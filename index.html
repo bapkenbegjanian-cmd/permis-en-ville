@@ -708,11 +708,27 @@ $('#go').onclick = async () => {
     await loadGoogle(key);
     sv = new google.maps.StreetViewService();
     let data;
-    try { data = await getPano({ location: { lat: p.lat, lng: p.lng }, radius: 120, source: google.maps.StreetViewSource && google.maps.StreetViewSource.OUTDOOR, preference: google.maps.StreetViewPreference && google.maps.StreetViewPreference.NEAREST }); }
-    catch (_) { showSetupError('Pas d\'images Street View à moins de 120 m de ce point. Choisissez une autre adresse.'); return; }
+    data = await findDrivablePano(p);
+    if (!data) { showSetupError('Pas de rue Street View praticable près de ce point. Choisissez une autre adresse.'); return; }
     startDrive(data);
   } catch (e) { showSetupError(e.message || String(e)); }
 };
+/* Point de départ : une photo Google officielle, reliée à d'autres (pas une photo isolée de particulier) */
+async function findDrivablePano(p) {
+  const SV = google.maps.StreetViewSource || {}, PREF = google.maps.StreetViewPreference || {};
+  const src = SV.GOOGLE ? { sources: [SV.GOOGLE] } : { source: SV.OUTDOOR };
+  const offsets = [[0, 0], [60, 0], [-60, 0], [0, 60], [0, -60], [150, 150], [-150, -150], [150, -150], [-150, 150]];
+  for (const radius of [50, 150, 400]) for (const [dx, dy] of offsets) {
+    const loc = unproj({ lat: p.lat, lng: p.lng }, { x: dx * (radius / 50 > 1 ? 1 : .5), y: dy * (radius / 50 > 1 ? 1 : .5) });
+    let d = null;
+    try { d = await getPano(Object.assign({ location: loc, radius, preference: PREF.NEAREST }, src)); } catch (_) { continue; }
+    if (d && d.links && d.links.length) return d;
+    if (d && d.location && d.location.pano) {
+      try { const full = await getPano({ pano: d.location.pano }); if (full && full.links && full.links.length) return full; } catch (_) {}
+    }
+  }
+  return null;
+}
 function startDrive(data) {
   $('#setup').hidden = true; $('#drive').hidden = false; $('#city2').textContent = cityLabel;
   const first = (data.links || [])[0];
