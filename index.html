@@ -7,12 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.123.0/Build/Cesium/Widgets/widgets.css">
 <style>
-/* Écran de conduite : la vraie rue (Street View) en plein écran, instruments en verre fumé par-dessus */
+/* Poste de conduite : la ville réelle en 3D plein écran, tableau de bord en bas, instruments en verre fumé */
 :root{
   --glass:rgba(14,18,24,.72); --glass-line:rgba(255,255,255,.14); --ink:#F2F5F9; --muted:#A9B3C1;
   --paper:#EEF1F5; --surface:#FFFFFF; --text:#16202E; --text-muted:#596476; --line:#D6DCE5;
-  --blue:#1D4F9C; --blue-hi:#5C8DE2; --red:#D62F35; --amber:#F0B43A; --ok:#3CB371;
+  --blue:#1D4F9C; --blue-hi:#5C8DE2; --red:#D62F35; --amber:#F0B43A; --ok:#3CB371; --dash:#15181D;
   --font-display:"Barlow Semi Condensed","Arial Narrow",sans-serif;
   --font-body:"Atkinson Hyperlegible",system-ui,sans-serif;
   --font-mono:"JetBrains Mono",ui-monospace,monospace;
@@ -37,7 +38,6 @@ button{cursor:pointer}
 .field label{font-family:var(--font-display);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
 .field input,.field select{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;color:var(--text);width:100%}
 .field small{color:var(--text-muted);font-size:13px}
-.field small a{color:var(--blue)}
 .row{display:flex;gap:8px}
 .row input{flex:1;min-width:0}
 .btn{border:1px solid var(--line);background:#fff;color:var(--text);padding:10px 14px;border-radius:8px;font-weight:700}
@@ -46,22 +46,17 @@ button{cursor:pointer}
 .err{background:#FDECEC;color:#8A1C20;border:1px solid #F3C2C4;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:14px}
 .keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:18px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:14px;color:var(--text-muted);align-items:center}
 kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;background:var(--paper);color:var(--text)}
+.alt{margin-top:14px;font-size:13px;color:var(--text-muted)} .alt a{color:var(--blue)}
 
 /* ---- Écran de conduite ---- */
-#drive{position:fixed;inset:0}
-#mini{width:100%;height:100%}
-#panoWrap{position:absolute;inset:0;background:#000;z-index:0;isolation:isolate;overflow:hidden}
-#pano{width:100%;height:100%}
-#drive > :not(#panoWrap){z-index:10}
+#drive{position:fixed;inset:0;overflow:hidden}
+#worldWrap{position:absolute;inset:0;z-index:0;isolation:isolate;background:#9cc3e6}
+#world{width:100%;height:100%}
+#world .cesium-viewer-bottom{bottom:auto;top:calc(80px + env(safe-area-inset-top));left:12px;opacity:.75}
+#drive > :not(#worldWrap){z-index:10}
 .glass{background:var(--glass);border:1px solid var(--glass-line);border-radius:12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .hud-tl{position:absolute;top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));display:flex;gap:10px;align-items:stretch}
-.gauge{display:flex;align-items:center;gap:14px;padding:10px 14px}
-.speed{font-family:var(--font-mono);font-weight:700;font-size:44px;line-height:1;font-variant-numeric:tabular-nums;min-width:2.3ch;text-align:right}
-.speed small{display:block;font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.08em}
-.speed.over{color:#FF6B70}
-.limit{width:56px;height:56px;border-radius:50%;background:#fff;border:7px solid #C8252C;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:22px;color:#111}
-.limit.unknown{border-color:#888;color:#888;font-size:16px}
-.street{padding:8px 12px;display:flex;flex-direction:column;justify-content:center;max-width:320px}
+.street{padding:8px 12px;display:flex;flex-direction:column;justify-content:center;max-width:340px}
 .street b{font-family:var(--font-display);font-weight:600;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .street span{color:var(--muted);font-size:12px}
 .hud-tr{position:absolute;top:calc(12px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));display:flex;gap:10px;align-items:flex-start}
@@ -74,30 +69,42 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 .next .t b{display:block;font-family:var(--font-display);font-size:19px;font-weight:600;line-height:1.1}
 .next .t span{color:var(--muted);font-size:13px}
 .next .d{font-family:var(--font-mono);font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
-.tlight{position:absolute;right:calc(16px + env(safe-area-inset-right));top:40%;transform:translateY(-50%);padding:10px;display:grid;gap:8px;justify-items:center}
+.tlight{position:absolute;right:calc(16px + env(safe-area-inset-right));top:34%;transform:translateY(-50%);padding:10px;display:grid;gap:8px;justify-items:center}
 .tlight i{width:34px;height:34px;border-radius:50%;background:#33373E;display:block}
 .tlight i.on.r{background:#FF3B30;box-shadow:0 0 18px #FF3B30}
 .tlight i.on.a{background:#FFB300;box-shadow:0 0 18px #FFB300}
 .tlight i.on.g{background:#2BD46B;box-shadow:0 0 18px #2BD46B}
 .tlight span{font-size:11px;color:var(--muted);text-align:center;max-width:70px}
-.blinker{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;padding:8px 14px;font-weight:700}
-.blinker .arr{font-size:26px;color:#3FE07A;animation:blink .8s steps(1) infinite}
-@keyframes blink{50%{opacity:.15}}
-.msg{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(200px + env(safe-area-inset-bottom));padding:10px 16px;max-width:min(560px,90vw);text-align:center}
+.msg{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(31vh + env(safe-area-inset-bottom));padding:10px 16px;max-width:min(560px,90vw);text-align:center}
 .toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(96px + env(safe-area-inset-top));background:var(--red);color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:16px;box-shadow:0 8px 24px rgba(0,0,0,.35);max-width:90vw;text-align:center}
 .toast.light{background:var(--amber);color:#1a1300}
-#miniWrap{position:absolute;right:calc(12px + env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));width:230px;height:170px;border-radius:12px;overflow:hidden;border:2px solid var(--glass-line)}
-.status{position:absolute;left:calc(12px + env(safe-area-inset-left));bottom:calc(12px + env(safe-area-inset-bottom));padding:6px 10px;font-size:12px;color:var(--muted);max-width:min(340px,60vw)}
-.look{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--font-display);font-weight:700;font-size:15px;padding:8px 12px}
-.look.l{left:calc(14px + env(safe-area-inset-left))} .look.r{right:calc(110px + env(safe-area-inset-right))}
-.touch{position:absolute;left:0;right:0;bottom:calc(196px + env(safe-area-inset-bottom));display:none;justify-content:space-between;padding:0 14px;pointer-events:none}
+.look{position:absolute;top:40%;font-family:var(--font-display);font-weight:700;font-size:15px;padding:8px 12px}
+.look.l{left:calc(14px + env(safe-area-inset-left))} .look.r{right:calc(14px + env(safe-area-inset-right))}
+.status{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(6px + env(safe-area-inset-bottom));font-size:11px;color:#8b95a3;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
+
+/* Tableau de bord */
+.dash{position:absolute;left:0;right:0;bottom:0;height:27vh;min-height:150px;pointer-events:none}
+.dash svg.body{position:absolute;inset:0;width:100%;height:100%}
+.wheel{position:absolute;left:30%;bottom:-11vh;width:34vh;height:34vh;transform-origin:50% 50%;margin-left:-17vh}
+.cluster{position:absolute;left:30%;bottom:7.5vh;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:8px 14px;border-radius:10px;background:#0b0d10;border:1px solid #2a2f37}
+.speed{font-family:var(--font-mono);font-weight:700;font-size:40px;line-height:1;font-variant-numeric:tabular-nums;min-width:2.3ch;text-align:right;color:#e9f0f8}
+.speed small{display:block;font-size:10px;font-weight:500;color:var(--muted);letter-spacing:.08em}
+.speed.over{color:#FF6B70}
+.limit{width:50px;height:50px;border-radius:50%;background:#fff;border:6px solid #C8252C;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:20px;color:#111}
+.limit.unknown{border-color:#888;color:#888;font-size:15px}
+.ind{font-size:24px;color:#2a3a2e;line-height:1}
+.ind.on{color:#3FE07A;animation:blink .7s steps(1) infinite}
+@keyframes blink{50%{opacity:.15}}
+#minimap{position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));width:190px;height:190px;border-radius:50%;border:3px solid #2a2f37;background:#1b2028}
+.touch{position:absolute;left:0;right:0;bottom:calc(29vh + env(safe-area-inset-bottom));display:flex;justify-content:space-between;padding:0 14px;pointer-events:none}
 .touch .grp{display:flex;gap:10px;pointer-events:auto}
-.touch button{width:62px;height:62px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-line);color:var(--ink);font-weight:700;font-size:13px;touch-action:none;user-select:none;-webkit-user-select:none}
+.touch button{width:58px;height:58px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-line);color:var(--ink);font-weight:700;font-size:13px;touch-action:none;user-select:none;-webkit-user-select:none}
 .touch button.on{background:var(--blue)}
-.touch{display:flex}
+@media (pointer:fine){.touch{display:none}}
 @media (max-width:760px){
-  .next{top:auto;bottom:calc(196px + env(safe-area-inset-bottom));} .street{display:none} #miniWrap{width:150px;height:120px} .score b{font-size:20px}
-  .speed{font-size:34px} .limit{width:46px;height:46px;font-size:18px;border-width:6px}
+  .street{display:none} #minimap{width:120px;height:120px} .score b{font-size:20px}
+  .speed{font-size:30px} .limit{width:42px;height:42px;font-size:17px;border-width:5px}
+  .wheel{left:24%} .cluster{left:50%}
 }
 
 /* ---- Fenêtres ---- */
@@ -126,7 +133,11 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 .flist li i{grid-row:span 2;border-radius:4px;background:var(--amber)}
 .flist li.grave i{background:var(--red)}
 .flist li small{color:var(--text-muted);font-family:var(--font-mono);font-size:11px}
-@media (prefers-reduced-motion:reduce){.blinker .arr{animation:none}}
+.loading{text-align:center}
+.bar{height:6px;border-radius:3px;background:var(--paper);overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;width:30%;background:var(--blue);animation:load 1.2s ease-in-out infinite}
+@keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
+@media (prefers-reduced-motion:reduce){.ind.on,.bar i{animation:none}}
 </style>
 </head>
 <body>
@@ -134,12 +145,12 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 <section id="setup">
   <div class="setup-card">
     <div class="brand"><span class="brand-mark">Auto-école</span><h1>Permis en Ville</h1></div>
-    <p class="lead">Conduisez dans les vraies rues de votre ville, vues depuis la place du conducteur. Limitations, stops, feux, cédez-le-passage, sens interdits et priorités à droite sont contrôlés comme à l'examen.</p>
+    <p class="lead">Conduisez dans la vraie ville en 3D, depuis le siège conducteur. Limitations, stops, feux, cédez-le-passage, sens interdits, priorités à droite et clignotants sont contrôlés comme à l'examen.</p>
     <div class="err" id="setupErr" hidden></div>
     <div class="field">
-      <label for="key">Clé API Google Maps</label>
+      <label for="key">Clé API Google</label>
       <input id="key" type="password" autocomplete="off" placeholder="AIza…">
-      <small>Elle reste sur cet ordinateur. L'API « Maps JavaScript » doit être activée (voir le fichier LISEZMOI).</small>
+      <small>La même clé que pour Street View. Activez aussi l'API « Map Tiles » sur Google Cloud.</small>
     </div>
     <div class="field">
       <label for="city">Point de départ</label>
@@ -147,43 +158,73 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
     </div>
     <div class="field">
       <label for="addr">Ou une adresse précise</label>
-      <div class="row"><input id="addr" type="text" placeholder="ex. 12 rue de la République, Lyon"><button class="btn" id="addrBtn" type="button">Chercher</button></div>
+      <div class="row"><input id="addr" type="text" placeholder="ex. rue de la Barre, Lyon"><button class="btn" id="addrBtn" type="button">Chercher</button></div>
       <small id="addrRes"></small>
     </div>
     <button class="btn primary" id="go" type="button">Démarrer la séance</button>
     <div class="keys">
-      <span><kbd>↑</kbd> / <kbd>↓</kbd></span><span>Accélérer / freiner</span>
+      <span><kbd>↑</kbd> / <kbd>↓</kbd></span><span>Accélérer / freiner (puis reculer à l'arrêt)</span>
+      <span><kbd>←</kbd> / <kbd>→</kbd></span><span>Tourner le volant</span>
       <span><kbd>Espace</kbd></span><span>Freinage appuyé</span>
-      <span><kbd>←</kbd> / <kbd>→</kbd></span><span>Clignotant : tourner au prochain carrefour</span>
+      <span><kbd>A</kbd> / <kbd>E</kbd></span><span>Clignotant gauche / droit</span>
       <span><kbd>Q</kbd> / <kbd>D</kbd></span><span>Regarder à gauche / à droite (maintenir)</span>
-      <span><kbd>R</kbd></span><span>Demi-tour</span>
       <span><kbd>P</kbd></span><span>Pause</span>
     </div>
+    <p class="alt">Ancienne version photo par photo : <a href="streetview.html">Street View</a></p>
   </div>
 </section>
 
 <section id="drive" hidden>
-  <div id="panoWrap"><div id="pano"></div></div>
-  <div class="hud-tl">
-    <div class="glass gauge"><div class="speed" id="spd">0<small>KM/H</small></div><div class="limit unknown" id="lim">—</div></div>
-    <div class="glass street"><b id="street">…</b><span id="city2"></span></div>
+  <div id="worldWrap"><div id="world"></div></div>
+
+  <div class="dash">
+    <svg class="body" viewBox="0 0 1000 270" preserveAspectRatio="none" aria-hidden="true">
+      <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2f36"/><stop offset=".25" stop-color="#16191e"/><stop offset="1" stop-color="#0c0e11"/></linearGradient></defs>
+      <path d="M0 270 L0 70 Q120 40 300 52 Q500 30 700 52 Q880 40 1000 70 L1000 270 Z" fill="url(#dg)"/>
+      <path d="M0 70 Q120 40 300 52 Q500 30 700 52 Q880 40 1000 70" fill="none" stroke="#3a414b" stroke-width="2"/>
+      <rect x="560" y="120" width="170" height="70" rx="10" fill="#0e1014" stroke="#262b33"/>
+      <circle cx="600" cy="155" r="10" fill="#1d2229"/><circle cx="645" cy="155" r="10" fill="#1d2229"/><circle cx="690" cy="155" r="10" fill="#1d2229"/>
+    </svg>
+    <svg class="wheel" id="wheel" viewBox="-100 -100 200 200" aria-hidden="true">
+      <circle r="88" fill="none" stroke="#111317" stroke-width="20"/>
+      <circle r="88" fill="none" stroke="#2c3138" stroke-width="2"/>
+      <path d="M-80 10 Q0 -10 80 10 L60 40 Q0 25 -60 40 Z" fill="#14171b"/>
+      <circle r="26" fill="#1a1d22" stroke="#2c3138" stroke-width="2"/>
+      <text y="6" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#5C8DE2">AE</text>
+    </svg>
+    <div class="cluster">
+      <span class="ind" id="indL">◀</span>
+      <div class="speed" id="spd">0<small>KM/H</small></div>
+      <div class="limit unknown" id="lim">—</div>
+      <span class="ind" id="indR">▶</span>
+    </div>
   </div>
+  <canvas id="minimap" width="380" height="380"></canvas>
+
+  <div class="hud-tl"><div class="glass street"><b id="street">…</b><span id="city2"></span></div></div>
   <div class="hud-tr">
     <div class="glass score"><b id="score">100</b><span id="faultCount">0 faute</span></div>
     <button class="hbtn" id="endBtn" type="button">Terminer</button>
   </div>
   <div class="glass next" id="next" hidden></div>
-  <div class="glass tlight" id="tlight" hidden><i class="r"></i><i class="a"></i><i class="g"></i><span>Feu simulé</span></div>
-  <div class="glass blinker" id="blinker" hidden><span class="arr" id="blArr">⬅</span><span id="blTxt">Tourner à gauche au prochain carrefour</span></div>
+  <div class="glass tlight" id="tlight" hidden><i class="r"></i><i class="a"></i><i class="g"></i><span>Feu</span></div>
   <div class="glass msg" id="msg" hidden></div>
   <div class="glass look l" id="lookL" hidden>◀ Contrôle gauche</div>
   <div class="glass look r" id="lookR" hidden>Contrôle droite ▶</div>
   <div class="toast" id="toast" hidden></div>
-  <div class="glass status" id="status">Chargement…</div>
-  <div id="miniWrap"><div id="mini"></div></div>
+  <div class="status" id="status"></div>
   <div class="touch">
-    <div class="grp"><button data-k="left" type="button">◀</button><button data-k="lookL" type="button">Œil G</button><button data-k="lookR" type="button">Œil D</button><button data-k="right" type="button">▶</button></div>
+    <div class="grp"><button data-k="left" type="button">◀</button><button data-k="right" type="button">▶</button><button data-k="blL" type="button">Clign. G</button><button data-k="blR" type="button">Clign. D</button></div>
     <div class="grp"><button data-k="down" type="button">Frein</button><button data-k="up" type="button">Gaz</button></div>
+  </div>
+
+  <div class="overlay center" id="loadOv">
+    <div class="modal loading">
+      <div class="eyebrow">Préparation</div>
+      <h3 id="loadTitle">Chargement de la ville en 3D…</h3>
+      <p id="loadText">Rues et panneaux, puis bâtiments. Cela prend quelques secondes.</p>
+      <div class="bar"><i></i></div>
+    </div>
   </div>
 
   <div class="overlay" id="quizOv" hidden>
@@ -201,7 +242,6 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
     <div class="modal">
       <div class="eyebrow">Pause</div>
       <h3>Séance en pause</h3>
-      <p>Regardez autour de vous avec la souris si besoin, puis reprenez.</p>
       <div class="actions"><button class="btn primary" id="resume" type="button">Reprendre</button></div>
     </div>
   </div>
@@ -225,12 +265,11 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
-
-/* =========================================================
-   Réglages
-   ========================================================= */
+const CESIUM_BASE = 'https://cdn.jsdelivr.net/npm/cesium@1.123.0/Build/Cesium/';
+const CAR_MODEL = 'https://cdn.jsdelivr.net/gh/CesiumGS/cesium@1.123/Apps/SampleData/models/GroundVehicle/GroundVehicle.glb';
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 const PRESETS = [
-  ['Lyon · Place Bellecour', 45.75795, 4.83260],
+  ['Lyon · Bellecour, rue de la Barre', 45.75790, 4.83590],
   ['Lyon · Part-Dieu', 45.76060, 4.85900],
   ['Lyon · Croix-Rousse', 45.77450, 4.83180],
   ['Paris · Opéra', 48.87080, 2.33200],
@@ -243,74 +282,68 @@ const PRESETS = [
   ['Nice · Masséna', 43.69750, 7.27000],
   ['Strasbourg · Kléber', 48.58350, 7.74600]
 ];
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 const store = { get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} } };
 
 /* =========================================================
-   Géométrie
+   Géométrie (mètres locaux : x = est, y = nord ; cap en degrés, 0 = nord, sens horaire)
    ========================================================= */
 const RAD = Math.PI / 180;
-function dist(a, b) { const x = (b.lng - a.lng) * RAD * Math.cos((a.lat + b.lat) / 2 * RAD), y = (b.lat - a.lat) * RAD; return Math.hypot(x, y) * 6371000; }
-function bearing(a, b) { const p1 = a.lat * RAD, p2 = b.lat * RAD, dl = (b.lng - a.lng) * RAD;
-  const y = Math.sin(dl) * Math.cos(p2), x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
-  return (Math.atan2(y, x) / RAD + 360) % 360; }
+let ORIGIN = null;
+const toXY = p => ({ x: (p.lng - ORIGIN.lng) * 111320 * Math.cos(ORIGIN.lat * RAD), y: (p.lat - ORIGIN.lat) * 110540 });
+const toLL = (x, y) => ({ lat: ORIGIN.lat + y / 110540, lng: ORIGIN.lng + x / (111320 * Math.cos(ORIGIN.lat * RAD)) });
 const angDiff = (from, to) => ((to - from + 540) % 360) - 180;
-const ll = g => ({ lat: typeof g.lat === 'function' ? g.lat() : g.lat, lng: typeof g.lng === 'function' ? g.lng() : g.lng });
-function proj(o, p) { return { x: (p.lng - o.lng) * 111320 * Math.cos(o.lat * RAD), y: (p.lat - o.lat) * 110540 }; }
-function unproj(o, q) { return { lat: o.lat + q.y / 110540, lng: o.lng + q.x / (111320 * Math.cos(o.lat * RAD)) }; }
+const bearingOf = (dx, dy) => (Math.atan2(dx, dy) / RAD + 360) % 360;
 
 /* =========================================================
-   Données OpenStreetMap : rues, limitations, panneaux
+   OpenStreetMap : rues, limitations, panneaux, carrefours
    ========================================================= */
-const RANK = { motorway_link: 4, trunk: 4, trunk_link: 4, primary: 4, primary_link: 4, secondary: 3, secondary_link: 3, tertiary: 2, tertiary_link: 2, unclassified: 1, residential: 1, living_street: 0 };
-let OSM = null, osmLoading = false;
+const RANK = { trunk: 4, trunk_link: 4, primary: 4, primary_link: 4, secondary: 3, secondary_link: 3, tertiary: 2, tertiary_link: 2, unclassified: 1, residential: 1, living_street: 0 };
+let OSM = null, osmLoading = false, osmCenter = null;
 
-function parseLimit(tags) {
-  const m = tags.maxspeed || '';
-  const n = parseInt(m, 10);
+function parseLimit(t) {
+  const m = t.maxspeed || '', n = parseInt(m, 10);
   if (!isNaN(n)) return n;
-  if (/zone30|:30$/i.test(m) || /30/.test(tags['zone:maxspeed'] || '')) return 30;
+  if (/zone30|:30$/i.test(m) || /30/.test(t['zone:maxspeed'] || '')) return 30;
   if (/urban/i.test(m)) return 50;
   if (/rural/i.test(m)) return 80;
-  if (/walk|living/i.test(m) || tags.highway === 'living_street') return 20;
+  if (/walk|living/i.test(m) || t.highway === 'living_street') return 20;
   return null;
 }
-async function loadOSM(center) {
-  if (osmLoading) return; osmLoading = true;
-  setStatus('Chargement des règles de circulation…');
-  const r = 1400, dLat = r / 110540, dLng = r / (111320 * Math.cos(center.lat * RAD));
+async function fetchOSM(center) {
+  const r = 1500, dLat = r / 110540, dLng = r / (111320 * Math.cos(center.lat * RAD));
   const bb = [center.lat - dLat, center.lng - dLng, center.lat + dLat, center.lng + dLng].map(v => v.toFixed(6)).join(',');
   const q = `[out:json][timeout:50];(way["highway"~"^(trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street)$"](${bb});node["highway"~"^(stop|give_way|traffic_signals|crossing|mini_roundabout)$"](${bb}););out body;>;out skel qt;`;
-  let json = null, lastErr = '';
+  let lastErr = '';
   for (const url of OVERPASS) {
     try {
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q) });
-      if (!res.ok) { lastErr = 'HTTP ' + res.status; continue; }
-      json = await res.json(); break;
+      if (res.ok) return await res.json();
+      lastErr = 'HTTP ' + res.status;
     } catch (e) { lastErr = e.message; }
   }
-  osmLoading = false;
-  if (!json) { setStatus('Règles de circulation indisponibles (' + lastErr + '). La conduite reste possible, sans contrôle.'); return; }
-  OSM = buildOSM(json, center);
-  setStatus(`Règles chargées : ${OSM.ways.size} rues, ${OSM.controlCount} panneaux et feux · données © OpenStreetMap`);
-  onStep();
+  throw new Error(lastErr || 'réseau');
 }
-function buildOSM(json, center) {
+function buildOSM(json) {
   const nodes = new Map(), ways = new Map(), nodeWays = new Map();
   for (const el of json.elements) if (el.type === 'node') {
-    const prev = nodes.get(el.id);
-    nodes.set(el.id, { id: el.id, lat: el.lat, lng: el.lon, tags: el.tags || (prev && prev.tags) || {} });
+    const prev = nodes.get(el.id), xy = toXY({ lat: el.lat, lng: el.lon });
+    nodes.set(el.id, { id: el.id, lat: el.lat, lng: el.lon, x: xy.x, y: xy.y, tags: el.tags || (prev && prev.tags) || {} });
   }
   for (const el of json.elements) if (el.type === 'way' && el.tags) {
-    const t = el.tags;
-    const ow = t.oneway === 'yes' || t.oneway === '1' || t.oneway === 'true' ? 1 : t.oneway === '-1' ? -1 : (t.junction === 'roundabout' || t.junction === 'circular') && t.oneway !== 'no' ? 1 : 0;
-    const w = { id: el.id, nodes: el.nodes.filter(n => nodes.has(n)), tags: t, name: t.name || t.ref || 'Rue sans nom', hw: t.highway, rank: RANK[t.highway] ?? 1,
-      limit: parseLimit(t), oneway: ow, roundabout: t.junction === 'roundabout' || t.junction === 'circular' };
-    if (w.nodes.length < 2) continue;
+    const t = el.tags, ids = el.nodes.filter(n => nodes.has(n));
+    if (ids.length < 2) continue;
+    const round = t.junction === 'roundabout' || t.junction === 'circular';
+    const ow = t.oneway === 'yes' || t.oneway === '1' || t.oneway === 'true' ? 1 : t.oneway === '-1' ? -1 : round && t.oneway !== 'no' ? 1 : 0;
+    const rank = RANK[t.highway] ?? 1, lanes = parseInt(t.lanes, 10);
+    const width = !isNaN(lanes) ? Math.max(3.2, lanes * 3.2) : rank >= 3 ? 11 : rank === 2 ? 8 : ow ? 4.5 : 6.5;
+    const pts = ids.map(id => nodes.get(id)), cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+    const w = { id: el.id, nodes: ids, pts, cum, len: cum[cum.length - 1], tags: t, name: t.name || t.ref || 'Rue sans nom', hw: t.highway, rank,
+      limit: parseLimit(t), oneway: ow, roundabout: round, half: width / 2, ctrls: [] };
+    pts.forEach((n, i) => { const h = n.tags.highway; if (h === 'stop' || h === 'give_way' || h === 'traffic_signals') w.ctrls.push({ s: cum[i], type: h, node: n }); });
     ways.set(w.id, w);
-    w.nodes.forEach(n => { if (!nodeWays.has(n)) nodeWays.set(n, []); const a = nodeWays.get(n); if (!a.includes(w.id)) a.push(w.id); });
+    ids.forEach(n => { if (!nodeWays.has(n)) nodeWays.set(n, []); const a = nodeWays.get(n); if (!a.includes(w.id)) a.push(w.id); });
   }
-  // carrefours : nœud partagé par des rues différentes
   const junctions = new Set();
   for (const [nid, ws] of nodeWays) {
     if (ws.length >= 3) { junctions.add(nid); continue; }
@@ -320,66 +353,76 @@ function buildOSM(json, center) {
       if (!(endA && endB && a.name === b.name)) junctions.add(nid);
     }
   }
-  // index spatial des segments (grille de 60 m)
   const grid = new Map(), CELL = 60;
-  const cellKey = (x, y) => Math.floor(x / CELL) + ':' + Math.floor(y / CELL);
-  for (const w of ways.values()) for (let i = 0; i < w.nodes.length - 1; i++) {
-    const a = proj(center, nodes.get(w.nodes[i])), b = proj(center, nodes.get(w.nodes[i + 1]));
-    const x0 = Math.floor(Math.min(a.x, b.x) / CELL), x1 = Math.floor(Math.max(a.x, b.x) / CELL), y0 = Math.floor(Math.min(a.y, b.y) / CELL), y1 = Math.floor(Math.max(a.y, b.y) / CELL);
-    for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) { const k = cx + ':' + cy; if (!grid.has(k)) grid.set(k, []); grid.get(k).push({ w, i, a, b }); }
+  for (const w of ways.values()) for (let i = 0; i < w.pts.length - 1; i++) {
+    const a = w.pts[i], b = w.pts[i + 1];
+    for (let cx = Math.floor(Math.min(a.x, b.x) / CELL); cx <= Math.floor(Math.max(a.x, b.x) / CELL); cx++)
+      for (let cy = Math.floor(Math.min(a.y, b.y) / CELL); cy <= Math.floor(Math.max(a.y, b.y) / CELL); cy++) {
+        const k = cx + ':' + cy; if (!grid.has(k)) grid.set(k, []); grid.get(k).push({ w, i, a, b });
+      }
   }
-  let controlCount = 0; for (const n of nodes.values()) if (['stop', 'give_way', 'traffic_signals'].includes(n.tags.highway)) controlCount++;
-  return { center, nodes, ways, nodeWays, junctions, grid, CELL, cellKey, controlCount };
+  return { nodes, ways, nodeWays, junctions, grid, CELL, wayList: [...ways.values()] };
+}
+async function loadOSM(center, first) {
+  if (osmLoading) return; osmLoading = true;
+  try {
+    const json = await fetchOSM(center);
+    OSM = buildOSM(json); osmCenter = center;
+    setStatus(`Règles : ${OSM.ways.size} rues · données © contributeurs OpenStreetMap · ville 3D © Google`);
+  } catch (e) {
+    if (first) setStatus('Règles de circulation indisponibles (' + e.message + ') : conduite libre, sans contrôle.');
+  }
+  osmLoading = false;
 }
 
-/* Trouver la rue sur laquelle roule la voiture */
-function matchWay(pos, heading) {
+/* Rue sur laquelle se trouve un point (avec le sens de circulation) */
+function matchWay(x, y, heading, maxD) {
   if (!OSM) return null;
-  const p = proj(OSM.center, pos), C = OSM.CELL;
-  let best = null, bestScore = 1e9;
+  const C = OSM.CELL; let best = null, bestScore = 1e9;
   for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
-    const segs = OSM.grid.get(Math.floor(p.x / C + dx) + ':' + Math.floor(p.y / C + dy)); if (!segs) continue;
-    for (const s of segs) {
-      const vx = s.b.x - s.a.x, vy = s.b.y - s.a.y, L2 = vx * vx + vy * vy || 1;
-      const t = Math.max(0, Math.min(1, ((p.x - s.a.x) * vx + (p.y - s.a.y) * vy) / L2));
-      const qx = s.a.x + vx * t, qy = s.a.y + vy * t, d = Math.hypot(p.x - qx, p.y - qy);
-      if (d > 28) continue;
-      const segBear = (Math.atan2(vx, vy) / RAD + 360) % 360;
-      const df = angDiff(heading, segBear), diff = Math.min(Math.abs(df), 180 - Math.abs(df));
-      const score = d + diff * .45;
-      if (score < bestScore) { bestScore = score; best = { w: s.w, i: s.i, dir: Math.abs(df) <= 90 ? 1 : -1, d, diff, point: unproj(OSM.center, { x: qx, y: qy }) }; }
+    const segs = OSM.grid.get(Math.floor(x / C + dx) + ':' + Math.floor(y / C + dy)); if (!segs) continue;
+    for (const sg of segs) {
+      const vx = sg.b.x - sg.a.x, vy = sg.b.y - sg.a.y, L = Math.hypot(vx, vy) || 1;
+      const t = Math.max(0, Math.min(1, ((x - sg.a.x) * vx + (y - sg.a.y) * vy) / (L * L)));
+      const qx = sg.a.x + vx * t, qy = sg.a.y + vy * t, d = Math.hypot(x - qx, y - qy);
+      if (d > (maxD || 30)) continue;
+      const segB = bearingOf(vx, vy), df = angDiff(heading, segB), diff = Math.min(Math.abs(df), 180 - Math.abs(df));
+      const score = d + diff * .35;
+      if (score < bestScore) {
+        bestScore = score;
+        const dir = Math.abs(df) <= 90 ? 1 : -1;
+        const latRight = ((x - sg.a.x) * vy - (y - sg.a.y) * vx) / L * dir;
+        best = { w: sg.w, i: sg.i, dir, d, diff, latRight, s: sg.w.cum[sg.i] + t * L, qx, qy };
+      }
     }
   }
-  return best && best.diff < 60 ? best : null;
+  return best;
 }
-
-/* Ce qui arrive devant : panneaux sur notre rue, puis le prochain carrefour */
+/* Devant la voiture : panneaux sur notre rue puis prochain carrefour */
 function lookAhead(m) {
-  const { w, i, dir } = m; const N = OSM.nodes;
-  let k = dir > 0 ? i + 1 : i, prev = m.point, d = 0;
+  const { w, dir } = m; let k = dir > 0 ? m.i + 1 : m.i;
   const controls = [];
-  for (let guard = 0; guard < 60 && k >= 0 && k < w.nodes.length; guard++, k += dir) {
-    const node = N.get(w.nodes[k]); d += dist(prev, node); prev = node;
+  for (let g = 0; g < 80 && k >= 0 && k < w.nodes.length; g++, k += dir) {
+    const node = w.pts[k], d = dir > 0 ? w.cum[k] - m.s : m.s - w.cum[k];
+    if (d < -1) continue;
     if (d > 170) break;
-    const hwTag = node.tags.highway;
-    if (hwTag && hwTag !== 'mini_roundabout') {
-      const dirTag = node.tags.direction;
-      const applies = !dirTag || (dirTag === 'forward' && dir > 0) || (dirTag === 'backward' && dir < 0) || (dirTag !== 'forward' && dirTag !== 'backward');
-      if (applies) controls.push({ type: hwTag, node, dist: d });
+    const h = node.tags.highway;
+    if (h && h !== 'mini_roundabout') {
+      const dt = node.tags.direction;
+      if (!dt || (dt === 'forward' && dir > 0) || (dt === 'backward' && dir < 0) || (dt !== 'forward' && dt !== 'backward')) controls.push({ type: h, node, dist: d });
     }
-    if (OSM.junctions.has(node.id)) {
+    if (OSM.junctions.has(node.id) && d > -1) {
       const others = (OSM.nodeWays.get(node.id) || []).filter(id => id !== w.id).map(id => OSM.ways.get(id)).filter(o => o && o.name !== w.name);
       if (!others.length) continue;
-      return { node, dist: d, controls, others, mini: hwTag === 'mini_roundabout' };
+      return { node, dist: d, controls, others, mini: h === 'mini_roundabout' };
     }
   }
-  return controls.length ? { node: null, dist: d, controls, others: [] } : null;
+  return controls.length ? { node: null, dist: 999, controls, others: [] } : null;
 }
-function hasYieldNear(way, jid) {
-  const N = OSM.nodes, idx = way.nodes.indexOf(jid); if (idx < 0) return false;
-  const J = N.get(jid);
-  for (const step of [-1, 1]) for (let k = idx + step; k >= 0 && k < way.nodes.length; k += step) {
-    const n = N.get(way.nodes[k]); if (dist(J, n) > 35) break;
+function hasYieldNear(way, J) {
+  const idx = way.nodes.indexOf(J.id); if (idx < 0) return false;
+  for (const st of [-1, 1]) for (let k = idx + st; k >= 0 && k < way.nodes.length; k += st) {
+    const n = way.pts[k]; if (Math.hypot(n.x - J.x, n.y - J.y) > 35) break;
     if (n.tags.highway === 'stop' || n.tags.highway === 'give_way') return true;
   }
   return false;
@@ -392,28 +435,24 @@ function junctionRule(m, ah) {
   if (near.some(c => c.type === 'give_way')) return { ctrl: 'give' };
   if (m.w.roundabout) return { ctrl: 'priority' };
   if (ah.mini || ah.others.some(o => o.roundabout)) return { ctrl: 'roundabout' };
-  if (ah.others.some(o => hasYieldNear(o, J.id))) return { ctrl: 'priority' };
+  if (ah.others.some(o => hasYieldNear(o, J))) return { ctrl: 'priority' };
   if (m.w.rank >= 3 && ah.others.every(o => o.rank <= 2)) return { ctrl: 'priority' };
   return { ctrl: 'right' };
 }
-
-/* Feux : l'état est simulé (la photo a été prise à un autre moment) */
 function lightState(node, t) {
   const off = (node.id % 997) / 997 * 40, ph = (t / 1000 + off) % 40;
   if (ph < 17) return { s: 'green', e: ph }; if (ph < 20) return { s: 'amber', e: ph - 17 }; return { s: 'red', e: ph - 20 };
 }
 
 /* =========================================================
-   État de la séance
+   État
    ========================================================= */
-let sv, pano, map, carMarker;
-const cache = new Map();
-let waitingLinks = false, waitSince = 0;
-let car = null, links = [], acc = 0, movedSinceStep = 0, lastStep = 0, povH = 0;
-let intent = null, intentDist = 999;
-let match = null, ev = null, faults = [], cooldown = {}, asked = new Set(), quizOk = 0, quizCount = 0;
-let paused = false, ended = false, started = 0, driveTime = 0, overT = 0, wrongWay = null, lastLimit = null, cityLabel = '';
-const keys = { up: false, down: false, brake: false, lookL: false, lookR: false };
+let viewer = null, tileset = null, carModelOk = false, cityLabel = '';
+const P = { x: 0, y: 0, b: 0, v: 0, steer: 0, h: 0, hOk: false };
+const keys = { up: false, down: false, left: false, right: false, brake: false, lookL: false, lookR: false };
+let blinker = null, match = null, ev = null, faults = [], cooldown = {}, asked = new Set(), quizOk = 0, quizCount = 0;
+let paused = true, ended = false, driveTime = 0, overT = 0, leftT = 0, offroad = false, wrongWay = null, lastLimit = null, lastName = '';
+let AIS = [], povLook = 0;
 
 function setStatus(t) { $('#status').textContent = t; }
 let toastTimer, msgTimer;
@@ -425,114 +464,107 @@ function addFault(code, label, grave) {
   const now = performance.now();
   if (cooldown[code] && now - cooldown[code] < 6000) return;
   cooldown[code] = now;
-  faults.push({ t: driveTime, label, grave, street: match ? match.w.name : '', pos: car && { ...car.pos } });
-  toast(label, grave);
-  if (map && car) new google.maps.Marker({ map, position: car.pos, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: grave ? '#D62F35' : '#F0B43A', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }, clickable: false });
-  renderScore();
+  faults.push({ t: driveTime, label, grave, street: lastName, x: P.x, y: P.y });
+  toast(label, grave); renderScore();
 }
 function scoreOf() { const g = faults.filter(f => f.grave).length; return { g, l: faults.length - g, s: Math.max(0, 100 - g * 20 - (faults.length - g) * 5) }; }
 function renderScore() { const s = scoreOf(); $('#score').textContent = s.s; $('#faultCount').textContent = faults.length + (faults.length > 1 ? ' fautes' : ' faute'); }
 
 /* =========================================================
-   Déplacement de photo en photo
+   Conduite du joueur
    ========================================================= */
-function getPano(req) { return new Promise((res, rej) => sv.getPanorama(req, (d, s) => s === 'OK' ? res(d) : rej(s))); }
-function prefetch() {
-  for (const l of links) if (!cache.has(l.pano)) { cache.set(l.pano, null); getPano({ pano: l.pano }).then(d => cache.set(l.pano, d)).catch(() => cache.delete(l.pano)); }
-}
-function pickTarget() {
-  const cand = links.map(l => ({ pano: l.pano, heading: l.heading, rel: angDiff(car.heading, l.heading) }));
-  let t = null;
-  if (intent) {
-    const want = intent === 'left' ? -90 : 90;
-    const opts = cand.filter(c => Math.sign(c.rel) === Math.sign(want) && Math.abs(c.rel) > 35 && Math.abs(c.rel) < 150);
-    if (opts.length) { t = opts.sort((a, b) => Math.abs(a.rel - want) - Math.abs(b.rel - want))[0]; t.turn = true; }
-  }
-  if (!t) t = cand.filter(c => Math.abs(c.rel) < 50).sort((a, b) => Math.abs(a.rel) - Math.abs(b.rel))[0] || null;
-  if (t) { const d = cache.get(t.pano); t.data = d || null; t.gap = d ? Math.max(1, dist(car.pos, ll(d.location.latLng))) : 9; }
-  return t;
-}
-function goTo(data, heading) {
-  car.pano = data.location.pano; car.pos = ll(data.location.latLng); car.heading = heading;
-  links = (data.links || []).filter(l => l && l.pano).map(l => ({ pano: l.pano, heading: l.heading }));
-  cache.set(car.pano, data);
-  waitingLinks = !links.length; waitSince = performance.now();
-  pano.setPano(car.pano);
-  if (data.location.description) car.desc = data.location.description;
-  prefetch();
-  if (carMarker) { carMarker.setPosition(car.pos); const ic = carMarker.getIcon(); ic.rotation = car.heading; carMarker.setIcon(ic); map.panTo(car.pos); }
-  onStep();
-}
-function tryStep(now) {
-  if (waitingLinks && now - waitSince < 3000) return;
-  const t = pickTarget();
-  if (!t) {
-    if (car.speed > 0) { car.speed = 0; acc = 0; message(links.length ? 'Plus de route tout droit : choisissez ← ou → au carrefour, ou R pour faire demi-tour.' : 'Fin des images Street View ici : R pour faire demi-tour.'); }
-    return;
-  }
-  if (acc >= t.gap && now - lastStep > 230) {
-    acc = Math.min(acc - t.gap, 12); movedSinceStep = 0; lastStep = now;
-    if (t.turn) {
-      if (intentDist < 15) addFault('blink', 'Clignotant mis trop tard avant de tourner', false);
-      intent = null; intentDist = 999; renderBlinker();
+function updatePlayer(dt) {
+  const v = P.v;
+  // volant
+  const maxSteer = 34 / (1 + Math.abs(v) * .09);
+  const target = (keys.left ? -1 : 0) + (keys.right ? 1 : 0);
+  const rate = target ? 70 : 110;
+  P.steer += Math.max(-rate * dt, Math.min(rate * dt, target * maxSteer - P.steer));
+  // pédales
+  let a;
+  if (keys.brake) a = -Math.sign(v) * Math.min(9.5, Math.abs(v) / dt);
+  else if (keys.up && !keys.down) a = v < -.1 ? 7 : 2.8 * (1 - v / 24);
+  else if (keys.down) a = v > .1 ? -7 : (v > -3 ? -1.6 : 0);
+  else a = -Math.sign(v) * Math.min(Math.abs(v) / dt, .45);
+  if (offroad) a -= Math.sign(v) * Math.min(Math.abs(v) / dt, 4);
+  P.v += a * dt;
+  if (Math.abs(P.v) < .03 && !keys.up && !keys.down) P.v = 0;
+  P.b = (P.b + (P.v / 2.65) * Math.tan(P.steer * RAD) / RAD * dt + 360) % 360;
+  P.x += Math.sin(P.b * RAD) * P.v * dt; P.y += Math.cos(P.b * RAD) * P.v * dt;
+  // collisions avec les autres voitures
+  for (const ai of AIS) {
+    if (Math.hypot(ai.x - P.x, ai.y - P.y) < 3.2) {
+      addFault('crash', 'Collision avec un véhicule', true);
+      const dx = P.x - ai.x, dy = P.y - ai.y, L = Math.hypot(dx, dy) || 1;
+      P.x = ai.x + dx / L * 3.3; P.y = ai.y + dy / L * 3.3; P.v = 0; ai.v = 0;
     }
-    if (t.data) goTo(t.data, t.heading); else goToId(t.pano, t.heading);
   }
 }
-/* Sans métadonnées : on laisse le panorama charger la photo, puis on lit sa position et ses liens */
-function goToId(id, heading) {
-  car.pano = id; car.heading = heading; links = []; waitingLinks = true; waitSince = performance.now();
-  pano.setPano(id);
-}
-function onPanoLinks() {
-  if (!car || pano.getPano() !== car.pano) return;
-  const L = (pano.getLinks() || []).filter(l => l && l.pano);
-  if (L.length) { links = L.map(l => ({ pano: l.pano, heading: l.heading })); waitingLinks = false; prefetch(); }
-}
-function onPanoPosition() {
-  if (!car || pano.getPano() !== car.pano) return;
-  const g = pano.getPosition(); if (!g) return;
-  const p = ll(g); if (Math.abs(p.lat - car.pos.lat) < 1e-9 && Math.abs(p.lng - car.pos.lng) < 1e-9) return;
-  car.pos = p;
-  if (carMarker) { carMarker.setPosition(car.pos); const ic = carMarker.getIcon(); ic.rotation = car.heading; carMarker.setIcon(ic); map.panTo(car.pos); }
-  onStep();
-}
 
-/* =========================================================
-   Règles : vérifiées à chaque nouvelle photo et en continu
-   ========================================================= */
-function onStep() {
-  if (!car) return;
-  if (OSM && dist(car.pos, OSM.center) > 900) loadOSM(car.pos);
-  match = matchWay(car.pos, car.heading);
+/* Règles vérifiées en continu */
+let ruleClock = 0;
+function updateRules(dt, now) {
+  const kmh = Math.abs(P.v) * 3.6;
+  if (lastLimit && kmh > lastLimit + 5) { overT += dt; if (overT > 2) { addFault('speed', `Excès de vitesse : ${Math.round(kmh)} km/h pour ${lastLimit}`, kmh > lastLimit + 20); overT = -4; } }
+  else if (overT > 0) overT = 0; else overT = Math.min(0, overT + dt);
+  if (ev) {
+    const d = liveDist();
+    if (d < 30) ev.minSpeed = Math.min(ev.minSpeed, kmh);
+    if (d < 60) { if (keys.lookL || povLook < -30) ev.lookedL = true; if (keys.lookR || povLook > 30) ev.lookedR = true; }
+    if (d < 45 && blinker) ev.blink = blinker;
+    if (d < 35 && ev.bIn === null) ev.bIn = P.b;
+  }
+  ruleClock += dt; if (ruleClock < .15 || !OSM) return; ruleClock = 0;
+  if (osmCenter && Math.hypot(P.x - toXY(osmCenter).x, P.y - toXY(osmCenter).y) > 900) loadOSM(toLL(P.x, P.y));
+  const dirB = P.v < -.1 ? (P.b + 180) % 360 : P.b;
+  match = matchWay(P.x, P.y, dirB, 40);
   if (match) {
-    $('#street').textContent = match.w.name;
-    if (match.w.limit) lastLimit = match.w.limit;
-    else if (lastLimit === null) lastLimit = 50;
+    lastName = match.w.name; $('#street').textContent = lastName;
+    lastLimit = match.w.limit || lastLimit || 50;
+    // sortie de chaussée
+    const nowOff = match.d > match.w.half + 2.5 && !nearJunction(P.x, P.y);
+    if (nowOff && !offroad) addFault('off', 'Sortie de chaussée', false);
+    offroad = nowOff;
     // sens interdit
-    if (match.w.oneway && match.dir * match.w.oneway < 0 && match.d < 12) {
-      if (wrongWay !== match.w.id) { wrongWay = match.w.id; addFault('wrong', 'Sens interdit emprunté : ' + match.w.name, true); }
+    if (match.w.oneway && match.dir * match.w.oneway < 0 && Math.abs(P.v) > 1.5 && match.d < match.w.half + 1) {
+      if (wrongWay !== match.w.id) { wrongWay = match.w.id; addFault('wrong', 'Sens interdit : ' + match.w.name, true); }
     } else if (wrongWay !== null && wrongWay !== match.w.id) wrongWay = null;
-  } else if (car.desc) $('#street').textContent = car.desc;
+    // voie de gauche
+    if (!match.w.oneway && P.v > 3 && match.latRight < -.6 && !nearJunction(P.x, P.y)) { leftT += .15; if (leftT > 2) { addFault('left', 'Circulation sur la voie de gauche', false); leftT = -4; } }
+    else leftT = Math.max(0, leftT);
+  } else {
+    if (!offroad && OSM && P.v > 2) { addFault('off', 'Sortie de chaussée', false); }
+    offroad = !!OSM;
+  }
   renderLimit();
-
-  const ah = match ? lookAhead(match) : null;
+  // carrefour à venir
+  const ah = match && !offroad ? lookAhead(match) : null;
   let next = null;
   if (ah && ah.node) {
-    const rule = junctionRule(match, ah);
-    const cross = ah.others[0] ? ah.others[0].name : '';
-    next = { id: ah.node.id, node: ah.node, dist: ah.dist, ctrl: rule.ctrl, sig: rule.sig, cross, crossing: ah.controls.find(c => c.type === 'crossing') };
+    const r = junctionRule(match, ah);
+    next = { id: ah.node.id, node: ah.node, dist: ah.dist, ctrl: r.ctrl, sig: r.sig, cross: ah.others[0] ? ah.others[0].name : '' };
   } else if (ah && ah.controls.length) {
-    const c = ah.controls[0];
-    if (c.type === 'traffic_signals' || c.type === 'stop' || c.type === 'give_way')
-      next = { id: c.node.id, node: c.node, dist: c.dist, ctrl: c.type === 'traffic_signals' ? 'signals' : c.type === 'stop' ? 'stop' : 'give', sig: c.type === 'traffic_signals' ? c.node : null, cross: '' };
+    const c = ah.controls.find(c => c.type !== 'crossing');
+    if (c) next = { id: c.node.id, node: c.node, dist: c.dist, ctrl: c.type === 'traffic_signals' ? 'signals' : c.type === 'stop' ? 'stop' : 'give', sig: c.type === 'traffic_signals' ? c.node : null, cross: '' };
   }
-  if (ev && (!next || next.id !== ev.id)) { if (ev.minDist < 25) judge(ev); ev = null; }
+  if (ev && (!next || next.id !== ev.id)) {
+    const dJ = Math.hypot(ev.node.x - P.x, ev.node.y - P.y);
+    if (ev.minDist < 25 && dJ < 40) judge(ev);
+    ev = null;
+  }
   if (next) {
-    if (!ev) ev = Object.assign(next, { minSpeed: Infinity, minDist: next.dist, lookedL: false, lookedR: false });
-    else { ev.dist = next.dist; ev.minDist = Math.min(ev.minDist, next.dist); }
+    if (!ev) ev = Object.assign(next, { minSpeed: Infinity, minDist: next.dist, lookedL: false, lookedR: false, blink: null, bIn: null, at: { x: P.x, y: P.y } });
+    else { ev.dist = next.dist; ev.minDist = Math.min(ev.minDist, next.dist); ev.at = { x: P.x, y: P.y }; }
   }
+  maybeAsk();
 }
+function nearJunction(x, y) {
+  if (!OSM) return false;
+  const C = OSM.CELL, segs = OSM.grid.get(Math.floor(x / C) + ':' + Math.floor(y / C)) || [];
+  for (const sg of segs) for (const n of [sg.a, sg.b]) if (OSM.junctions.has(n.id) && Math.hypot(n.x - x, n.y - y) < 18) return true;
+  return false;
+}
+function liveDist() { return ev ? Math.max(0, ev.dist - Math.hypot(P.x - ev.at.x, P.y - ev.at.y)) : 999; }
 function judge(e) {
   const where = e.cross ? ' (' + e.cross + ')' : '';
   if (e.ctrl === 'signals' && e.sig) {
@@ -541,34 +573,255 @@ function judge(e) {
     else if (L.s === 'amber' && L.e > 1.2) addFault('amber', 'Feu orange franchi alors que l\'arrêt était possible', false);
   }
   if (e.ctrl === 'stop') {
-    if (e.minSpeed > .5) addFault('stop', 'STOP : arrêt non marqué' + where, true);
-    else if (!(e.lookedL && e.lookedR)) addFault('stoplook', 'STOP : contrôle à gauche et à droite non effectué', false);
+    if (e.minSpeed > 1) addFault('stop', 'STOP : arrêt non marqué' + where, true);
+    else if (!(e.lookedL && e.lookedR)) addFault('stoplook', 'STOP : pas de contrôle à gauche et à droite', false);
   }
   if ((e.ctrl === 'give' || e.ctrl === 'roundabout') && e.minSpeed > 20) addFault('give', (e.ctrl === 'roundabout' ? 'Entrée de giratoire' : 'Cédez-le-passage') + ' abordé trop vite (' + Math.round(e.minSpeed) + ' km/h)', false);
   if (e.ctrl === 'right') {
     if (e.minSpeed > 25) addFault('right', 'Priorité à droite abordée trop vite (' + Math.round(e.minSpeed) + ' km/h)' + where, false);
     else if (!e.lookedR) addFault('rightlook', 'Priorité à droite : pas de contrôle à droite' + where, false);
   }
+  // changement de direction
+  if (e.bIn !== null) {
+    const turn = angDiff(e.bIn, P.b);
+    if (Math.abs(turn) > 40) {
+      const side = turn < 0 ? 'left' : 'right';
+      if (e.blink !== side) addFault('blink', 'Changement de direction sans clignotant ' + (side === 'left' ? 'gauche' : 'droit'), false);
+      if (blinker === side) setBlinker(null);
+    }
+  }
 }
-function liveDist() { return ev ? Math.max(0, ev.dist - movedSinceStep) : 999; }
 
 /* =========================================================
-   Questions sur la vraie image
+   Circulation (voitures automatiques sur les vraies rues)
+   ========================================================= */
+const AI_COLORS = ['#B8433A', '#3F6FB0', '#4C8C5A', '#C9A23A', '#7B5AA6', '#D0D3D8', '#24282F', '#8A8F98', '#A35E2E', '#2F8F95'];
+function posAt(w, s) {
+  let i = 0; while (i < w.cum.length - 2 && w.cum[i + 1] < s) i++;
+  const a = w.pts[i], b = w.pts[i + 1], L = (w.cum[i + 1] - w.cum[i]) || 1, t = Math.max(0, Math.min(1, (s - w.cum[i]) / L));
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, ux: (b.x - a.x) / L, uy: (b.y - a.y) / L };
+}
+function spawnAI(ai) {
+  if (!OSM) return null;
+  const cands = OSM.wayList.filter(w => w.len > 40 && w.rank >= 1 && w.pts.some(p => Math.hypot(p.x - P.x, p.y - P.y) < 280));
+  for (let k = 0; k < 40 && cands.length; k++) {
+    const w = cands[Math.random() * cands.length | 0];
+    const dir = w.oneway === 1 ? 1 : w.oneway === -1 ? -1 : (Math.random() < .5 ? 1 : -1);
+    const s = 10 + Math.random() * (w.len - 20), p = posAt(w, s);
+    const dP = Math.hypot(p.x - P.x, p.y - P.y);
+    if (dP < 45 || dP > 300) continue;
+    if (AIS.some(o => o !== ai && Math.hypot(o.x - p.x, o.y - p.y) < 15)) continue;
+    const o = ai || { color: AI_COLORS[AIS.length % AI_COLORS.length], h: P.h };
+    Object.assign(o, { w, s, dir, v: 3, vmax: .8 + Math.random() * .2, stopT: 0, done: new Set(), stuck: 0 });
+    placeAI(o);
+    return o;
+  }
+  return null;
+}
+function placeAI(ai) {
+  const p = posAt(ai.w, ai.s), ux = p.ux * ai.dir, uy = p.uy * ai.dir;
+  const lane = ai.w.oneway ? 0 : Math.min(2.2, ai.w.half * .45);
+  ai.x = p.x + uy * lane; ai.y = p.y - ux * lane; ai.b = bearingOf(ux, uy);
+}
+function updateAI(ai, dt, now) {
+  const w = ai.w;
+  let vT = Math.min(w.limit || 50, 50) / 3.6 * ai.vmax;
+  for (const c of w.ctrls) {
+    const ds = ai.dir > 0 ? c.s - ai.s : ai.s - c.s;
+    if (ds < 0 || ds > 30) continue;
+    if (c.type === 'stop' && !ai.done.has(c.node.id)) {
+      vT = Math.min(vT, Math.sqrt(2 * 3 * Math.max(0, ds - 4)));
+      if (ds < 6 && ai.v < .3) { ai.stopT += dt; if (ai.stopT > 1.5) { ai.done.add(c.node.id); ai.stopT = 0; } }
+    } else if (c.type === 'traffic_signals' && ds > 3.5) {
+      const L = lightState(c.node, now);
+      if (L.s === 'red' || (L.s === 'amber' && ds > ai.v * ai.v / 8 + 4)) vT = Math.min(vT, Math.sqrt(2 * 3 * Math.max(0, ds - 4)));
+    } else if (c.type === 'give_way') vT = Math.min(vT, 4 + ds * .4);
+  }
+  // obstacles devant (joueur et autres voitures)
+  const fx = Math.sin(ai.b * RAD), fy = Math.cos(ai.b * RAD), look = 8 + ai.v * 2.5;
+  const test = (ox, oy) => { const rx = ox - ai.x, ry = oy - ai.y, f = rx * fx + ry * fy, l = rx * fy - ry * fx;
+    if (f > 0 && f < look && Math.abs(l) < 2.1) vT = Math.min(vT, Math.sqrt(2 * 4 * Math.max(0, f - 7))); };
+  test(P.x, P.y); for (const o of AIS) if (o !== ai) test(o.x, o.y);
+  ai.v = ai.v < vT ? Math.min(vT, ai.v + 2 * dt) : Math.max(vT, ai.v - 6 * dt);
+  ai.s += ai.dir * ai.v * dt;
+  if (ai.s > w.len || ai.s < 0) {
+    const nid = ai.s > w.len ? w.nodes[w.nodes.length - 1] : w.nodes[0];
+    const opts = [];
+    for (const id of OSM.nodeWays.get(nid) || []) {
+      const w2 = OSM.ways.get(id); if (!w2) continue;
+      const idx = w2.nodes.indexOf(nid);
+      if (idx < w2.nodes.length - 1 && w2.oneway !== -1) opts.push({ w: w2, s: w2.cum[idx], dir: 1 });
+      if (idx > 0 && w2.oneway !== 1) opts.push({ w: w2, s: w2.cum[idx], dir: -1 });
+    }
+    const fwd = opts.filter(o => !(o.w === w && o.dir === -ai.dir));
+    const pick = (fwd.length ? fwd : opts)[Math.random() * (fwd.length || opts.length) | 0];
+    if (!pick) { spawnAI(ai); return; }
+    ai.w = pick.w; ai.s = pick.s; ai.dir = pick.dir; ai.done = new Set();
+  }
+  placeAI(ai);
+  ai.stuck = ai.v < .1 ? ai.stuck + dt : 0;
+  const dP = Math.hypot(ai.x - P.x, ai.y - P.y);
+  if (dP > 420 || (ai.stuck > 20 && dP > 60)) spawnAI(ai);
+}
+
+/* =========================================================
+   Rendu 3D (CesiumJS + Google Photorealistic 3D Tiles)
+   ========================================================= */
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Chargement impossible : ' + src)); document.head.appendChild(s); }); }
+async function initWorld(key) {
+  window.CESIUM_BASE_URL = CESIUM_BASE;
+  if (!window.Cesium) await loadScript(CESIUM_BASE + 'Cesium.js');
+  const C = window.Cesium;
+  viewer = new C.Viewer('world', {
+    globe: false, baseLayer: false, baseLayerPicker: false, geocoder: false, homeButton: false, sceneModePicker: false, navigationHelpButton: false,
+    animation: false, timeline: false, fullscreenButton: false, infoBox: false, selectionIndicator: false, shouldAnimate: false, msaaSamples: 4
+  });
+  const scene = viewer.scene;
+  scene.screenSpaceCameraController.enableInputs = false;
+  scene.backgroundColor = C.Color.fromCssColorString('#9cc3e6');
+  if (scene.skyAtmosphere) scene.skyAtmosphere.show = true;
+  scene.fog.enabled = true; scene.fog.density = 0.0006;
+  viewer.clock.currentTime = C.JulianDate.fromIso8601('2025-06-15T10:30:00Z');
+  scene.camera.frustum.fov = C.Math.toRadians(70);
+  scene.camera.frustum.near = 0.2;
+  try {
+    tileset = await C.Cesium3DTileset.fromUrl('https://tile.googleapis.com/v1/3dtiles/root.json?key=' + encodeURIComponent(key), { showCreditsOnScreen: true, maximumScreenSpaceError: 8 });
+    scene.primitives.add(tileset);
+  } catch (e) {
+    const code = e && (e.statusCode || (e.target && e.target.status));
+    throw new Error(code === 403 || code === 400
+      ? 'Google refuse la ville 3D (erreur ' + code + '). Activez l\'API « Map Tiles » pour votre clé sur Google Cloud, puis réessayez.'
+      : 'Impossible de charger la ville 3D (' + (e && e.message || e) + ').');
+  }
+  try { const r = await fetch(CAR_MODEL, { method: 'HEAD' }); carModelOk = r.ok; } catch (_) { carModelOk = false; }
+}
+async function groundHeightAt(x, y) {
+  const C = window.Cesium, pts = [[0, 0], [2, 0], [-2, 0], [0, 2], [0, -2]].map(([dx, dy]) => { const ll = toLL(x + dx, y + dy); return C.Cartographic.fromDegrees(ll.lng, ll.lat); });
+  for (let tries = 0; tries < 4; tries++) {
+    try {
+      const res = await viewer.scene.sampleHeightMostDetailed(pts);
+      const hs = res.map(c => c.height).filter(h => h !== undefined && isFinite(h));
+      if (hs.length) return Math.min(...hs);
+    } catch (_) {}
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  return null;
+}
+function addAIEntity(ai) {
+  const C = window.Cesium;
+  ai.cart = C.Cartesian3.fromDegrees(0, 0, 0); ai.quat = new C.Quaternion();
+  const pos = new C.CallbackProperty(() => ai.cart, false), ori = new C.CallbackProperty(() => ai.quat, false);
+  const color = C.Color.fromCssColorString(ai.color);
+  ai.ent = viewer.entities.add(carModelOk
+    ? { position: pos, orientation: ori, model: { uri: CAR_MODEL, scale: 1, minimumPixelSize: 0, color, colorBlendMode: C.ColorBlendMode.MIX, colorBlendAmount: .45 } }
+    : { position: pos, orientation: ori, box: { dimensions: new C.Cartesian3(4.4, 1.8, 1.45), material: color } });
+}
+let hSampleIdx = 0, frameN = 0;
+function render() {
+  const C = window.Cesium, scene = viewer.scene;
+  frameN++;
+  // hauteur du sol sous la voiture (ignore arbres et toits)
+  if (frameN % 3 === 0 && scene.sampleHeightSupported) {
+    const ll = toLL(P.x, P.y), h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), AIS.map(a => a.ent).filter(Boolean));
+    if (h !== undefined && isFinite(h) && h < P.h + 1.0 && h > P.h - 4) P.h += (h - P.h) * .35;
+  }
+  // hauteur d'une voiture automatique par image
+  if (AIS.length && scene.sampleHeightSupported) {
+    const ai = AIS[hSampleIdx++ % AIS.length], ll = toLL(ai.x, ai.y);
+    const h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), AIS.map(a => a.ent).filter(Boolean));
+    if (h !== undefined && isFinite(h) && Math.abs(h - P.h) < 15 && h < ai.h + 1.2) ai.h += (h - ai.h) * .5;
+  }
+  for (const ai of AIS) {
+    const ll = toLL(ai.x, ai.y), z = ai.h + (carModelOk ? 0 : .72);
+    C.Cartesian3.fromDegrees(ll.lng, ll.lat, z, undefined, ai.cart);
+    C.Transforms.headingPitchRollQuaternion(ai.cart, new C.HeadingPitchRoll(C.Math.toRadians(ai.b - 90), 0, 0), undefined, undefined, ai.quat);
+  }
+  // caméra : place du conducteur (à gauche dans la voiture)
+  const look = keys.lookL ? -75 : keys.lookR ? 75 : 0;
+  povLook += (look - povLook) * .12;
+  const sx = Math.cos(P.b * RAD) * -.38, sy = -Math.sin(P.b * RAD) * -.38;
+  const ll = toLL(P.x + sx, P.y + sy);
+  scene.camera.setView({ destination: C.Cartesian3.fromDegrees(ll.lng, ll.lat, P.h + 1.22), orientation: { heading: C.Math.toRadians(P.b + povLook), pitch: C.Math.toRadians(-4), roll: 0 } });
+}
+
+/* =========================================================
+   Mini-carte et instruments
+   ========================================================= */
+const mm = $('#minimap'), mg = mm.getContext('2d');
+function drawMinimap() {
+  const W = mm.width, R = W / 2, k = R / 140;
+  mg.setTransform(1, 0, 0, 1, 0, 0); mg.clearRect(0, 0, W, W);
+  mg.save(); mg.beginPath(); mg.arc(R, R, R, 0, 7); mg.clip();
+  mg.fillStyle = '#1b2028'; mg.fillRect(0, 0, W, W);
+  mg.translate(R, R + R * .3); mg.rotate(-P.b * RAD); mg.scale(k, -k); mg.translate(-P.x, -P.y);
+  if (OSM) {
+    mg.lineCap = 'round'; mg.lineJoin = 'round';
+    for (const w of OSM.wayList) {
+      if (!w.pts.some(p => Math.abs(p.x - P.x) < 220 && Math.abs(p.y - P.y) < 220)) continue;
+      mg.strokeStyle = w.rank >= 3 ? '#8aa4c8' : '#5d6673'; mg.lineWidth = Math.max(4, w.half * 2);
+      mg.beginPath(); w.pts.forEach((p, i) => i ? mg.lineTo(p.x, p.y) : mg.moveTo(p.x, p.y)); mg.stroke();
+    }
+    for (const n of OSM.nodes.values()) {
+      const h = n.tags.highway; if (!h || Math.abs(n.x - P.x) > 200 || Math.abs(n.y - P.y) > 200) continue;
+      mg.fillStyle = h === 'stop' ? '#E0373D' : h === 'traffic_signals' ? '#F0B43A' : h === 'give_way' ? '#ffffff' : null;
+      if (!mg.fillStyle || h === 'crossing') continue; mg.beginPath(); mg.arc(n.x, n.y, 4, 0, 7); mg.fill();
+    }
+  }
+  mg.fillStyle = '#c9d1db'; for (const ai of AIS) { mg.beginPath(); mg.arc(ai.x, ai.y, 3.2, 0, 7); mg.fill(); }
+  for (const f of faults) { mg.fillStyle = f.grave ? '#E0373D' : '#F0B43A'; mg.beginPath(); mg.arc(f.x, f.y, 5, 0, 7); mg.fill(); }
+  mg.restore();
+  mg.save(); mg.translate(R, R + R * .3); mg.fillStyle = '#5C8DE2'; mg.strokeStyle = '#fff'; mg.lineWidth = 3;
+  mg.beginPath(); mg.moveTo(0, -16); mg.lineTo(10, 12); mg.lineTo(0, 6); mg.lineTo(-10, 12); mg.closePath(); mg.fill(); mg.stroke(); mg.restore();
+}
+const ICON = {
+  stop: '<svg viewBox="-2 -2 4 4"><polygon points="-.77,-1.85 .77,-1.85 1.85,-.77 1.85,.77 .77,1.85 -.77,1.85 -1.85,.77 -1.85,-.77" fill="#C8252C" stroke="#fff" stroke-width=".18"/><text x="0" y=".38" font-size="1.05" font-weight="700" fill="#fff" text-anchor="middle" font-family="sans-serif">STOP</text></svg>',
+  give: '<svg viewBox="-2 -2 4 4"><polygon points="-1.9,-1.5 1.9,-1.5 0,1.9" fill="#C8252C"/><polygon points="-1.05,-1 1.05,-1 0,.9" fill="#fff"/></svg>',
+  right: '<svg viewBox="-2 -2 4 4"><polygon points="-1.9,1.5 1.9,1.5 0,-1.9" fill="#C8252C"/><polygon points="-1.15,1 1.15,1 0,-1" fill="#fff"/><path d="M0 .8V-.6M-.6 .1H.6" stroke="#111" stroke-width=".28"/></svg>',
+  roundabout: '<svg viewBox="-2 -2 4 4"><polygon points="-1.9,-1.5 1.9,-1.5 0,1.9" fill="#C8252C"/><polygon points="-1.05,-1 1.05,-1 0,.9" fill="#fff"/><circle cy="-.45" r=".35" fill="none" stroke="#111" stroke-width=".15"/></svg>',
+  priority: '<svg viewBox="-2 -2 4 4"><rect x="-1.3" y="-1.3" width="2.6" height="2.6" transform="rotate(45)" fill="#fff" stroke="#999" stroke-width=".1"/><rect x="-.85" y="-.85" width="1.7" height="1.7" transform="rotate(45)" fill="#F2C400"/></svg>',
+  signals: '<svg viewBox="-2 -2 4 4"><rect x="-.9" y="-1.95" width="1.8" height="3.9" rx=".35" fill="#1b1d21"/><circle cy="-1.15" r=".45" fill="#FF3B30"/><circle r=".45" fill="#FFB300"/><circle cy="1.15" r=".45" fill="#2BD46B"/></svg>'
+};
+const LABEL = { stop: 'STOP : arrêt complet', give: 'Cédez le passage', right: 'Priorité à droite', roundabout: 'Giratoire : cédez le passage', priority: 'Vous êtes prioritaire', signals: 'Feu tricolore' };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let lastNextHtml = '';
+function renderLimit() { const el = $('#lim'); if (lastLimit) { el.textContent = lastLimit; el.classList.remove('unknown'); } else { el.textContent = '—'; el.classList.add('unknown'); } }
+function renderHUD(now) {
+  const kmh = Math.round(Math.abs(P.v) * 3.6), sp = $('#spd');
+  sp.firstChild.nodeValue = kmh; sp.classList.toggle('over', !!lastLimit && kmh > lastLimit + 4);
+  $('#wheel').style.transform = `rotate(${P.steer * 9}deg)`;
+  const nx = $('#next'), d = liveDist();
+  if (ev && d < 120) {
+    const html = ICON[ev.ctrl] + `<div class="t"><b>${LABEL[ev.ctrl]}</b><span>${ev.cross ? 'Croisement ' + esc(ev.cross) : ''}</span></div><div class="d">${Math.round(d)} m</div>`;
+    if (html !== lastNextHtml) { nx.innerHTML = html; lastNextHtml = html; } nx.hidden = false;
+  } else { nx.hidden = true; lastNextHtml = ''; }
+  const tl = $('#tlight');
+  if (ev && ev.ctrl === 'signals' && ev.sig && d < 100) {
+    const s = lightState(ev.sig, now).s; tl.hidden = false;
+    tl.children[0].classList.toggle('on', s === 'red'); tl.children[1].classList.toggle('on', s === 'amber'); tl.children[2].classList.toggle('on', s === 'green');
+  } else tl.hidden = true;
+  $('#lookL').hidden = !keys.lookL; $('#lookR').hidden = !keys.lookR;
+}
+function setBlinker(side) {
+  blinker = side;
+  $('#indL').classList.toggle('on', side === 'left'); $('#indR').classList.toggle('on', side === 'right');
+}
+
+/* =========================================================
+   Questions
    ========================================================= */
 const QUIZ = {
-  stop: { t: 'Panneau STOP', q: 'Un STOP arrive. Que devez-vous faire ?', o: ['Ralentir fortement et passer si la voie est libre', 'M\'arrêter complètement à la ligne, regarder des deux côtés, puis céder le passage', 'M\'arrêter seulement si un véhicule arrive'], a: 1, ex: 'L\'arrêt complet à la ligne est obligatoire, même si personne n\'arrive. Ne pas le marquer est éliminatoire à l\'examen.' },
-  give: { t: 'Cédez le passage', q: 'Ce carrefour est signalé « Cédez le passage ». Quelle est la bonne conduite ?', o: ['Je m\'arrête toujours complètement', 'Je ralentis, j\'observe et je laisse passer les véhicules de la route prioritaire', 'Je suis prioritaire'], a: 1, ex: 'L\'arrêt n\'est obligatoire que si un véhicule arrive, mais vous devez arriver assez lentement pour pouvoir vous arrêter.' },
+  stop: { t: 'Panneau STOP', q: 'Un STOP arrive. Que devez-vous faire ?', o: ['Ralentir fortement et passer si la voie est libre', 'M\'arrêter complètement à la ligne, regarder des deux côtés (Q puis D), puis céder le passage', 'M\'arrêter seulement si un véhicule arrive'], a: 1, ex: 'L\'arrêt complet est obligatoire, même si personne n\'arrive. Ne pas le marquer est éliminatoire à l\'examen.' },
+  give: { t: 'Cédez le passage', q: 'Ce carrefour est signalé « Cédez le passage ». Quelle est la bonne conduite ?', o: ['Je m\'arrête toujours complètement', 'Je ralentis, j\'observe et je laisse passer les véhicules prioritaires', 'Je suis prioritaire'], a: 1, ex: 'L\'arrêt n\'est obligatoire que si un véhicule arrive, mais vous devez arriver assez lentement pour pouvoir vous arrêter.' },
   right: { t: 'Priorité à droite', q: 'Aucun panneau ni feu à ce carrefour. Qui est prioritaire ?', o: ['Moi, si ma rue est plus large', 'Les véhicules qui arrivent de ma droite', 'Le premier arrivé au carrefour'], a: 1, ex: 'Sans signalisation, c\'est la priorité à droite. Ralentissez et regardez à droite (touche D) avant de vous engager.' },
-  signals: { t: 'Feu tricolore', q: 'Le feu passe à l\'orange alors que vous êtes à 30 m, à 30 km/h. Que faites-vous ?', o: ['J\'accélère pour passer', 'Je m\'arrête à la ligne', 'Je continue à la même vitesse'], a: 1, ex: 'Le feu orange impose l\'arrêt sauf si c\'est dangereux. À 30 km/h il faut environ 13 m pour s\'arrêter. Ici l\'état du feu est simulé : suivez le feu affiché à droite de l\'écran.' },
-  roundabout: { t: 'Giratoire', q: 'Vous allez entrer dans un giratoire. Qui est prioritaire ?', o: ['Moi, j\'entre dans l\'anneau', 'Les véhicules déjà engagés dans l\'anneau', 'Les véhicules venant de ma droite'], a: 1, ex: 'À l\'entrée d\'un giratoire, vous cédez le passage aux véhicules qui circulent déjà dans l\'anneau.' },
-  priority: { t: 'Vous êtes prioritaire', q: 'Les rues qui croisent la vôtre ont un STOP ou un cédez-le-passage. Que faites-vous ?', o: ['Je passe sans regarder', 'Je reste attentif et prêt à freiner si quelqu\'un ne respecte pas la règle', 'Je m\'arrête par précaution'], a: 1, ex: 'Être prioritaire ne dispense pas d\'observer : anticipez une éventuelle erreur des autres usagers.' }
+  signals: { t: 'Feu tricolore', q: 'Le feu passe à l\'orange alors que vous êtes à 30 m, à 30 km/h. Que faites-vous ?', o: ['J\'accélère pour passer', 'Je m\'arrête à la ligne', 'Je continue à la même vitesse'], a: 1, ex: 'Le feu orange impose l\'arrêt sauf si c\'est dangereux. À 30 km/h il faut environ 13 m pour s\'arrêter. Suivez le feu affiché à droite de l\'écran.' },
+  roundabout: { t: 'Giratoire', q: 'Vous allez entrer dans un giratoire. Qui est prioritaire ?', o: ['Moi, j\'entre dans l\'anneau', 'Les véhicules déjà engagés dans l\'anneau', 'Les véhicules venant de ma droite'], a: 1, ex: 'À l\'entrée d\'un giratoire, vous cédez le passage aux véhicules qui circulent déjà dans l\'anneau.' }
 };
 function maybeAsk() {
   if (!ev || asked.has(ev.ctrl) || !QUIZ[ev.ctrl]) return;
-  const d = liveDist(); if (d > 45 || d < 8) return;
+  const d = liveDist(); if (d > 45 || d < 10) return;
   asked.add(ev.ctrl); const q = QUIZ[ev.ctrl];
-  paused = true; keys.up = keys.down = false;
-  $('#qEyebrow').textContent = 'Question · ' + (match ? match.w.name : '') + (ev.cross ? ' × ' + ev.cross : '');
+  paused = true; for (const k in keys) keys[k] = false;
+  $('#qEyebrow').textContent = 'Question · ' + lastName + (ev.cross ? ' × ' + ev.cross : '');
   $('#qTitle').textContent = q.t; $('#qText').textContent = q.q;
   const box = $('#qOpts'); box.innerHTML = ''; $('#qExpl').hidden = true; $('#qGo').hidden = true;
   q.o.forEach((txt, i) => {
@@ -586,104 +839,35 @@ function maybeAsk() {
 $('#qGo').onclick = () => { $('#quizOv').hidden = true; paused = false; };
 
 /* =========================================================
-   Affichage
-   ========================================================= */
-const ICON = {
-  stop: '<svg viewBox="-2 -2 4 4"><polygon points="-.77,-1.85 .77,-1.85 1.85,-.77 1.85,.77 .77,1.85 -.77,1.85 -1.85,.77 -1.85,-.77" fill="#C8252C" stroke="#fff" stroke-width=".18"/><text x="0" y=".38" font-size="1.05" font-weight="700" fill="#fff" text-anchor="middle" font-family="sans-serif">STOP</text></svg>',
-  give: '<svg viewBox="-2 -2 4 4"><polygon points="-1.9,-1.5 1.9,-1.5 0,1.9" fill="#C8252C"/><polygon points="-1.05,-1 1.05,-1 0,.9" fill="#fff"/></svg>',
-  right: '<svg viewBox="-2 -2 4 4"><polygon points="-1.9,1.5 1.9,1.5 0,-1.9" fill="#C8252C"/><polygon points="-1.15,1 1.15,1 0,-1" fill="#fff"/><path d="M0 .8V-.6M-.6 .1H.6" stroke="#111" stroke-width=".28"/></svg>',
-  roundabout: '<svg viewBox="-2 -2 4 4"><polygon points="-1.9,-1.5 1.9,-1.5 0,1.9" fill="#C8252C"/><polygon points="-1.05,-1 1.05,-1 0,.9" fill="#fff"/><circle cy="-.45" r=".35" fill="none" stroke="#111" stroke-width=".15"/></svg>',
-  priority: '<svg viewBox="-2 -2 4 4"><rect x="-1.3" y="-1.3" width="2.6" height="2.6" transform="rotate(45)" fill="#fff" stroke="#999" stroke-width=".1"/><rect x="-.85" y="-.85" width="1.7" height="1.7" transform="rotate(45)" fill="#F2C400"/></svg>',
-  signals: '<svg viewBox="-2 -2 4 4"><rect x="-.9" y="-1.95" width="1.8" height="3.9" rx=".35" fill="#1b1d21"/><circle cy="-1.15" r=".45" fill="#FF3B30"/><circle r=".45" fill="#FFB300"/><circle cy="1.15" r=".45" fill="#2BD46B"/></svg>'
-};
-const LABEL = { stop: 'STOP : arrêt complet', give: 'Cédez le passage', right: 'Priorité à droite', roundabout: 'Giratoire : cédez le passage', priority: 'Vous êtes prioritaire', signals: 'Feu tricolore' };
-let lastNextHtml = '';
-function renderLimit() {
-  const el = $('#lim');
-  if (lastLimit) { el.textContent = lastLimit; el.classList.remove('unknown'); } else { el.textContent = '—'; el.classList.add('unknown'); }
-}
-function renderBlinker() {
-  const b = $('#blinker'); if (!intent) { b.hidden = true; return; }
-  $('#blArr').textContent = intent === 'left' ? '⬅' : '➡';
-  $('#blTxt').textContent = intent === 'left' ? 'Clignotant gauche : je tourne au prochain carrefour' : 'Clignotant droit : je tourne au prochain carrefour';
-  b.hidden = false;
-}
-function renderHUD(now) {
-  const kmh = Math.round(car.speed);
-  const sp = $('#spd'); sp.firstChild.nodeValue = kmh; sp.classList.toggle('over', !!lastLimit && kmh > lastLimit + 4);
-  const nx = $('#next'), d = liveDist();
-  if (ev && d < 120) {
-    const html = ICON[ev.ctrl] + `<div class="t"><b>${LABEL[ev.ctrl]}</b><span>${ev.cross ? 'Croisement ' + escapeHtml(ev.cross) : (ev.crossing && ev.crossing.dist < 60 ? 'Passage piéton avant le carrefour' : '')}</span></div><div class="d">${Math.round(d)} m</div>`;
-    if (html !== lastNextHtml) { nx.innerHTML = html; lastNextHtml = html; }
-    nx.hidden = false;
-  } else { nx.hidden = true; lastNextHtml = ''; }
-  const tl = $('#tlight');
-  if (ev && ev.ctrl === 'signals' && ev.sig && d < 90) {
-    const s = lightState(ev.sig, now).s; tl.hidden = false;
-    tl.children[0].classList.toggle('on', s === 'red'); tl.children[1].classList.toggle('on', s === 'amber'); tl.children[2].classList.toggle('on', s === 'green');
-  } else tl.hidden = true;
-  $('#lookL').hidden = !keys.lookL; $('#lookR').hidden = !keys.lookR;
-}
-const escapeHtml = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-/* =========================================================
-   Boucle principale
+   Boucle
    ========================================================= */
 let lastT = performance.now(), hudTick = 0;
 function loop(now) {
-  const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
-  if (car && !paused && !ended) {
-    driveTime += dt;
-    if (keys.brake) car.speed -= 40 * dt;
-    else if (keys.down) car.speed -= 18 * dt;
-    else if (keys.up) car.speed += 12 * (1 - car.speed / 95) * dt;
-    else car.speed -= 1.5 * dt;
-    car.speed = Math.max(0, Math.min(90, car.speed));
-    const ms = car.speed / 3.6 * dt; acc += ms; movedSinceStep += ms;
-    tryStep(now);
-    // relevés pour le carrefour à venir
-    const d = liveDist();
-    if (ev && d < 30) ev.minSpeed = Math.min(ev.minSpeed, car.speed);
-    if (ev && d < 60) { if (keys.lookL) ev.lookedL = true; if (keys.lookR) ev.lookedR = true; }
-    maybeAsk();
-    // vitesse
-    if (lastLimit && car.speed > lastLimit + 5) { overT += dt; if (overT > 2) { addFault('speed', `Excès de vitesse : ${Math.round(car.speed)} km/h pour ${lastLimit}`, car.speed > lastLimit + 20); overT = -4; } }
-    else if (overT > 0) overT = 0; else overT = Math.min(0, overT + dt);
+  const total = Math.min(.25, (now - lastT) / 1000); lastT = now;
+  if (!paused && !ended) {
+    const n = Math.max(1, Math.ceil(total / .03)), dt = total / n;
+    for (let i = 0; i < n; i++) {
+      driveTime += dt;
+      updatePlayer(dt);
+      for (const ai of AIS) updateAI(ai, dt, now);
+      updateRules(dt, now);
+    }
   }
-  // regard : la caméra suit la direction de la voiture, ou tourne la tête
-  if (car && pano) {
-    const look = keys.lookL ? -80 : keys.lookR ? 80 : 0;
-    const target = (car.heading + look + 360) % 360, diff = angDiff(povH, target);
-    if (Math.abs(diff) > .3) { povH = (povH + diff * Math.min(1, dt * 6) + 360) % 360; pano.setPov({ heading: povH, pitch: -2 }); }
-  }
-  if (car && (hudTick++ % 3 === 0)) renderHUD(now);
+  if (viewer) render();
+  if (hudTick++ % 3 === 0) { renderHUD(now); drawMinimap(); }
   requestAnimationFrame(loop);
 }
 
 /* =========================================================
    Démarrage
    ========================================================= */
-function loadGoogle(key) {
-  return new Promise((res, rej) => {
-    if (window.google && google.maps && google.maps.StreetViewPanorama) return res();
-    window.__gmReady = () => res();
-    window.gm_authFailure = () => showSetupError('Google a refusé la clé. Vérifiez qu\'elle est correcte, que l\'API « Maps JavaScript » est activée et que la facturation est configurée sur Google Cloud.');
-    const s = document.createElement('script');
-    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&v=weekly&language=fr&region=FR&callback=__gmReady';
-    s.async = true; s.onerror = () => rej(new Error('Impossible de charger Google Maps. Vérifiez votre connexion internet.'));
-    document.head.appendChild(s);
-  });
-}
 function showSetupError(t) {
   const e = $('#setupErr'); e.textContent = t; e.hidden = false;
   $('#setup').hidden = false; $('#drive').hidden = true; $('#go').disabled = false; $('#go').textContent = 'Démarrer la séance';
 }
 let chosen = null;
-function fillCities() {
-  const sel = $('#city');
-  PRESETS.forEach(([n], i) => { const o = document.createElement('option'); o.value = i; o.textContent = n; sel.appendChild(o); });
-  sel.onchange = () => { chosen = null; $('#addrRes').textContent = ''; };
-}
+PRESETS.forEach(([n], i) => { const o = document.createElement('option'); o.value = i; o.textContent = n; $('#city').appendChild(o); });
+$('#city').onchange = () => { chosen = null; $('#addrRes').textContent = ''; };
 $('#addrBtn').onclick = async () => {
   const q = $('#addr').value.trim(); if (!q) return;
   $('#addrRes').textContent = 'Recherche…';
@@ -699,77 +883,61 @@ $('#addr').addEventListener('keydown', e => { if (e.key === 'Enter') $('#addrBtn
 
 $('#go').onclick = async () => {
   const key = $('#key').value.trim();
-  if (!key) { showSetupError('Entrez votre clé API Google Maps pour charger les vraies rues.'); return; }
+  if (!key) { showSetupError('Entrez votre clé API Google pour charger la ville en 3D.'); return; }
   store.set('pev_key', key);
   const p = chosen || (() => { const [n, lat, lng] = PRESETS[+$('#city').value]; return { name: n, lat, lng }; })();
-  cityLabel = p.name;
-  $('#setupErr').hidden = true; $('#go').disabled = true; $('#go').textContent = 'Chargement des rues…';
+  cityLabel = p.name; ORIGIN = { lat: p.lat, lng: p.lng };
+  $('#setupErr').hidden = true; $('#go').disabled = true; $('#go').textContent = 'Chargement…';
+  $('#setup').hidden = true; $('#drive').hidden = false; $('#loadOv').hidden = false; $('#city2').textContent = cityLabel;
   try {
-    await loadGoogle(key);
-    sv = new google.maps.StreetViewService();
-    let data;
-    data = await findDrivablePano(p);
-    if (!data) { showSetupError('Pas de rue Street View praticable près de ce point. Choisissez une autre adresse.'); return; }
-    startDrive(data);
-  } catch (e) { showSetupError(e.message || String(e)); }
+    $('#loadTitle').textContent = 'Chargement des rues et des panneaux…';
+    await loadOSM(ORIGIN, true);
+    placeStart();
+    $('#loadTitle').textContent = 'Chargement de la ville en 3D…';
+    await initWorld(key);
+    render();
+    const h = await groundHeightAt(P.x, P.y);
+    if (h === null) throw new Error('La ville 3D ne s\'affiche pas à cet endroit. Essayez une autre ville ou vérifiez l\'API « Map Tiles ».');
+    P.h = h; P.hOk = true;
+    if (OSM) for (let i = 0; i < 14; i++) { const ai = spawnAI(); if (ai) { ai.h = h; AIS.push(ai); addAIEntity(ai); } }
+    $('#loadOv').hidden = true; paused = false;
+    message('↑ pour avancer, ← → pour tourner. Clignotants : A et E.', 6000);
+  } catch (e) {
+    if (viewer) { try { viewer.destroy(); } catch (_) {} viewer = null; }
+    showSetupError(e.message || String(e));
+  }
 };
-/* Point de départ : une photo Google officielle, reliée à d'autres (pas une photo isolée de particulier) */
-async function findDrivablePano(p) {
-  const SV = google.maps.StreetViewSource || {}, PREF = google.maps.StreetViewPreference || {};
-  const src = SV.GOOGLE ? { sources: [SV.GOOGLE] } : { source: SV.OUTDOOR };
-  const offsets = [[0, 0], [60, 0], [-60, 0], [0, 60], [0, -60], [150, 150], [-150, -150], [150, -150], [-150, 150]];
-  for (const radius of [50, 150, 400]) for (const [dx, dy] of offsets) {
-    const loc = unproj({ lat: p.lat, lng: p.lng }, { x: dx * (radius / 50 > 1 ? 1 : .5), y: dy * (radius / 50 > 1 ? 1 : .5) });
-    let d = null;
-    try { d = await getPano(Object.assign({ location: loc, radius, preference: PREF.NEAREST }, src)); } catch (_) { continue; }
-    if (d && d.links && d.links.length) return d;
-    if (d && d.location && d.location.pano) {
-      try { const full = await getPano({ pano: d.location.pano }); if (full && full.links && full.links.length) return full; } catch (_) {}
+function placeStart() {
+  P.x = 0; P.y = 0; P.b = 0;
+  if (!OSM) return;
+  let best = null, bd = 1e9;
+  for (const w of OSM.wayList) {
+    if (w.rank < 1 || w.len < 40) continue;
+    for (let i = 0; i < w.pts.length - 1; i++) {
+      const a = w.pts[i], b = w.pts[i + 1], vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy || 1;
+      const t = Math.max(0, Math.min(1, -(a.x * vx + a.y * vy) / L2)), d = Math.hypot(a.x + vx * t, a.y + vy * t);
+      if (d < bd) { bd = d; best = { w, i, t }; }
     }
   }
-  return null;
-}
-function startDrive(data) {
-  $('#setup').hidden = true; $('#drive').hidden = false; $('#city2').textContent = cityLabel;
-  const first = (data.links || [])[0];
-  const heading = first ? first.heading : 0;
-  povH = heading;
-  pano = new google.maps.StreetViewPanorama($('#pano'), {
-    pano: data.location.pano, pov: { heading, pitch: -2 }, zoom: 0, visible: true,
-    disableDefaultUI: true, clickToGo: false, linksControl: false, panControl: false, zoomControl: false, addressControl: false,
-    fullscreenControl: false, motionTracking: false, motionTrackingControl: false, showRoadLabels: false, scrollwheel: false, disableDoubleClickZoom: true, keyboardShortcuts: false
-  });
-  pano.addListener('links_changed', onPanoLinks); pano.addListener('position_changed', onPanoPosition);
-  const pos = ll(data.location.latLng);
-  map = new google.maps.Map($('#mini'), { center: pos, zoom: 17, disableDefaultUI: true, gestureHandling: 'none', keyboardShortcuts: false, clickableIcons: false });
-  carMarker = new google.maps.Marker({ map, position: pos, clickable: false,
-    icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 6, rotation: heading, fillColor: '#1D4F9C', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
-  car = { pano: data.location.pano, pos, heading, speed: 0, desc: data.location.description || '' };
-  faults = []; cooldown = {}; asked = new Set(); quizOk = quizCount = 0; ev = null; match = null; intent = null; lastLimit = null; driveTime = 0; ended = false; paused = false;
-  renderScore(); renderBlinker();
-  goTo(data, heading);
-  loadOSM(pos);
-  message('Appuyez sur ↑ pour avancer. ← / → pour mettre le clignotant avant un carrefour.', 6000);
+  if (!best) return;
+  const { w, i } = best, a = w.pts[i], b = w.pts[i + 1], dir = w.oneway === -1 ? -1 : 1;
+  const ux = (b.x - a.x) * dir, uy = (b.y - a.y) * dir, L = Math.hypot(ux, uy) || 1;
+  const t = Math.min(.5, best.t), lane = w.oneway ? 0 : Math.min(2, w.half * .45);
+  P.x = a.x + (b.x - a.x) * t + (uy / L) * lane; P.y = a.y + (b.y - a.y) * t - (ux / L) * lane; P.b = bearingOf(ux, uy);
+  lastName = w.name; $('#street').textContent = w.name; lastLimit = w.limit || 50; renderLimit();
 }
 
 /* =========================================================
    Commandes
    ========================================================= */
-function setIntent(dir) {
-  intent = intent === dir ? null : dir;
-  intentDist = intent ? liveDist() : 999;
-  renderBlinker();
-}
-const KEYMAP = { ArrowUp: 'up', ArrowDown: 'down', Space: 'brake', KeyQ: 'lookL', KeyA: 'lookL', KeyD: 'lookR', KeyE: 'lookR' };
+const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', ArrowRight: 'right', Space: 'brake', KeyQ: 'lookL', KeyD: 'lookR' };
 addEventListener('keydown', e => {
-  if (e.target && e.target.tagName !== 'INPUT') e.stopPropagation();
-  if (!car || $('#drive').hidden || e.target.tagName === 'INPUT') return;
+  if ($('#drive').hidden || (e.target && e.target.tagName === 'INPUT')) return;
   if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
   if (paused || ended) return;
-  if (e.code === 'ArrowLeft') { if (!e.repeat) setIntent('left'); e.preventDefault(); return; }
-  if (e.code === 'ArrowRight') { if (!e.repeat) setIntent('right'); e.preventDefault(); return; }
-  if (e.code === 'KeyR' && !e.repeat) { if (car.speed > 3) { message('Arrêtez-vous avant de faire demi-tour.'); return; } car.heading = (car.heading + 180) % 360; intent = null; renderBlinker(); acc = 0; onStep(); return; }
-  const k = KEYMAP[e.code]; if (k) { keys[k] = true; e.preventDefault(); }
+  if (e.code === 'KeyA' && !e.repeat) { setBlinker(blinker === 'left' ? null : 'left'); return; }
+  if (e.code === 'KeyE' && !e.repeat) { setBlinker(blinker === 'right' ? null : 'right'); return; }
+  const k = KEYMAP[e.code]; if (k) { keys[k] = true; e.preventDefault(); e.stopPropagation(); }
 }, true);
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; }, true);
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -777,19 +945,20 @@ document.querySelectorAll('.touch button').forEach(b => {
   const k = b.dataset.k;
   b.addEventListener('pointerdown', e => {
     e.preventDefault(); if (paused || ended) return;
-    if (k === 'left' || k === 'right') { setIntent(k); return; }
+    if (k === 'blL') { setBlinker(blinker === 'left' ? null : 'left'); return; }
+    if (k === 'blR') { setBlinker(blinker === 'right' ? null : 'right'); return; }
     keys[k] = true; b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (_) {}
   });
   const off = () => { if (k in keys) keys[k] = false; b.classList.remove('on'); };
   b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
 });
 function togglePause() {
-  if (ended || !$('#quizOv').hidden) return;
+  if (ended || !$('#quizOv').hidden || !$('#loadOv').hidden) return;
   paused = !paused; $('#pauseOv').hidden = !paused;
 }
 $('#resume').onclick = togglePause;
 $('#endBtn').onclick = () => {
-  ended = true; car.speed = 0;
+  ended = true; P.v = 0;
   const s = scoreOf(), ok = s.g === 0 && s.s >= 75;
   $('#vTitle').textContent = ok ? 'Favorable' : 'À retravailler'; $('#vTitle').className = 'verdict ' + (ok ? 'ok' : 'ko');
   $('#vText').textContent = s.g ? `${s.g} faute${s.g > 1 ? 's' : ''} éliminatoire${s.g > 1 ? 's' : ''} : à l'examen, la séance serait défavorable.` : faults.length ? 'Pas de faute éliminatoire. Quelques points à corriger ci-dessous.' : 'Aucune faute relevée.';
@@ -801,7 +970,6 @@ $('#endBtn').onclick = () => {
 $('#vBack').onclick = () => { $('#endOv').hidden = true; ended = false; };
 $('#vNew').onclick = () => location.reload();
 
-fillCities();
 const saved = store.get('pev_key'); if (saved) $('#key').value = saved;
 requestAnimationFrame(loop);
 })();

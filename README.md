@@ -1,13 +1,16 @@
 # Permis en Ville
 
-Simulateur de conduite pour auto-école dans les vraies rues (Google Street View) avec les vraies règles de circulation (OpenStreetMap).
+Simulateur de conduite pour auto-école dans la vraie ville en 3D (Google Photorealistic 3D Tiles) avec les vraies règles de circulation (OpenStreetMap) et une circulation automatique.
+
+Site : https://bapkenbegjanian-cmd.github.io/permis-en-ville/
 
 ## 1. Créer la clé Google (une seule fois, environ 10 minutes)
 
 1. Aller sur https://console.cloud.google.com et se connecter avec un compte Google.
 2. Créer un projet (par exemple « Permis en Ville »).
 3. Activer la facturation (une carte bancaire est demandée). Google offre un quota gratuit chaque mois ; un usage de test reste en général gratuit.
-4. Menu « API et services » → « Bibliothèque » → chercher **Maps JavaScript API** → **Activer**.
+4. Menu « API et services » → « Bibliothèque » → chercher **Map Tiles API** → **Activer** (ville en 3D).
+   Pour l'ancienne version Street View, activer aussi **Maps JavaScript API**.
 5. « API et services » → « Identifiants » → « Créer des identifiants » → « Clé API ». Copier la clé (elle commence par `AIza…`).
 
 ## 2. Lancer l'application
