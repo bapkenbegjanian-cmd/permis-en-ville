@@ -49,7 +49,8 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 
 /* ---- Écran de conduite ---- */
 #drive{position:fixed;inset:0}
-#pano{position:absolute;inset:0;background:#000}
+#pano{position:absolute;inset:0;background:#000;z-index:0;isolation:isolate}
+#drive > :not(#pano){z-index:5}
 .glass{background:var(--glass);border:1px solid var(--glass-line);border-radius:12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .hud-tl{position:absolute;top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));display:flex;gap:10px;align-items:stretch}
 .gauge{display:flex;align-items:center;gap:14px;padding:10px 14px}
