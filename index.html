@@ -405,6 +405,7 @@ function lightState(node, t) {
    ========================================================= */
 let sv, pano, map, carMarker;
 const cache = new Map();
+let waitingLinks = false, waitSince = 0;
 let car = null, links = [], acc = 0, movedSinceStep = 0, lastStep = 0, povH = 0;
 let intent = null, intentDist = 999;
 let match = null, ev = null, faults = [], cooldown = {}, asked = new Set(), quizOk = 0, quizCount = 0;
@@ -445,13 +446,14 @@ function pickTarget() {
     if (opts.length) { t = opts.sort((a, b) => Math.abs(a.rel - want) - Math.abs(b.rel - want))[0]; t.turn = true; }
   }
   if (!t) t = cand.filter(c => Math.abs(c.rel) < 50).sort((a, b) => Math.abs(a.rel) - Math.abs(b.rel))[0] || null;
-  if (t) { const d = cache.get(t.pano); t.data = d || null; t.gap = d ? Math.max(1, dist(car.pos, ll(d.location.latLng))) : null; }
+  if (t) { const d = cache.get(t.pano); t.data = d || null; t.gap = d ? Math.max(1, dist(car.pos, ll(d.location.latLng))) : 9; }
   return t;
 }
 function goTo(data, heading) {
   car.pano = data.location.pano; car.pos = ll(data.location.latLng); car.heading = heading;
   links = (data.links || []).filter(l => l && l.pano).map(l => ({ pano: l.pano, heading: l.heading }));
   cache.set(car.pano, data);
+  waitingLinks = !links.length; waitSince = performance.now();
   pano.setPano(car.pano);
   if (data.location.description) car.desc = data.location.description;
   prefetch();
@@ -459,20 +461,38 @@ function goTo(data, heading) {
   onStep();
 }
 function tryStep(now) {
+  if (waitingLinks && now - waitSince < 3000) return;
   const t = pickTarget();
   if (!t) {
     if (car.speed > 0) { car.speed = 0; acc = 0; message(links.length ? 'Plus de route tout droit : choisissez ← ou → au carrefour, ou R pour faire demi-tour.' : 'Fin des images Street View ici : R pour faire demi-tour.'); }
     return;
   }
-  if (!t.data) return;
   if (acc >= t.gap && now - lastStep > 230) {
     acc = Math.min(acc - t.gap, 12); movedSinceStep = 0; lastStep = now;
     if (t.turn) {
       if (intentDist < 15) addFault('blink', 'Clignotant mis trop tard avant de tourner', false);
       intent = null; intentDist = 999; renderBlinker();
     }
-    goTo(t.data, t.heading);
+    if (t.data) goTo(t.data, t.heading); else goToId(t.pano, t.heading);
   }
+}
+/* Sans métadonnées : on laisse le panorama charger la photo, puis on lit sa position et ses liens */
+function goToId(id, heading) {
+  car.pano = id; car.heading = heading; links = []; waitingLinks = true; waitSince = performance.now();
+  pano.setPano(id);
+}
+function onPanoLinks() {
+  if (!car || pano.getPano() !== car.pano) return;
+  const L = (pano.getLinks() || []).filter(l => l && l.pano);
+  if (L.length) { links = L.map(l => ({ pano: l.pano, heading: l.heading })); waitingLinks = false; prefetch(); }
+}
+function onPanoPosition() {
+  if (!car || pano.getPano() !== car.pano) return;
+  const g = pano.getPosition(); if (!g) return;
+  const p = ll(g); if (Math.abs(p.lat - car.pos.lat) < 1e-9 && Math.abs(p.lng - car.pos.lng) < 1e-9) return;
+  car.pos = p;
+  if (carMarker) { carMarker.setPosition(car.pos); const ic = carMarker.getIcon(); ic.rotation = car.heading; carMarker.setIcon(ic); map.panTo(car.pos); }
+  onStep();
 }
 
 /* =========================================================
@@ -700,6 +720,7 @@ function startDrive(data) {
     disableDefaultUI: true, clickToGo: false, linksControl: false, panControl: false, zoomControl: false, addressControl: false,
     fullscreenControl: false, motionTracking: false, motionTrackingControl: false, showRoadLabels: false, scrollwheel: false, disableDoubleClickZoom: true, keyboardShortcuts: false
   });
+  pano.addListener('links_changed', onPanoLinks); pano.addListener('position_changed', onPanoPosition);
   const pos = ll(data.location.latLng);
   map = new google.maps.Map($('#mini'), { center: pos, zoom: 17, disableDefaultUI: true, gestureHandling: 'none', keyboardShortcuts: false, clickableIcons: false });
   carMarker = new google.maps.Marker({ map, position: pos, clickable: false,
