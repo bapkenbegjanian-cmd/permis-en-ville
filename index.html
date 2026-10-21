@@ -695,17 +695,32 @@ async function initWorld(key) {
   }
   try { const r = await fetch(CAR_MODEL, { method: 'HEAD' }); carModelOk = r.ok; } catch (_) { carModelOk = false; }
 }
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function waitTiles(maxMs) {
+  const t0 = performance.now();
+  await wait(400);
+  while (performance.now() - t0 < maxMs) { if (tileset && tileset.tilesLoaded) return; await wait(250); }
+}
+function aerial(x, y, alt) {
+  const C = window.Cesium, ll = toLL(x, y);
+  viewer.scene.camera.setView({ destination: C.Cartesian3.fromDegrees(ll.lng, ll.lat, alt), orientation: { heading: 0, pitch: C.Math.toRadians(-90), roll: 0 } });
+}
+const median = a => { const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+/* Altitude du sol : on survole d'abord le quartier pour charger la 3D détaillée, puis on mesure sous la voiture */
 async function groundHeightAt(x, y) {
-  const C = window.Cesium, pts = [[0, 0], [2, 0], [-2, 0], [0, 2], [0, -2]].map(([dx, dy]) => { const ll = toLL(x + dx, y + dy); return C.Cartographic.fromDegrees(ll.lng, ll.lat); });
-  for (let tries = 0; tries < 4; tries++) {
-    try {
-      const res = await viewer.scene.sampleHeightMostDetailed(pts);
-      const hs = res.map(c => c.height).filter(h => h !== undefined && isFinite(h));
-      if (hs.length) return Math.min(...hs);
-    } catch (_) {}
-    await new Promise(r => setTimeout(r, 1500));
+  const C = window.Cesium, scene = viewer.scene;
+  const pts = () => [[0, 0], [1.5, 0], [-1.5, 0], [0, 1.5], [0, -1.5]].map(([dx, dy]) => { const ll = toLL(x + dx, y + dy); return C.Cartographic.fromDegrees(ll.lng, ll.lat); });
+  // 1. vue aérienne haute, puis plus basse, en attendant que la 3D se charge
+  aerial(x, y, 1500); await waitTiles(12000);
+  let guess = null;
+  try { const r = await scene.sampleHeightMostDetailed(pts()); const hs = r.map(c => c.height).filter(h => h !== undefined && isFinite(h)); if (hs.length) guess = median(hs); } catch (_) {}
+  for (const above of [300, 80, 25]) {
+    aerial(x, y, (guess ?? 200) + above); await waitTiles(8000);
+    const hs = [];
+    for (let k = 0; k < 6; k++) { scene.render(); for (const c of pts()) { const h = scene.sampleHeight(c); if (h !== undefined && isFinite(h)) hs.push(h); } await wait(100); }
+    if (hs.length) guess = median(hs);
   }
-  return null;
+  return guess;
 }
 function addAIEntity(ai) {
   const C = window.Cesium;
@@ -716,14 +731,20 @@ function addAIEntity(ai) {
     ? { position: pos, orientation: ori, model: { uri: CAR_MODEL, scale: 1, minimumPixelSize: 0, color, colorBlendMode: C.ColorBlendMode.MIX, colorBlendAmount: .45 } }
     : { position: pos, orientation: ori, box: { dimensions: new C.Cartesian3(4.4, 1.8, 1.45), material: color } });
 }
-let hSampleIdx = 0, frameN = 0;
+let hSampleIdx = 0, frameN = 0, hOff = 0, hBuf = [];
 function render() {
   const C = window.Cesium, scene = viewer.scene;
+  if (!P.hOk) return;
   frameN++;
   // hauteur du sol sous la voiture (ignore arbres et toits)
   if (frameN % 3 === 0 && scene.sampleHeightSupported) {
     const ll = toLL(P.x, P.y), h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), AIS.map(a => a.ent).filter(Boolean));
-    if (h !== undefined && isFinite(h) && h < P.h + 1.0 && h > P.h - 4) P.h += (h - P.h) * .35;
+    if (h !== undefined && isFinite(h)) {
+      if (Math.abs(h - P.h) < 1.2) { P.h += (h - P.h) * .35; hOff = 0; }
+      else { hOff++; hBuf.push(h); if (hBuf.length > 12) hBuf.shift();
+        // écart qui dure (pente, pont) : on suit ; écart bref (arbre, voiture garée) : on ignore
+        if (hOff > 12) { const m = median(hBuf); if (Math.abs(m - P.h) < 8) P.h += (m - P.h) * .5; hOff = 0; } }
+    }
   }
   // hauteur d'une voiture automatique par image
   if (AIS.length && scene.sampleHeightSupported) {
@@ -895,7 +916,7 @@ $('#go').onclick = async () => {
     placeStart();
     $('#loadTitle').textContent = 'Chargement de la ville en 3D…';
     await initWorld(key);
-    render();
+    $('#loadTitle').textContent = 'Chargement des bâtiments du quartier…';
     const h = await groundHeightAt(P.x, P.y);
     if (h === null) throw new Error('La ville 3D ne s\'affiche pas à cet endroit. Essayez une autre ville ou vérifiez l\'API « Map Tiles ».');
     P.h = h; P.hOk = true;
