@@ -91,7 +91,7 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 .touch .grp{display:flex;gap:10px;pointer-events:auto}
 .touch button{width:62px;height:62px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-line);color:var(--ink);font-weight:700;font-size:13px;touch-action:none;user-select:none;-webkit-user-select:none}
 .touch button.on{background:var(--blue)}
-@media (pointer:coarse){.touch{display:flex}}
+.touch{display:flex}
 @media (max-width:760px){
   .next{top:auto;bottom:calc(196px + env(safe-area-inset-bottom));} .street{display:none} #mini{width:150px;height:120px} .score b{font-size:20px}
   .speed{font-size:34px} .limit{width:46px;height:46px;font-size:18px;border-width:6px}
@@ -698,7 +698,7 @@ function startDrive(data) {
   pano = new google.maps.StreetViewPanorama($('#pano'), {
     pano: data.location.pano, pov: { heading, pitch: -2 }, zoom: 0, visible: true,
     disableDefaultUI: true, clickToGo: false, linksControl: false, panControl: false, zoomControl: false, addressControl: false,
-    fullscreenControl: false, motionTracking: false, motionTrackingControl: false, showRoadLabels: false, scrollwheel: false, disableDoubleClickZoom: true
+    fullscreenControl: false, motionTracking: false, motionTrackingControl: false, showRoadLabels: false, scrollwheel: false, disableDoubleClickZoom: true, keyboardShortcuts: false
   });
   const pos = ll(data.location.latLng);
   map = new google.maps.Map($('#mini'), { center: pos, zoom: 17, disableDefaultUI: true, gestureHandling: 'none', keyboardShortcuts: false, clickableIcons: false });
@@ -722,6 +722,7 @@ function setIntent(dir) {
 }
 const KEYMAP = { ArrowUp: 'up', ArrowDown: 'down', Space: 'brake', KeyQ: 'lookL', KeyA: 'lookL', KeyD: 'lookR', KeyE: 'lookR' };
 addEventListener('keydown', e => {
+  if (e.target && e.target.tagName !== 'INPUT') e.stopPropagation();
   if (!car || $('#drive').hidden || e.target.tagName === 'INPUT') return;
   if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
   if (paused || ended) return;
@@ -729,8 +730,8 @@ addEventListener('keydown', e => {
   if (e.code === 'ArrowRight') { if (!e.repeat) setIntent('right'); e.preventDefault(); return; }
   if (e.code === 'KeyR' && !e.repeat) { if (car.speed > 3) { message('Arrêtez-vous avant de faire demi-tour.'); return; } car.heading = (car.heading + 180) % 360; intent = null; renderBlinker(); acc = 0; onStep(); return; }
   const k = KEYMAP[e.code]; if (k) { keys[k] = true; e.preventDefault(); }
-});
-addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+}, true);
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; }, true);
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 document.querySelectorAll('.touch button').forEach(b => {
   const k = b.dataset.k;
