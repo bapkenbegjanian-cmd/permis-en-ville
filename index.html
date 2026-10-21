@@ -687,6 +687,8 @@ async function initWorld(key) {
   try {
     tileset = await C.Cesium3DTileset.fromUrl('https://tile.googleapis.com/v1/3dtiles/root.json?key=' + encodeURIComponent(key), { showCreditsOnScreen: true, maximumScreenSpaceError: 8 });
     scene.primitives.add(tileset);
+    let fails = 0;
+    tileset.tileFailed.addEventListener(e => { fails++; setStatus(`Google refuse ${fails} morceau(x) de la ville 3D : ${(e && e.message || '').slice(0, 120)}`); });
   } catch (e) {
     const code = e && (e.statusCode || (e.target && e.target.status));
     throw new Error(code === 403 || code === 400
@@ -738,7 +740,7 @@ function render() {
   frameN++;
   // hauteur du sol sous la voiture (ignore arbres et toits)
   if (frameN % 3 === 0 && scene.sampleHeightSupported) {
-    const ll = toLL(P.x, P.y), h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), AIS.map(a => a.ent).filter(Boolean));
+    const ll = toLL(P.x, P.y); let h; try { h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), AIS.map(a => a.ent).filter(Boolean)); } catch (_) { h = undefined; }
     if (h !== undefined && isFinite(h)) {
       if (Math.abs(h - P.h) < 1.2) { P.h += (h - P.h) * .35; hOff = 0; }
       else { hOff++; hBuf.push(h); if (hBuf.length > 12) hBuf.shift();
@@ -749,7 +751,7 @@ function render() {
   // hauteur d'une voiture automatique par image
   if (AIS.length && scene.sampleHeightSupported) {
     const ai = AIS[hSampleIdx++ % AIS.length], ll = toLL(ai.x, ai.y);
-    const h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), AIS.map(a => a.ent).filter(Boolean));
+    let h; try { h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), AIS.map(a => a.ent).filter(Boolean)); } catch (_) { h = undefined; }
     if (h !== undefined && isFinite(h) && Math.abs(h - P.h) < 15 && h < ai.h + 1.2) ai.h += (h - ai.h) * .5;
   }
   for (const ai of AIS) {
@@ -863,7 +865,12 @@ $('#qGo').onclick = () => { $('#quizOv').hidden = true; paused = false; };
    Boucle
    ========================================================= */
 let lastT = performance.now(), hudTick = 0;
+let loopErr = '';
 function loop(now) {
+  requestAnimationFrame(loop);
+  try { step(now); } catch (e) { if (!loopErr) { loopErr = e && e.message || String(e); setStatus('Erreur : ' + loopErr); console.error(e); } }
+}
+function step(now) {
   const total = Math.min(.25, (now - lastT) / 1000); lastT = now;
   if (!paused && !ended) {
     const n = Math.max(1, Math.ceil(total / .03)), dt = total / n;
@@ -874,9 +881,8 @@ function loop(now) {
       updateRules(dt, now);
     }
   }
-  if (viewer) render();
+  if (viewer) { try { render(); } catch (e) { if (!loopErr) { loopErr = e && e.message || String(e); setStatus('Erreur 3D : ' + loopErr); console.error(e); } } }
   if (hudTick++ % 3 === 0) { renderHUD(now); drawMinimap(); }
-  requestAnimationFrame(loop);
 }
 
 /* =========================================================
