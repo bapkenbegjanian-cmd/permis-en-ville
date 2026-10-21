@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Permis en Ville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Écran de conduite : la vraie rue (Street View) en plein écran, instruments en verre fumé par-dessus */
+:root{
+  --glass:rgba(14,18,24,.72); --glass-line:rgba(255,255,255,.14); --ink:#F2F5F9; --muted:#A9B3C1;
+  --paper:#EEF1F5; --surface:#FFFFFF; --text:#16202E; --text-muted:#596476; --line:#D6DCE5;
+  --blue:#1D4F9C; --blue-hi:#5C8DE2; --red:#D62F35; --amber:#F0B43A; --ok:#3CB371;
+  --font-display:"Barlow Semi Condensed","Arial Narrow",sans-serif;
+  --font-body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{font-family:var(--font-body);font-size:15px;line-height:1.45;background:#0B0F14;color:var(--ink)}
+button,input,select{font:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blue-hi);outline-offset:2px}
+
+/* ---- Écran de départ ---- */
+#setup{min-height:100%;background:var(--paper);color:var(--text);display:grid;place-items:center;
+  padding:24px max(16px,env(safe-area-inset-right)) 24px max(16px,env(safe-area-inset-left))}
+.setup-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(20,30,50,.12)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.brand-mark{background:var(--blue);color:#fff;font-family:var(--font-display);font-weight:700;letter-spacing:.06em;font-size:12px;padding:4px 8px;border-radius:3px;text-transform:uppercase}
+.brand h1{font-family:var(--font-display);font-size:26px;margin:0}
+.lead{color:var(--text-muted);margin:0 0 20px}
+.field{display:grid;gap:6px;margin-bottom:16px}
+.field label{font-family:var(--font-display);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.field input,.field select{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;color:var(--text);width:100%}
+.field small{color:var(--text-muted);font-size:13px}
+.field small a{color:var(--blue)}
+.row{display:flex;gap:8px}
+.row input{flex:1;min-width:0}
+.btn{border:1px solid var(--line);background:#fff;color:var(--text);padding:10px 14px;border-radius:8px;font-weight:700}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;width:100%;padding:13px;font-size:16px}
+.btn:disabled{opacity:.6;cursor:default}
+.err{background:#FDECEC;color:#8A1C20;border:1px solid #F3C2C4;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:14px}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:18px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:14px;color:var(--text-muted);align-items:center}
+kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;background:var(--paper);color:var(--text)}
+
+/* ---- Écran de conduite ---- */
+#drive{position:fixed;inset:0}
+#pano{position:absolute;inset:0;background:#000}
+.glass{background:var(--glass);border:1px solid var(--glass-line);border-radius:12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.hud-tl{position:absolute;top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));display:flex;gap:10px;align-items:stretch}
+.gauge{display:flex;align-items:center;gap:14px;padding:10px 14px}
+.speed{font-family:var(--font-mono);font-weight:700;font-size:44px;line-height:1;font-variant-numeric:tabular-nums;min-width:2.3ch;text-align:right}
+.speed small{display:block;font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.08em}
+.speed.over{color:#FF6B70}
+.limit{width:56px;height:56px;border-radius:50%;background:#fff;border:7px solid #C8252C;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:22px;color:#111}
+.limit.unknown{border-color:#888;color:#888;font-size:16px}
+.street{padding:8px 12px;display:flex;flex-direction:column;justify-content:center;max-width:320px}
+.street b{font-family:var(--font-display);font-weight:600;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.street span{color:var(--muted);font-size:12px}
+.hud-tr{position:absolute;top:calc(12px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));display:flex;gap:10px;align-items:flex-start}
+.score{padding:8px 14px;text-align:right}
+.score b{font-family:var(--font-mono);font-size:26px;font-variant-numeric:tabular-nums}
+.score span{display:block;color:var(--muted);font-size:12px}
+.hbtn{background:var(--glass);border:1px solid var(--glass-line);color:var(--ink);border-radius:10px;padding:10px 12px;font-weight:700}
+.next{position:absolute;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top));display:flex;align-items:center;gap:12px;padding:10px 16px}
+.next svg{width:38px;height:38px;flex:none}
+.next .t b{display:block;font-family:var(--font-display);font-size:19px;font-weight:600;line-height:1.1}
+.next .t span{color:var(--muted);font-size:13px}
+.next .d{font-family:var(--font-mono);font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.tlight{position:absolute;right:calc(16px + env(safe-area-inset-right));top:40%;transform:translateY(-50%);padding:10px;display:grid;gap:8px;justify-items:center}
+.tlight i{width:34px;height:34px;border-radius:50%;background:#33373E;display:block}
+.tlight i.on.r{background:#FF3B30;box-shadow:0 0 18px #FF3B30}
+.tlight i.on.a{background:#FFB300;box-shadow:0 0 18px #FFB300}
+.tlight i.on.g{background:#2BD46B;box-shadow:0 0 18px #2BD46B}
+.tlight span{font-size:11px;color:var(--muted);text-align:center;max-width:70px}
+.blinker{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;padding:8px 14px;font-weight:700}
+.blinker .arr{font-size:26px;color:#3FE07A;animation:blink .8s steps(1) infinite}
+@keyframes blink{50%{opacity:.15}}
+.msg{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(200px + env(safe-area-inset-bottom));padding:10px 16px;max-width:min(560px,90vw);text-align:center}
+.toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(96px + env(safe-area-inset-top));background:var(--red);color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:16px;box-shadow:0 8px 24px rgba(0,0,0,.35);max-width:90vw;text-align:center}
+.toast.light{background:var(--amber);color:#1a1300}
+#mini{position:absolute;right:calc(12px + env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));width:230px;height:170px;border-radius:12px;overflow:hidden;border:2px solid var(--glass-line)}
+.status{position:absolute;left:calc(12px + env(safe-area-inset-left));bottom:calc(12px + env(safe-area-inset-bottom));padding:6px 10px;font-size:12px;color:var(--muted);max-width:min(340px,60vw)}
+.look{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--font-display);font-weight:700;font-size:15px;padding:8px 12px}
+.look.l{left:calc(14px + env(safe-area-inset-left))} .look.r{right:calc(110px + env(safe-area-inset-right))}
+.touch{position:absolute;left:0;right:0;bottom:calc(196px + env(safe-area-inset-bottom));display:none;justify-content:space-between;padding:0 14px;pointer-events:none}
+.touch .grp{display:flex;gap:10px;pointer-events:auto}
+.touch button{width:62px;height:62px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-line);color:var(--ink);font-weight:700;font-size:13px;touch-action:none;user-select:none;-webkit-user-select:none}
+.touch button.on{background:var(--blue)}
+@media (pointer:coarse){.touch{display:flex}}
+@media (max-width:760px){
+  .next{top:auto;bottom:calc(196px + env(safe-area-inset-bottom));} .street{display:none} #mini{width:150px;height:120px} .score b{font-size:20px}
+  .speed{font-size:34px} .limit{width:46px;height:46px;font-size:18px;border-width:6px}
+}
+
+/* ---- Fenêtres ---- */
+.overlay{position:absolute;inset:0;display:grid;align-items:end;justify-items:center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(0,0,0,.55),transparent 60%)}
+.overlay.center{align-items:center;background:rgba(5,8,12,.6)}
+.modal{background:var(--surface);color:var(--text);border-radius:14px;padding:20px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4);max-height:80vh;overflow:auto}
+.eyebrow{font-family:var(--font-display);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:4px}
+.modal h3{font-family:var(--font-display);font-size:24px;margin:0 0 10px;line-height:1.15}
+.modal p{margin:0 0 12px}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--text);border-radius:8px;padding:10px 12px}
+.opt:hover:not(:disabled){border-color:var(--blue)}
+.opt.good{border-color:var(--ok);background:#E7F6EC}
+.opt.bad{border-color:var(--red);background:#FCE9EA}
+.expl{margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--paper);font-size:14px}
+.actions{margin-top:14px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.actions .btn{width:auto}
+.verdict{font-family:var(--font-display);font-weight:700;font-size:32px;margin:2px 0 8px}
+.verdict.ok{color:#1E8048}.verdict.ko{color:var(--red)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.stat{background:var(--paper);border-radius:8px;padding:8px}
+.stat b{display:block;font-family:var(--font-mono);font-size:20px}
+.stat span{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em}
+.flist{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:240px;overflow:auto}
+.flist li{display:grid;grid-template-columns:8px 1fr;gap:2px 10px;padding:7px 9px;border-radius:7px;background:var(--paper);font-size:14px}
+.flist li i{grid-row:span 2;border-radius:4px;background:var(--amber)}
+.flist li.grave i{background:var(--red)}
+.flist li small{color:var(--text-muted);font-family:var(--font-mono);font-size:11px}
+@media (prefers-reduced-motion:reduce){.blinker .arr{animation:none}}
+</style>
+</head>
+<body>
+
+<section id="setup">
+  <div class="setup-card">
+    <div class="brand"><span class="brand-mark">Auto-école</span><h1>Permis en Ville</h1></div>
+    <p class="lead">Conduisez dans les vraies rues de votre ville, vues depuis la place du conducteur. Limitations, stops, feux, cédez-le-passage, sens interdits et priorités à droite sont contrôlés comme à l'examen.</p>
+    <div class="err" id="setupErr" hidden></div>
+    <div class="field">
+      <label for="key">Clé API Google Maps</label>
+      <input id="key" type="password" autocomplete="off" placeholder="AIza…">
+      <small>Elle reste sur cet ordinateur. L'API « Maps JavaScript » doit être activée (voir le fichier LISEZMOI).</small>
+    </div>
+    <div class="field">
+      <label for="city">Point de départ</label>
+      <select id="city"></select>
+    </div>
+    <div class="field">
+      <label for="addr">Ou une adresse précise</label>
+      <div class="row"><input id="addr" type="text" placeholder="ex. 12 rue de la République, Lyon"><button class="btn" id="addrBtn" type="button">Chercher</button></div>
+      <small id="addrRes"></small>
+    </div>
+    <button class="btn primary" id="go" type="button">Démarrer la séance</button>
+    <div class="keys">
+      <span><kbd>↑</kbd> / <kbd>↓</kbd></span><span>Accélérer / freiner</span>
+      <span><kbd>Espace</kbd></span><span>Freinage appuyé</span>
+      <span><kbd>←</kbd> / <kbd>→</kbd></span><span>Clignotant : tourner au prochain carrefour</span>
+      <span><kbd>Q</kbd> / <kbd>D</kbd></span><span>Regarder à gauche / à droite (maintenir)</span>
+      <span><kbd>R</kbd></span><span>Demi-tour</span>
+      <span><kbd>P</kbd></span><span>Pause</span>
+    </div>
+  </div>
+</section>
+
+<section id="drive" hidden>
+  <div id="pano"></div>
+  <div class="hud-tl">
+    <div class="glass gauge"><div class="speed" id="spd">0<small>KM/H</small></div><div class="limit unknown" id="lim">—</div></div>
+    <div class="glass street"><b id="street">…</b><span id="city2"></span></div>
+  </div>
+  <div class="hud-tr">
+    <div class="glass score"><b id="score">100</b><span id="faultCount">0 faute</span></div>
+    <button class="hbtn" id="endBtn" type="button">Terminer</button>
+  </div>
+  <div class="glass next" id="next" hidden></div>
+  <div class="glass tlight" id="tlight" hidden><i class="r"></i><i class="a"></i><i class="g"></i><span>Feu simulé</span></div>
+  <div class="glass blinker" id="blinker" hidden><span class="arr" id="blArr">⬅</span><span id="blTxt">Tourner à gauche au prochain carrefour</span></div>
+  <div class="glass msg" id="msg" hidden></div>
+  <div class="glass look l" id="lookL" hidden>◀ Contrôle gauche</div>
+  <div class="glass look r" id="lookR" hidden>Contrôle droite ▶</div>
+  <div class="toast" id="toast" hidden></div>
+  <div class="glass status" id="status">Chargement…</div>
+  <div id="mini"></div>
+  <div class="touch">
+    <div class="grp"><button data-k="left" type="button">◀</button><button data-k="lookL" type="button">Œil G</button><button data-k="lookR" type="button">Œil D</button><button data-k="right" type="button">▶</button></div>
+    <div class="grp"><button data-k="down" type="button">Frein</button><button data-k="up" type="button">Gaz</button></div>
+  </div>
+
+  <div class="overlay" id="quizOv" hidden>
+    <div class="modal">
+      <div class="eyebrow" id="qEyebrow">Question</div>
+      <h3 id="qTitle"></h3>
+      <p id="qText"></p>
+      <div class="opts" id="qOpts"></div>
+      <div class="expl" id="qExpl" hidden></div>
+      <div class="actions"><button class="btn primary" id="qGo" type="button" hidden>Reprendre la conduite</button></div>
+    </div>
+  </div>
+
+  <div class="overlay center" id="pauseOv" hidden>
+    <div class="modal">
+      <div class="eyebrow">Pause</div>
+      <h3>Séance en pause</h3>
+      <p>Regardez autour de vous avec la souris si besoin, puis reprenez.</p>
+      <div class="actions"><button class="btn primary" id="resume" type="button">Reprendre</button></div>
+    </div>
+  </div>
+
+  <div class="overlay center" id="endOv" hidden>
+    <div class="modal">
+      <div class="eyebrow">Bilan de la séance</div>
+      <div class="verdict" id="vTitle"></div>
+      <p id="vText"></p>
+      <div class="stats" id="vStats"></div>
+      <ul class="flist" id="vList"></ul>
+      <div class="actions">
+        <button class="btn" id="vBack" type="button">Continuer à conduire</button>
+        <button class="btn primary" id="vNew" type="button">Nouvelle séance</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+
+/* =========================================================
+   Réglages
+   ========================================================= */
+const PRESETS = [
+  ['Lyon · Place Bellecour', 45.75795, 4.83260],
+  ['Lyon · Part-Dieu', 45.76060, 4.85900],
+  ['Lyon · Croix-Rousse', 45.77450, 4.83180],
+  ['Paris · Opéra', 48.87080, 2.33200],
+  ['Paris · Bastille', 48.85310, 2.36920],
+  ['Marseille · Vieux-Port', 43.29550, 5.37450],
+  ['Toulouse · Capitole', 43.60450, 1.44400],
+  ['Bordeaux · Quinconces', 44.84400, -0.57300],
+  ['Lille · Grand Place', 50.63700, 3.06350],
+  ['Nantes · Commerce', 47.21350, -1.55900],
+  ['Nice · Masséna', 43.69750, 7.27000],
+  ['Strasbourg · Kléber', 48.58350, 7.74600]
+];
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const store = { get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} } };
+
+/* =========================================================
+   Géométrie
+   ========================================================= */
+const RAD = Math.PI / 180;
+function dist(a, b) { const x = (b.lng - a.lng) * RAD * Math.cos((a.lat + b.lat) / 2 * RAD), y = (b.lat - a.lat) * RAD; return Math.hypot(x, y) * 6371000; }
+function bearing(a, b) { const p1 = a.lat * RAD, p2 = b.lat * RAD, dl = (b.lng - a.lng) * RAD;
+  const y = Math.sin(dl) * Math.cos(p2), x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+  return (Math.atan2(y, x) / RAD + 360) % 360; }
+const angDiff = (from, to) => ((to - from + 540) % 360) - 180;
+const ll = g => ({ lat: typeof g.lat === 'function' ? g.lat() : g.lat, lng: typeof g.lng === 'function' ? g.lng() : g.lng });
+function proj(o, p) { return { x: (p.lng - o.lng) * 111320 * Math.cos(o.lat * RAD), y: (p.lat - o.lat) * 110540 }; }
+function unproj(o, q) { return { lat: o.lat + q.y / 110540, lng: o.lng + q.x / (111320 * Math.cos(o.lat * RAD)) }; }
+
+/* =========================================================
+   Données OpenStreetMap : rues, limitations, panneaux
+   ========================================================= */
+const RANK = { motorway_link: 4, trunk: 4, trunk_link: 4, primary: 4, primary_link: 4, secondary: 3, secondary_link: 3, tertiary: 2, tertiary_link: 2, unclassified: 1, residential: 1, living_street: 0 };
+let OSM = null, osmLoading = false;
+
+function parseLimit(tags) {
+  const m = tags.maxspeed || '';
+  const n = parseInt(m, 10);
+  if (!isNaN(n)) return n;
+  if (/zone30|:30$/i.test(m) || /30/.test(tags['zone:maxspeed'] || '')) return 30;
+  if (/urban/i.test(m)) return 50;
+  if (/rural/i.test(m)) return 80;
+  if (/walk|living/i.test(m) || tags.highway === 'living_street') return 20;
+  return null;
+}
+async function loadOSM(center) {
+  if (osmLoading) return; osmLoading = true;
+  setStatus('Chargement des règles de circulation…');
+  const r = 1400, dLat = r / 110540, dLng = r / (111320 * Math.cos(center.lat * RAD));
+  const bb = [center.lat - dLat, center.lng - dLng, center.lat + dLat, center.lng + dLng].map(v => v.toFixed(6)).join(',');
+  const q = `[out:json][timeout:50];(way["highway"~"^(trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street)$"](${bb});node["highway"~"^(stop|give_way|traffic_signals|crossing|mini_roundabout)$"](${bb}););out body;>;out skel qt;`;
+  let json = null, lastErr = '';
+  for (const url of OVERPASS) {
+    try {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q) });
+      if (!res.ok) { lastErr = 'HTTP ' + res.status; continue; }
+      json = await res.json(); break;
+    } catch (e) { lastErr = e.message; }
+  }
+  osmLoading = false;
+  if (!json) { setStatus('Règles de circulation indisponibles (' + lastErr + '). La conduite reste possible, sans contrôle.'); return; }
+  OSM = buildOSM(json, center);
+  setStatus(`Règles chargées : ${OSM.ways.size} rues, ${OSM.controlCount} panneaux et feux · données © OpenStreetMap`);
+  onStep();
+}
+function buildOSM(json, center) {
+  const nodes = new Map(), ways = new Map(), nodeWays = new Map();
+  for (const el of json.elements) if (el.type === 'node') {
+    const prev = nodes.get(el.id);
+    nodes.set(el.id, { id: el.id, lat: el.lat, lng: el.lon, tags: el.tags || (prev && prev.tags) || {} });
+  }
+  for (const el of json.elements) if (el.type === 'way' && el.tags) {
+    const t = el.tags;
+    const ow = t.oneway === 'yes' || t.oneway === '1' || t.oneway === 'true' ? 1 : t.oneway === '-1' ? -1 : (t.junction === 'roundabout' || t.junction === 'circular') && t.oneway !== 'no' ? 1 : 0;
+    const w = { id: el.id, nodes: el.nodes.filter(n => nodes.has(n)), tags: t, name: t.name || t.ref || 'Rue sans nom', hw: t.highway, rank: RANK[t.highway] ?? 1,
+      limit: parseLimit(t), oneway: ow, roundabout: t.junction === 'roundabout' || t.junction === 'circular' };
+    if (w.nodes.length < 2) continue;
+    ways.set(w.id, w);
+    w.nodes.forEach(n => { if (!nodeWays.has(n)) nodeWays.set(n, []); const a = nodeWays.get(n); if (!a.includes(w.id)) a.push(w.id); });
+  }
+  // carrefours : nœud partagé par des rues différentes
+  const junctions = new Set();
+  for (const [nid, ws] of nodeWays) {
+    if (ws.length >= 3) { junctions.add(nid); continue; }
+    if (ws.length === 2) {
+      const [a, b] = ws.map(id => ways.get(id));
+      const endA = a.nodes[0] === nid || a.nodes[a.nodes.length - 1] === nid, endB = b.nodes[0] === nid || b.nodes[b.nodes.length - 1] === nid;
+      if (!(endA && endB && a.name === b.name)) junctions.add(nid);
+    }
+  }
+  // index spatial des segments (grille de 60 m)
+  const grid = new Map(), CELL = 60;
+  const cellKey = (x, y) => Math.floor(x / CELL) + ':' + Math.floor(y / CELL);
+  for (const w of ways.values()) for (let i = 0; i < w.nodes.length - 1; i++) {
+    const a = proj(center, nodes.get(w.nodes[i])), b = proj(center, nodes.get(w.nodes[i + 1]));
+    const x0 = Math.floor(Math.min(a.x, b.x) / CELL), x1 = Math.floor(Math.max(a.x, b.x) / CELL), y0 = Math.floor(Math.min(a.y, b.y) / CELL), y1 = Math.floor(Math.max(a.y, b.y) / CELL);
+    for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) { const k = cx + ':' + cy; if (!grid.has(k)) grid.set(k, []); grid.get(k).push({ w, i, a, b }); }
+  }
+  let controlCount = 0; for (const n of nodes.values()) if (['stop', 'give_way', 'traffic_signals'].includes(n.tags.highway)) controlCount++;
+  return { center, nodes, ways, nodeWays, junctions, grid, CELL, cellKey, controlCount };
+}
+
+/* Trouver la rue sur laquelle roule la voiture */
+function matchWay(pos, heading) {
+  if (!OSM) return null;
+  const p = proj(OSM.center, pos), C = OSM.CELL;
+  let best = null, bestScore = 1e9;
+  for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+    const segs = OSM.grid.get(Math.floor(p.x / C + dx) + ':' + Math.floor(p.y / C + dy)); if (!segs) continue;
+    for (const s of segs) {
+      const vx = s.b.x - s.a.x, vy = s.b.y - s.a.y, L2 = vx * vx + vy * vy || 1;
+      const t = Math.max(0, Math.min(1, ((p.x - s.a.x) * vx + (p.y - s.a.y) * vy) / L2));
+      const qx = s.a.x + vx * t, qy = s.a.y + vy * t, d = Math.hypot(p.x - qx, p.y - qy);
+      if (d > 28) continue;
+      const segBear = (Math.atan2(vx, vy) / RAD + 360) % 360;
+      const df = angDiff(heading, segBear), diff = Math.min(Math.abs(df), 180 - Math.abs(df));
+      const score = d + diff * .45;
+      if (score < bestScore) { bestScore = score; best = { w: s.w, i: s.i, dir: Math.abs(df) <= 90 ? 1 : -1, d, diff, point: unproj(OSM.center, { x: qx, y: qy }) }; }
+    }
+  }
+  return best && best.diff < 60 ? best : null;
+}
+
+/* Ce qui arrive devant : panneaux sur notre rue, puis le prochain carrefour */
+function lookAhead(m) {
+  const { w, i, dir } = m; const N = OSM.nodes;
+  let k = dir > 0 ? i + 1 : i, prev = m.point, d = 0;
+  const controls = [];
+  for (let guard = 0; guard < 60 && k >= 0 && k < w.nodes.length; guard++, k += dir) {
+    const node = N.get(w.nodes[k]); d += dist(prev, node); prev = node;
+    if (d > 170) break;
+    const hwTag = node.tags.highway;
+    if (hwTag && hwTag !== 'mini_roundabout') {
+      const dirTag = node.tags.direction;
+      const applies = !dirTag || (dirTag === 'forward' && dir > 0) || (dirTag === 'backward' && dir < 0) || (dirTag !== 'forward' && dirTag !== 'backward');
+      if (applies) controls.push({ type: hwTag, node, dist: d });
+    }
+    if (OSM.junctions.has(node.id)) {
+      const others = (OSM.nodeWays.get(node.id) || []).filter(id => id !== w.id).map(id => OSM.ways.get(id)).filter(o => o && o.name !== w.name);
+      if (!others.length) continue;
+      return { node, dist: d, controls, others, mini: hwTag === 'mini_roundabout' };
+    }
+  }
+  return controls.length ? { node: null, dist: d, controls, others: [] } : null;
+}
+function hasYieldNear(way, jid) {
+  const N = OSM.nodes, idx = way.nodes.indexOf(jid); if (idx < 0) return false;
+  const J = N.get(jid);
+  for (const step of [-1, 1]) for (let k = idx + step; k >= 0 && k < way.nodes.length; k += step) {
+    const n = N.get(way.nodes[k]); if (dist(J, n) > 35) break;
+    if (n.tags.highway === 'stop' || n.tags.highway === 'give_way') return true;
+  }
+  return false;
+}
+function junctionRule(m, ah) {
+  const J = ah.node, near = ah.controls.filter(c => ah.dist - c.dist < 40);
+  const sig = J.tags.highway === 'traffic_signals' ? J : (near.find(c => c.type === 'traffic_signals') || {}).node;
+  if (sig) return { ctrl: 'signals', sig };
+  if (near.some(c => c.type === 'stop')) return { ctrl: 'stop' };
+  if (near.some(c => c.type === 'give_way')) return { ctrl: 'give' };
+  if (m.w.roundabout) return { ctrl: 'priority' };
+  if (ah.mini || ah.others.some(o => o.roundabout)) return { ctrl: 'roundabout' };
+  if (ah.others.some(o => hasYieldNear(o, J.id))) return { ctrl: 'priority' };
+  if (m.w.rank >= 3 && ah.others.every(o => o.rank <= 2)) return { ctrl: 'priority' };
+  return { ctrl: 'right' };
+}
+
+/* Feux : l'état est simulé (la photo a été prise à un autre moment) */
+function lightState(node, t) {
+  const off = (node.id % 997) / 997 * 40, ph = (t / 1000 + off) % 40;
+  if (ph < 17) return { s: 'green', e: ph }; if (ph < 20) return { s: 'amber', e: ph - 17 }; return { s: 'red', e: ph - 20 };
+}
+
+/* =========================================================
+   État de la séance
+   ========================================================= */
+let sv, pano, map, carMarker;
+const cache = new Map();
+let car = null, links = [], acc = 0, movedSinceStep = 0, lastStep = 0, povH = 0;
+let intent = null, intentDist = 999;
+let match = null, ev = null, faults = [], cooldown = {}, asked = new Set(), quizOk = 0, quizCount = 0;
+let paused = false, ended = false, started = 0, driveTime = 0, overT = 0, wrongWay = null, lastLimit = null, cityLabel = '';
+const keys = { up: false, down: false, brake: false, lookL: false, lookR: false };
+
+function setStatus(t) { $('#status').textContent = t; }
+let toastTimer, msgTimer;
+function toast(t, grave) { const el = $('#toast'); el.textContent = t; el.className = 'toast' + (grave ? '' : ' light'); el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.hidden = true, 3200); }
+function message(t, ms) { const el = $('#msg'); el.textContent = t; el.hidden = false; clearTimeout(msgTimer); msgTimer = setTimeout(() => el.hidden = true, ms || 3500); }
+const fmtT = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+
+function addFault(code, label, grave) {
+  const now = performance.now();
+  if (cooldown[code] && now - cooldown[code] < 6000) return;
+  cooldown[code] = now;
+  faults.push({ t: driveTime, label, grave, street: match ? match.w.name : '', pos: car && { ...car.pos } });
+  toast(label, grave);
+  if (map && car) new google.maps.Marker({ map, position: car.pos, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: grave ? '#D62F35' : '#F0B43A', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }, clickable: false });
+  renderScore();
+}
+function scoreOf() { const g = faults.filter(f => f.grave).length; return { g, l: faults.length - g, s: Math.max(0, 100 - g * 20 - (faults.length - g) * 5) }; }
+function renderScore() { const s = scoreOf(); $('#score').textContent = s.s; $('#faultCount').textContent = faults.length + (faults.length > 1 ? ' fautes' : ' faute'); }
+
+/* =========================================================
+   Déplacement de photo en photo
+   ========================================================= */
+function getPano(req) { return new Promise((res, rej) => sv.getPanorama(req, (d, s) => s === 'OK' ? res(d) : rej(s))); }
+function prefetch() {
+  for (const l of links) if (!cache.has(l.pano)) { cache.set(l.pano, null); getPano({ pano: l.pano }).then(d => cache.set(l.pano, d)).catch(() => cache.delete(l.pano)); }
+}
+function pickTarget() {
+  const cand = links.map(l => ({ pano: l.pano, heading: l.heading, rel: angDiff(car.heading, l.heading) }));
+  let t = null;
+  if (intent) {
+    const want = intent === 'left' ? -90 : 90;
+    const opts = cand.filter(c => Math.sign(c.rel) === Math.sign(want) && Math.abs(c.rel) > 35 && Math.abs(c.rel) < 150);
+    if (opts.length) { t = opts.sort((a, b) => Math.abs(a.rel - want) - Math.abs(b.rel - want))[0]; t.turn = true; }
+  }
+  if (!t) t = cand.filter(c => Math.abs(c.rel) < 50).sort((a, b) => Math.abs(a.rel) - Math.abs(b.rel))[0] || null;
+  if (t) { const d = cache.get(t.pano); t.data = d || null; t.gap = d ? Math.max(1, dist(car.pos, ll(d.location.latLng))) : null; }
+  return t;
+}
+function goTo(data, heading) {
+  car.pano = data.location.pano; car.pos = ll(data.location.latLng); car.heading = heading;
+  links = (data.links || []).filter(l => l && l.pano).map(l => ({ pano: l.pano, heading: l.heading }));
+  cache.set(car.pano, data);
+  pano.setPano(car.pano);
+  if (data.location.description) car.desc = data.location.description;
+  prefetch();
+  if (carMarker) { carMarker.setPosition(car.pos); const ic = carMarker.getIcon(); ic.rotation = car.heading; carMarker.setIcon(ic); map.panTo(car.pos); }
+  onStep();
+}
+function tryStep(now) {
+  const t = pickTarget();
+  if (!t) {
+    if (car.speed > 0) { car.speed = 0; acc = 0; message(links.length ? 'Plus de route tout droit : choisissez ← ou → au carrefour, ou R pour faire demi-tour.' : 'Fin des images Street View ici : R pour faire demi-tour.'); }
+    return;
+  }
+  if (!t.data) return;
+  if (acc >= t.gap && now - lastStep > 230) {
+    acc = Math.min(acc - t.gap, 12); movedSinceStep = 0; lastStep = now;
+    if (t.turn) {
+      if (intentDist < 15) addFault('blink', 'Clignotant mis trop tard avant de tourner', false);
+      intent = null; intentDist = 999; renderBlinker();
+    }
+    goTo(t.data, t.heading);
+  }
+}
+
+/* =========================================================
+   Règles : vérifiées à chaque nouvelle photo et en continu
+   ========================================================= */
+function onStep() {
+  if (!car) return;
+  if (OSM && dist(car.pos, OSM.center) > 900) loadOSM(car.pos);
+  match = matchWay(car.pos, car.heading);
+  if (match) {
+    $('#street').textContent = match.w.name;
+    if (match.w.limit) lastLimit = match.w.limit;
+    else if (lastLimit === null) lastLimit = 50;
+    // sens interdit
+    if (match.w.oneway && match.dir * match.w.oneway < 0 && match.d < 12) {
+      if (wrongWay !== match.w.id) { wrongWay = match.w.id; addFault('wrong', 'Sens interdit emprunté : ' + match.w.name, true); }
+    } else if (wrongWay !== null && wrongWay !== match.w.id) wrongWay = null;
+  } else if (car.desc) $('#street').textContent = car.desc;
+  renderLimit();
+
+  const ah = match ? lookAhead(match) : null;
+  let next = null;
+  if (ah && ah.node) {
+    const rule = junctionRule(match, ah);
+    const cross = ah.others[0] ? ah.others[0].name : '';
+    next = { id: ah.node.id, node: ah.node, dist: ah.dist, ctrl: rule.ctrl, sig: rule.sig, cross, crossing: ah.controls.find(c => c.type === 'crossing') };
+  } else if (ah && ah.controls.length) {
+    const c = ah.controls[0];
+    if (c.type === 'traffic_signals' || c.type === 'stop' || c.type === 'give_way')
+      next = { id: c.node.id, node: c.node, dist: c.dist, ctrl: c.type === 'traffic_signals' ? 'signals' : c.type === 'stop' ? 'stop' : 'give', sig: c.type === 'traffic_signals' ? c.node : null, cross: '' };
+  }
+  if (ev && (!next || next.id !== ev.id)) { if (ev.minDist < 25) judge(ev); ev = null; }
+  if (next) {
+    if (!ev) ev = Object.assign(next, { minSpeed: Infinity, minDist: next.dist, lookedL: false, lookedR: false });
+    else { ev.dist = next.dist; ev.minDist = Math.min(ev.minDist, next.dist); }
+  }
+}
+function judge(e) {
+  const where = e.cross ? ' (' + e.cross + ')' : '';
+  if (e.ctrl === 'signals' && e.sig) {
+    const L = lightState(e.sig, performance.now());
+    if (L.s === 'red' && L.e > .5) addFault('red', 'Feu rouge grillé' + where, true);
+    else if (L.s === 'amber' && L.e > 1.2) addFault('amber', 'Feu orange franchi alors que l\'arrêt était possible', false);
+  }
+  if (e.ctrl === 'stop') {
+    if (e.minSpeed > .5) addFault('stop', 'STOP : arrêt non marqué' + where, true);
+    else if (!(e.lookedL && e.lookedR)) addFault('stoplook', 'STOP : contrôle à gauche et à droite non effectué', false);
+  }
+  if ((e.ctrl === 'give' || e.ctrl === 'roundabout') && e.minSpeed > 20) addFault('give', (e.ctrl === 'roundabout' ? 'Entrée de giratoire' : 'Cédez-le-passage') + ' abordé trop vite (' + Math.round(e.minSpeed) + ' km/h)', false);
+  if (e.ctrl === 'right') {
+    if (e.minSpeed > 25) addFault('right', 'Priorité à droite abordée trop vite (' + Math.round(e.minSpeed) + ' km/h)' + where, false);
+    else if (!e.lookedR) addFault('rightlook', 'Priorité à droite : pas de contrôle à droite' + where, false);
+  }
+}
+function liveDist() { return ev ? Math.max(0, ev.dist - movedSinceStep) : 999; }
+
+/* =========================================================
+   Questions sur la vraie image
+   ========================================================= */
+const QUIZ = {
+  stop: { t: 'Panneau STOP', q: 'Un STOP arrive. Que devez-vous faire ?', o: ['Ralentir fortement et passer si la voie est libre', 'M\'arrêter complètement à la ligne, regarder des deux côtés, puis céder le passage', 'M\'arrêter seulement si un véhicule arrive'], a: 1, ex: 'L\'arrêt complet à la ligne est obligatoire, même si personne n\'arrive. Ne pas le marquer est éliminatoire à l\'examen.' },
+  give: { t: 'Cédez le passage', q: 'Ce carrefour est signalé « Cédez le passage ». Quelle est la bonne conduite ?', o: ['Je m\'arrête toujours complètement', 'Je ralentis, j\'observe et je laisse passer les véhicules de la route prioritaire', 'Je suis prioritaire'], a: 1, ex: 'L\'arrêt n\'est obligatoire que si un véhicule arrive, mais vous devez arriver assez lentement pour pouvoir vous arrêter.' },
+  right: { t: 'Priorité à droite', q: 'Aucun panneau ni feu à ce carrefour. Qui est prioritaire ?', o: ['Moi, si ma rue est plus large', 'Les véhicules qui arrivent de ma droite', 'Le premier arrivé au carrefour'], a: 1, ex: 'Sans signalisation, c\'est la priorité à droite. Ralentissez et regardez à droite (touche D) avant de vous engager.' },
+  signals: { t: 'Feu tricolore', q: 'Le feu passe à l\'orange alors que vous êtes à 30 m, à 30 km/h. Que faites-vous ?', o: ['J\'accélère pour passer', 'Je m\'arrête à la ligne', 'Je continue à la même vitesse'], a: 1, ex: 'Le feu orange impose l\'arrêt sauf si c\'est dangereux. À 30 km/h il faut environ 13 m pour s\'arrêter. Ici l\'état du feu est simulé : suivez le feu affiché à droite de l\'écran.' },
+  roundabout: { t: 'Giratoire', q: 'Vous allez entrer dans un giratoire. Qui est prioritaire ?', o: ['Moi, j\'entre dans l\'anneau', 'Les véhicules déjà engagés dans l\'anneau', 'Les véhicules venant de ma droite'], a: 1, ex: 'À l\'entrée d\'un giratoire, vous cédez le passage aux véhicules qui circulent déjà dans l\'anneau.' },
+  priority: { t: 'Vous êtes prioritaire', q: 'Les rues qui croisent la vôtre ont un STOP ou un cédez-le-passage. Que faites-vous ?', o: ['Je passe sans regarder', 'Je reste attentif et prêt à freiner si quelqu\'un ne respecte pas la règle', 'Je m\'arrête par précaution'], a: 1, ex: 'Être prioritaire ne dispense pas d\'observer : anticipez une éventuelle erreur des autres usagers.' }
+};
+function maybeAsk() {
+  if (!ev || asked.has(ev.ctrl) || !QUIZ[ev.ctrl]) return;
+  const d = liveDist(); if (d > 45 || d < 8) return;
+  asked.add(ev.ctrl); const q = QUIZ[ev.ctrl];
+  paused = true; keys.up = keys.down = false;
+  $('#qEyebrow').textContent = 'Question · ' + (match ? match.w.name : '') + (ev.cross ? ' × ' + ev.cross : '');
+  $('#qTitle').textContent = q.t; $('#qText').textContent = q.q;
+  const box = $('#qOpts'); box.innerHTML = ''; $('#qExpl').hidden = true; $('#qGo').hidden = true;
+  q.o.forEach((txt, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'opt'; b.textContent = txt;
+    b.onclick = () => {
+      [...box.children].forEach((c, j) => { c.disabled = true; if (j === q.a) c.classList.add('good'); else if (j === i) c.classList.add('bad'); });
+      quizCount++; if (i === q.a) quizOk++;
+      const ex = $('#qExpl'); ex.textContent = (i === q.a ? 'Bonne réponse. ' : 'Ce n\'est pas ça. ') + q.ex; ex.hidden = false;
+      $('#qGo').hidden = false; $('#qGo').focus();
+    };
+    box.appendChild(b);
+  });
+  $('#quizOv').hidden = false;
+}
+$('#qGo').onclick = () => { $('#quizOv').hidden = true; paused = false; };
+
+/* =========================================================
+   Affichage
+   ========================================================= */
+const ICON = {
+  stop: '<svg viewBox="-2 -2 4 4"><polygon points="-.77,-1.85 .77,-1.85 1.85,-.77 1.85,.77 .77,1.85 -.77,1.85 -1.85,.77 -1.85,-.77" fill="#C8252C" stroke="#fff" stroke-width=".18"/><text x="0" y=".38" font-size="1.05" font-weight="700" fill="#fff" text-anchor="middle" font-family="sans-serif">STOP</text></svg>',
+  give: '<svg viewBox="-2 -2 4 4"><polygon points="-1.9,-1.5 1.9,-1.5 0,1.9" fill="#C8252C"/><polygon points="-1.05,-1 1.05,-1 0,.9" fill="#fff"/></svg>',
+  right: '<svg viewBox="-2 -2 4 4"><polygon points="-1.9,1.5 1.9,1.5 0,-1.9" fill="#C8252C"/><polygon points="-1.15,1 1.15,1 0,-1" fill="#fff"/><path d="M0 .8V-.6M-.6 .1H.6" stroke="#111" stroke-width=".28"/></svg>',
+  roundabout: '<svg viewBox="-2 -2 4 4"><polygon points="-1.9,-1.5 1.9,-1.5 0,1.9" fill="#C8252C"/><polygon points="-1.05,-1 1.05,-1 0,.9" fill="#fff"/><circle cy="-.45" r=".35" fill="none" stroke="#111" stroke-width=".15"/></svg>',
+  priority: '<svg viewBox="-2 -2 4 4"><rect x="-1.3" y="-1.3" width="2.6" height="2.6" transform="rotate(45)" fill="#fff" stroke="#999" stroke-width=".1"/><rect x="-.85" y="-.85" width="1.7" height="1.7" transform="rotate(45)" fill="#F2C400"/></svg>',
+  signals: '<svg viewBox="-2 -2 4 4"><rect x="-.9" y="-1.95" width="1.8" height="3.9" rx=".35" fill="#1b1d21"/><circle cy="-1.15" r=".45" fill="#FF3B30"/><circle r=".45" fill="#FFB300"/><circle cy="1.15" r=".45" fill="#2BD46B"/></svg>'
+};
+const LABEL = { stop: 'STOP : arrêt complet', give: 'Cédez le passage', right: 'Priorité à droite', roundabout: 'Giratoire : cédez le passage', priority: 'Vous êtes prioritaire', signals: 'Feu tricolore' };
+let lastNextHtml = '';
+function renderLimit() {
+  const el = $('#lim');
+  if (lastLimit) { el.textContent = lastLimit; el.classList.remove('unknown'); } else { el.textContent = '—'; el.classList.add('unknown'); }
+}
+function renderBlinker() {
+  const b = $('#blinker'); if (!intent) { b.hidden = true; return; }
+  $('#blArr').textContent = intent === 'left' ? '⬅' : '➡';
+  $('#blTxt').textContent = intent === 'left' ? 'Clignotant gauche : je tourne au prochain carrefour' : 'Clignotant droit : je tourne au prochain carrefour';
+  b.hidden = false;
+}
+function renderHUD(now) {
+  const kmh = Math.round(car.speed);
+  const sp = $('#spd'); sp.firstChild.nodeValue = kmh; sp.classList.toggle('over', !!lastLimit && kmh > lastLimit + 4);
+  const nx = $('#next'), d = liveDist();
+  if (ev && d < 120) {
+    const html = ICON[ev.ctrl] + `<div class="t"><b>${LABEL[ev.ctrl]}</b><span>${ev.cross ? 'Croisement ' + escapeHtml(ev.cross) : (ev.crossing && ev.crossing.dist < 60 ? 'Passage piéton avant le carrefour' : '')}</span></div><div class="d">${Math.round(d)} m</div>`;
+    if (html !== lastNextHtml) { nx.innerHTML = html; lastNextHtml = html; }
+    nx.hidden = false;
+  } else { nx.hidden = true; lastNextHtml = ''; }
+  const tl = $('#tlight');
+  if (ev && ev.ctrl === 'signals' && ev.sig && d < 90) {
+    const s = lightState(ev.sig, now).s; tl.hidden = false;
+    tl.children[0].classList.toggle('on', s === 'red'); tl.children[1].classList.toggle('on', s === 'amber'); tl.children[2].classList.toggle('on', s === 'green');
+  } else tl.hidden = true;
+  $('#lookL').hidden = !keys.lookL; $('#lookR').hidden = !keys.lookR;
+}
+const escapeHtml = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* =========================================================
+   Boucle principale
+   ========================================================= */
+let lastT = performance.now(), hudTick = 0;
+function loop(now) {
+  const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
+  if (car && !paused && !ended) {
+    driveTime += dt;
+    if (keys.brake) car.speed -= 40 * dt;
+    else if (keys.down) car.speed -= 18 * dt;
+    else if (keys.up) car.speed += 12 * (1 - car.speed / 95) * dt;
+    else car.speed -= 1.5 * dt;
+    car.speed = Math.max(0, Math.min(90, car.speed));
+    const ms = car.speed / 3.6 * dt; acc += ms; movedSinceStep += ms;
+    tryStep(now);
+    // relevés pour le carrefour à venir
+    const d = liveDist();
+    if (ev && d < 30) ev.minSpeed = Math.min(ev.minSpeed, car.speed);
+    if (ev && d < 60) { if (keys.lookL) ev.lookedL = true; if (keys.lookR) ev.lookedR = true; }
+    maybeAsk();
+    // vitesse
+    if (lastLimit && car.speed > lastLimit + 5) { overT += dt; if (overT > 2) { addFault('speed', `Excès de vitesse : ${Math.round(car.speed)} km/h pour ${lastLimit}`, car.speed > lastLimit + 20); overT = -4; } }
+    else if (overT > 0) overT = 0; else overT = Math.min(0, overT + dt);
+  }
+  // regard : la caméra suit la direction de la voiture, ou tourne la tête
+  if (car && pano) {
+    const look = keys.lookL ? -80 : keys.lookR ? 80 : 0;
+    const target = (car.heading + look + 360) % 360, diff = angDiff(povH, target);
+    if (Math.abs(diff) > .3) { povH = (povH + diff * Math.min(1, dt * 6) + 360) % 360; pano.setPov({ heading: povH, pitch: -2 }); }
+  }
+  if (car && (hudTick++ % 3 === 0)) renderHUD(now);
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================
+   Démarrage
+   ========================================================= */
+function loadGoogle(key) {
+  return new Promise((res, rej) => {
+    if (window.google && google.maps && google.maps.StreetViewPanorama) return res();
+    window.__gmReady = () => res();
+    window.gm_authFailure = () => showSetupError('Google a refusé la clé. Vérifiez qu\'elle est correcte, que l\'API « Maps JavaScript » est activée et que la facturation est configurée sur Google Cloud.');
+    const s = document.createElement('script');
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&v=weekly&language=fr&region=FR&callback=__gmReady';
+    s.async = true; s.onerror = () => rej(new Error('Impossible de charger Google Maps. Vérifiez votre connexion internet.'));
+    document.head.appendChild(s);
+  });
+}
+function showSetupError(t) {
+  const e = $('#setupErr'); e.textContent = t; e.hidden = false;
+  $('#setup').hidden = false; $('#drive').hidden = true; $('#go').disabled = false; $('#go').textContent = 'Démarrer la séance';
+}
+let chosen = null;
+function fillCities() {
+  const sel = $('#city');
+  PRESETS.forEach(([n], i) => { const o = document.createElement('option'); o.value = i; o.textContent = n; sel.appendChild(o); });
+  sel.onchange = () => { chosen = null; $('#addrRes').textContent = ''; };
+}
+$('#addrBtn').onclick = async () => {
+  const q = $('#addr').value.trim(); if (!q) return;
+  $('#addrRes').textContent = 'Recherche…';
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr&q=' + encodeURIComponent(q), { headers: { 'Accept-Language': 'fr' } });
+    const j = await r.json();
+    if (!j.length) { $('#addrRes').textContent = 'Adresse introuvable. Essayez avec le nom de la ville.'; chosen = null; return; }
+    chosen = { name: j[0].display_name.split(',').slice(0, 3).join(','), lat: +j[0].lat, lng: +j[0].lon };
+    $('#addrRes').textContent = 'Départ : ' + chosen.name;
+  } catch (_) { $('#addrRes').textContent = 'Recherche impossible pour le moment. Choisissez une ville dans la liste.'; }
+};
+$('#addr').addEventListener('keydown', e => { if (e.key === 'Enter') $('#addrBtn').click(); });
+
+$('#go').onclick = async () => {
+  const key = $('#key').value.trim();
+  if (!key) { showSetupError('Entrez votre clé API Google Maps pour charger les vraies rues.'); return; }
+  store.set('pev_key', key);
+  const p = chosen || (() => { const [n, lat, lng] = PRESETS[+$('#city').value]; return { name: n, lat, lng }; })();
+  cityLabel = p.name;
+  $('#setupErr').hidden = true; $('#go').disabled = true; $('#go').textContent = 'Chargement des rues…';
+  try {
+    await loadGoogle(key);
+    sv = new google.maps.StreetViewService();
+    let data;
+    try { data = await getPano({ location: { lat: p.lat, lng: p.lng }, radius: 120, source: google.maps.StreetViewSource && google.maps.StreetViewSource.OUTDOOR, preference: google.maps.StreetViewPreference && google.maps.StreetViewPreference.NEAREST }); }
+    catch (_) { showSetupError('Pas d\'images Street View à moins de 120 m de ce point. Choisissez une autre adresse.'); return; }
+    startDrive(data);
+  } catch (e) { showSetupError(e.message || String(e)); }
+};
+function startDrive(data) {
+  $('#setup').hidden = true; $('#drive').hidden = false; $('#city2').textContent = cityLabel;
+  const first = (data.links || [])[0];
+  const heading = first ? first.heading : 0;
+  povH = heading;
+  pano = new google.maps.StreetViewPanorama($('#pano'), {
+    pano: data.location.pano, pov: { heading, pitch: -2 }, zoom: 0, visible: true,
+    disableDefaultUI: true, clickToGo: false, linksControl: false, panControl: false, zoomControl: false, addressControl: false,
+    fullscreenControl: false, motionTracking: false, motionTrackingControl: false, showRoadLabels: false, scrollwheel: false, disableDoubleClickZoom: true
+  });
+  const pos = ll(data.location.latLng);
+  map = new google.maps.Map($('#mini'), { center: pos, zoom: 17, disableDefaultUI: true, gestureHandling: 'none', keyboardShortcuts: false, clickableIcons: false });
+  carMarker = new google.maps.Marker({ map, position: pos, clickable: false,
+    icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 6, rotation: heading, fillColor: '#1D4F9C', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+  car = { pano: data.location.pano, pos, heading, speed: 0, desc: data.location.description || '' };
+  faults = []; cooldown = {}; asked = new Set(); quizOk = quizCount = 0; ev = null; match = null; intent = null; lastLimit = null; driveTime = 0; ended = false; paused = false;
+  renderScore(); renderBlinker();
+  goTo(data, heading);
+  loadOSM(pos);
+  message('Appuyez sur ↑ pour avancer. ← / → pour mettre le clignotant avant un carrefour.', 6000);
+}
+
+/* =========================================================
+   Commandes
+   ========================================================= */
+function setIntent(dir) {
+  intent = intent === dir ? null : dir;
+  intentDist = intent ? liveDist() : 999;
+  renderBlinker();
+}
+const KEYMAP = { ArrowUp: 'up', ArrowDown: 'down', Space: 'brake', KeyQ: 'lookL', KeyA: 'lookL', KeyD: 'lookR', KeyE: 'lookR' };
+addEventListener('keydown', e => {
+  if (!car || $('#drive').hidden || e.target.tagName === 'INPUT') return;
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
+  if (paused || ended) return;
+  if (e.code === 'ArrowLeft') { if (!e.repeat) setIntent('left'); e.preventDefault(); return; }
+  if (e.code === 'ArrowRight') { if (!e.repeat) setIntent('right'); e.preventDefault(); return; }
+  if (e.code === 'KeyR' && !e.repeat) { if (car.speed > 3) { message('Arrêtez-vous avant de faire demi-tour.'); return; } car.heading = (car.heading + 180) % 360; intent = null; renderBlinker(); acc = 0; onStep(); return; }
+  const k = KEYMAP[e.code]; if (k) { keys[k] = true; e.preventDefault(); }
+});
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+document.querySelectorAll('.touch button').forEach(b => {
+  const k = b.dataset.k;
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); if (paused || ended) return;
+    if (k === 'left' || k === 'right') { setIntent(k); return; }
+    keys[k] = true; b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  const off = () => { if (k in keys) keys[k] = false; b.classList.remove('on'); };
+  b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
+});
+function togglePause() {
+  if (ended || !$('#quizOv').hidden) return;
+  paused = !paused; $('#pauseOv').hidden = !paused;
+}
+$('#resume').onclick = togglePause;
+$('#endBtn').onclick = () => {
+  ended = true; car.speed = 0;
+  const s = scoreOf(), ok = s.g === 0 && s.s >= 75;
+  $('#vTitle').textContent = ok ? 'Favorable' : 'À retravailler'; $('#vTitle').className = 'verdict ' + (ok ? 'ok' : 'ko');
+  $('#vText').textContent = s.g ? `${s.g} faute${s.g > 1 ? 's' : ''} éliminatoire${s.g > 1 ? 's' : ''} : à l'examen, la séance serait défavorable.` : faults.length ? 'Pas de faute éliminatoire. Quelques points à corriger ci-dessous.' : 'Aucune faute relevée.';
+  $('#vStats').innerHTML = `<div class="stat"><b>${s.s}</b><span>Note /100</span></div><div class="stat"><b>${fmtT(driveTime)}</b><span>Durée</span></div><div class="stat"><b>${quizOk}/${quizCount}</b><span>Questions</span></div>`;
+  const ul = $('#vList'); ul.innerHTML = '';
+  faults.forEach(f => { const li = document.createElement('li'); if (f.grave) li.className = 'grave'; li.innerHTML = '<i></i><span></span><small></small>'; li.children[1].textContent = f.label; li.children[2].textContent = fmtT(f.t) + ' · ' + f.street + (f.grave ? ' · éliminatoire' : ''); ul.appendChild(li); });
+  $('#endOv').hidden = false;
+};
+$('#vBack').onclick = () => { $('#endOv').hidden = true; ended = false; };
+$('#vNew').onclick = () => location.reload();
+
+fillCities();
+const saved = store.get('pev_key'); if (saved) $('#key').value = saved;
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
