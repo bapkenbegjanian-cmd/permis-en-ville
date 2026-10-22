@@ -266,7 +266,6 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 'use strict';
 const $ = s => document.querySelector(s);
 const CESIUM_BASE = 'https://cdn.jsdelivr.net/npm/cesium@1.123.0/Build/Cesium/';
-const CAR_MODEL = 'https://cdn.jsdelivr.net/gh/CesiumGS/cesium@1.123/Apps/SampleData/models/GroundVehicle/GroundVehicle.glb';
 const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 const PRESETS = [
   ['Lyon · Bellecour, rue de la Barre', 45.75790, 4.83590],
@@ -353,6 +352,10 @@ function buildOSM(json) {
       if (!(endA && endB && a.name === b.name)) junctions.add(nid);
     }
   }
+  for (const n of nodes.values()) if (n.tags.highway === 'traffic_signals') {
+    let best = 35;
+    for (const jid of junctions) { const j = nodes.get(jid); const d = Math.hypot(j.x - n.x, j.y - n.y); if (d < best) { best = d; n.jid = jid; } }
+  }
   const grid = new Map(), CELL = 60;
   for (const w of ways.values()) for (let i = 0; i < w.pts.length - 1; i++) {
     const a = w.pts[i], b = w.pts[i + 1];
@@ -414,6 +417,14 @@ function lookAhead(m) {
     if (OSM.junctions.has(node.id) && d > -1) {
       const others = (OSM.nodeWays.get(node.id) || []).filter(id => id !== w.id).map(id => OSM.ways.get(id)).filter(o => o && o.name !== w.name);
       if (!others.length) continue;
+      // panneaux déjà dépassés mais qui concernent ce carrefour (ligne de stop juste derrière la voiture)
+      for (let b = k - dir, back = 0; b >= 0 && b < w.nodes.length; b -= dir) {
+        const n2 = w.pts[b]; back = Math.abs(w.cum[k] - w.cum[b]); if (back > 40) break;
+        const h2 = n2.tags.highway, dt2 = n2.tags.direction;
+        if ((h2 === 'stop' || h2 === 'give_way' || h2 === 'traffic_signals') && !controls.some(c => c.node === n2)
+          && (!dt2 || (dt2 === 'forward' && dir > 0) || (dt2 === 'backward' && dir < 0) || (dt2 !== 'forward' && dt2 !== 'backward')))
+          controls.push({ type: h2, node: n2, dist: d - back });
+      }
       return { node, dist: d, controls, others, mini: h === 'mini_roundabout' };
     }
   }
@@ -439,15 +450,17 @@ function junctionRule(m, ah) {
   if (m.w.rank >= 3 && ah.others.every(o => o.rank <= 2)) return { ctrl: 'priority' };
   return { ctrl: 'right' };
 }
-function lightState(node, t) {
-  const off = (node.id % 997) / 997 * 40, ph = (t / 1000 + off) % 40;
+/* Feux simulés, synchronisés par carrefour : les deux axes perpendiculaires sont en opposition */
+function lightState(node, t, bearing) {
+  const axis = bearing === undefined ? 0 : Math.round((((bearing % 180) + 180) % 180) / 90) % 2;
+  const key = node.jid || node.id, off = (key % 997) / 997 * 40 + axis * 20, ph = (t / 1000 + off) % 40;
   if (ph < 17) return { s: 'green', e: ph }; if (ph < 20) return { s: 'amber', e: ph - 17 }; return { s: 'red', e: ph - 20 };
 }
 
 /* =========================================================
    État
    ========================================================= */
-let viewer = null, tileset = null, carModelOk = false, cityLabel = '';
+let viewer = null, tileset = null, cityLabel = '';
 const P = { x: 0, y: 0, b: 0, v: 0, steer: 0, h: 0, hOk: false };
 const keys = { up: false, down: false, left: false, right: false, brake: false, lookL: false, lookR: false };
 let blinker = null, match = null, ev = null, faults = [], cooldown = {}, asked = new Set(), quizOk = 0, quizCount = 0;
@@ -516,6 +529,7 @@ function updateRules(dt, now) {
   }
   ruleClock += dt; if (ruleClock < .15 || !OSM) return; ruleClock = 0;
   if (osmCenter && Math.hypot(P.x - toXY(osmCenter).x, P.y - toXY(osmCenter).y) > 900) loadOSM(toLL(P.x, P.y));
+  if (detail.cx !== null && Math.hypot(P.x - detail.cx, P.y - detail.cy) > 260) buildDetails();
   const dirB = P.v < -.1 ? (P.b + 180) % 360 : P.b;
   match = matchWay(P.x, P.y, dirB, 40);
   if (match) {
@@ -542,10 +556,10 @@ function updateRules(dt, now) {
   let next = null;
   if (ah && ah.node) {
     const r = junctionRule(match, ah);
-    next = { id: ah.node.id, node: ah.node, dist: ah.dist, ctrl: r.ctrl, sig: r.sig, cross: ah.others[0] ? ah.others[0].name : '' };
+    next = { id: ah.node.id + ':' + match.w.id + ':' + match.dir, node: ah.node, dist: ah.dist, ctrl: r.ctrl, sig: r.sig, cross: ah.others[0] ? ah.others[0].name : '' };
   } else if (ah && ah.controls.length) {
     const c = ah.controls.find(c => c.type !== 'crossing');
-    if (c) next = { id: c.node.id, node: c.node, dist: c.dist, ctrl: c.type === 'traffic_signals' ? 'signals' : c.type === 'stop' ? 'stop' : 'give', sig: c.type === 'traffic_signals' ? c.node : null, cross: '' };
+    if (c) next = { id: c.node.id + ':' + match.w.id + ':' + match.dir, node: c.node, dist: c.dist, ctrl: c.type === 'traffic_signals' ? 'signals' : c.type === 'stop' ? 'stop' : 'give', sig: c.type === 'traffic_signals' ? c.node : null, cross: '' };
   }
   if (ev && (!next || next.id !== ev.id)) {
     const dJ = Math.hypot(ev.node.x - P.x, ev.node.y - P.y);
@@ -553,7 +567,7 @@ function updateRules(dt, now) {
     ev = null;
   }
   if (next) {
-    if (!ev) ev = Object.assign(next, { minSpeed: Infinity, minDist: next.dist, lookedL: false, lookedR: false, blink: null, bIn: null, at: { x: P.x, y: P.y } });
+    if (!ev) ev = Object.assign(next, { b0: P.b, minSpeed: Infinity, minDist: next.dist, lookedL: false, lookedR: false, blink: null, bIn: null, at: { x: P.x, y: P.y } });
     else { ev.dist = next.dist; ev.minDist = Math.min(ev.minDist, next.dist); ev.at = { x: P.x, y: P.y }; }
   }
   maybeAsk();
@@ -568,7 +582,7 @@ function liveDist() { return ev ? Math.max(0, ev.dist - Math.hypot(P.x - ev.at.x
 function judge(e) {
   const where = e.cross ? ' (' + e.cross + ')' : '';
   if (e.ctrl === 'signals' && e.sig) {
-    const L = lightState(e.sig, performance.now());
+    const L = lightState(e.sig, performance.now(), e.b0);
     if (L.s === 'red' && L.e > .5) addFault('red', 'Feu rouge grillé' + where, true);
     else if (L.s === 'amber' && L.e > 1.2) addFault('amber', 'Feu orange franchi alors que l\'arrêt était possible', false);
   }
@@ -633,7 +647,7 @@ function updateAI(ai, dt, now) {
       vT = Math.min(vT, Math.sqrt(2 * 3 * Math.max(0, ds - 4)));
       if (ds < 6 && ai.v < .3) { ai.stopT += dt; if (ai.stopT > 1.5) { ai.done.add(c.node.id); ai.stopT = 0; } }
     } else if (c.type === 'traffic_signals' && ds > 3.5) {
-      const L = lightState(c.node, now);
+      const L = lightState(c.node, now, ai.b);
       if (L.s === 'red' || (L.s === 'amber' && ds > ai.v * ai.v / 8 + 4)) vT = Math.min(vT, Math.sqrt(2 * 3 * Math.max(0, ds - 4)));
     } else if (c.type === 'give_way') vT = Math.min(vT, 4 + ds * .4);
   }
@@ -674,18 +688,21 @@ async function initWorld(key) {
   const C = window.Cesium;
   viewer = new C.Viewer('world', {
     globe: false, baseLayer: false, baseLayerPicker: false, geocoder: false, homeButton: false, sceneModePicker: false, navigationHelpButton: false,
-    animation: false, timeline: false, fullscreenButton: false, infoBox: false, selectionIndicator: false, shouldAnimate: false, msaaSamples: 4
+    animation: false, timeline: false, fullscreenButton: false, infoBox: false, selectionIndicator: false, shouldAnimate: false, msaaSamples: 4,
+    useBrowserRecommendedResolution: false
   });
   const scene = viewer.scene;
   scene.screenSpaceCameraController.enableInputs = false;
   scene.backgroundColor = C.Color.fromCssColorString('#9cc3e6');
   if (scene.skyAtmosphere) scene.skyAtmosphere.show = true;
-  scene.fog.enabled = true; scene.fog.density = 0.0006;
+  scene.fog.enabled = false;
+  scene.postProcessStages.fxaa.enabled = true;
+  viewer.resolutionScale = 1;
   viewer.clock.currentTime = C.JulianDate.fromIso8601('2025-06-15T10:30:00Z');
   scene.camera.frustum.fov = C.Math.toRadians(70);
   scene.camera.frustum.near = 0.2;
   try {
-    tileset = await C.Cesium3DTileset.fromUrl('https://tile.googleapis.com/v1/3dtiles/root.json?key=' + encodeURIComponent(key), { showCreditsOnScreen: true, maximumScreenSpaceError: 8 });
+    tileset = await C.Cesium3DTileset.fromUrl('https://tile.googleapis.com/v1/3dtiles/root.json?key=' + encodeURIComponent(key), { showCreditsOnScreen: true, maximumScreenSpaceError: 4, cacheBytes: 1024 * 1024 * 1024 });
     scene.primitives.add(tileset);
     let fails = 0;
     if (tileset.tileFailed) tileset.tileFailed.addEventListener(e => { fails++; setStatus(`Google refuse ${fails} morceau(x) de la ville 3D : ${(e && e.message || '').slice(0, 120)}`); });
@@ -695,7 +712,7 @@ async function initWorld(key) {
       ? 'Google refuse la ville 3D (erreur ' + code + '). Activez l\'API « Map Tiles » pour votre clé sur Google Cloud, puis réessayez.'
       : 'Impossible de charger la ville 3D (' + (e && e.message || e) + ').');
   }
-  try { const r = await fetch(CAR_MODEL, { method: 'HEAD' }); carModelOk = r.ok; } catch (_) { carModelOk = false; }
+  await C.GroundPrimitive.initializeTerrainHeights();
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 async function waitTiles(maxMs) {
@@ -724,14 +741,321 @@ async function groundHeightAt(x, y) {
   }
   return guess;
 }
+/* Écriture d'un modèle glTF binaire à partir de groupes de triangles (un matériau par groupe) */
+function buildGlb(groups) {
+  const enc = new TextEncoder(), chunks = [], views = [], accessors = [], prims = [], materials = [], images = [], textures = []; let off = 0;
+  const pushView = (bytes, target) => { const pad = (4 - off % 4) % 4; if (pad) { chunks.push(new Uint8Array(pad)); off += pad; } views.push(Object.assign({ buffer: 0, byteOffset: off, byteLength: bytes.byteLength }, target ? { target } : {})); chunks.push(bytes); off += bytes.byteLength; return views.length - 1; };
+  groups.forEach((g, gi) => {
+    if (!g.pos.length) return;
+    const P = new Float32Array(g.pos), Nm = new Float32Array(g.nor);
+    const min = [0, 1, 2].map(i => Math.min(...g.pos.filter((_, j) => j % 3 === i))), max = [0, 1, 2].map(i => Math.max(...g.pos.filter((_, j) => j % 3 === i)));
+    accessors.push({ bufferView: pushView(new Uint8Array(P.buffer), 34962), componentType: 5126, count: P.length / 3, type: 'VEC3', min, max });
+    accessors.push({ bufferView: pushView(new Uint8Array(Nm.buffer), 34962), componentType: 5126, count: P.length / 3, type: 'VEC3' });
+    const attributes = { POSITION: accessors.length - 2, NORMAL: accessors.length - 1 };
+    const m = g.mat, mat = { pbrMetallicRoughness: { baseColorFactor: m.color || [1, 1, 1, 1], metallicFactor: m.metal ?? 0, roughnessFactor: m.rough ?? .8 }, emissiveFactor: m.emissive || [0, 0, 0], doubleSided: !!m.double };
+    if (g.uv && m.png) {
+      const U = new Float32Array(g.uv);
+      accessors.push({ bufferView: pushView(new Uint8Array(U.buffer), 34962), componentType: 5126, count: U.length / 2, type: 'VEC2' });
+      attributes.TEXCOORD_0 = accessors.length - 1;
+      images.push({ bufferView: pushView(m.png), mimeType: 'image/png' });
+      textures.push({ source: images.length - 1, sampler: 0 });
+      mat.pbrMetallicRoughness.baseColorTexture = { index: textures.length - 1 };
+      mat.alphaMode = 'MASK'; mat.alphaCutoff = .5;
+    }
+    materials.push(mat);
+    prims.push({ attributes, material: materials.length - 1 });
+  });
+  const bin = new Uint8Array(off + (4 - off % 4) % 4); let o = 0; for (const c of chunks) { bin.set(c, o); o += c.byteLength; }
+  const gltf = { asset: { version: '2.0' }, scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0 }], meshes: [{ primitives: prims }], materials, accessors, bufferViews: views, buffers: [{ byteLength: bin.length }] };
+  if (images.length) { gltf.images = images; gltf.textures = textures; gltf.samplers = [{ magFilter: 9729, minFilter: 9987, wrapS: 33071, wrapT: 33071 }]; }
+  let js = enc.encode(JSON.stringify(gltf)); const jsP = new Uint8Array(js.length + (4 - js.length % 4) % 4).fill(32); jsP.set(js);
+  const total = 28 + jsP.length + bin.length, out = new Uint8Array(total), dv = new DataView(out.buffer);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, total, true);
+  dv.setUint32(12, jsP.length, true); dv.setUint32(16, 0x4E4F534A, true); out.set(jsP, 20);
+  dv.setUint32(20 + jsP.length, bin.length, true); dv.setUint32(24 + jsP.length, 0x004E4942, true); out.set(bin, 28 + jsP.length);
+  return URL.createObjectURL(new Blob([out], { type: 'model/gltf-binary' }));
+}
+/* Groupe de triangles. Repère « véhicule » : x = avant, y = haut, z = droite ; converti en repère glTF (+Z avant, +X gauche) */
+function meshGroup(mat) {
+  const g = { mat, pos: [], nor: [], uv: mat.png ? [] : null };
+  const T = v => [-v[2], v[1], v[0]];
+  g.tri = (a, b, c, n, ua, ub, uc) => { for (const v of [a, b, c]) g.pos.push(...T(v)); for (let k = 0; k < 3; k++) g.nor.push(...T(n)); if (g.uv) g.uv.push(...ua, ...ub, ...uc); };
+  g.quad = (a, b, c, d, uvs) => {
+    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], w = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
+    let n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]]; const L = Math.hypot(...n) || 1; n = n.map(k => k / L);
+    const q = uvs || [[0, 0], [1, 0], [1, 1], [0, 1]];
+    g.tri(a, b, c, n, q[0], q[1], q[2]); g.tri(a, c, d, n, q[0], q[2], q[3]);
+  };
+  g.box = (x0, x1, y0, y1, z0, z1) => {
+    const P = (x, y, z) => [x, y, z];
+    g.quad(P(x0, y1, z0), P(x0, y1, z1), P(x1, y1, z1), P(x1, y1, z0)); // haut
+    g.quad(P(x0, y0, z0), P(x1, y0, z0), P(x1, y0, z1), P(x0, y0, z1)); // bas
+    g.quad(P(x1, y0, z0), P(x1, y1, z0), P(x1, y1, z1), P(x1, y0, z1)); // avant
+    g.quad(P(x0, y0, z1), P(x0, y1, z1), P(x0, y1, z0), P(x0, y0, z0)); // arrière
+    g.quad(P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1)); // droite
+    g.quad(P(x1, y0, z0), P(x0, y0, z0), P(x0, y1, z0), P(x1, y1, z0)); // gauche
+  };
+  g.cyl = (cx, cz, y0, y1, r, N) => { // cylindre vertical
+    for (let i = 0; i < N; i++) {
+      const a0 = i / N * Math.PI * 2, a1 = (i + 1) / N * Math.PI * 2;
+      const p = (a, y) => [cx + Math.cos(a) * r, y, cz + Math.sin(a) * r];
+      g.quad(p(a0, y0), p(a0, y1), p(a1, y1), p(a1, y0));
+    }
+  };
+  return g;
+}
+const pngBytes = canvas => { const b = atob(canvas.toDataURL('image/png').split(',')[1]); const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+/* Modèle de voiture généré (glTF) : carrosserie, vitres, roues, phares. Un modèle par couleur. */
+const carModels = new Map();
+function carModelUri(paint) {
+  if (carModels.has(paint)) return carModels.get(paint);
+  const G = {
+    paint: meshGroup({ color: [...hexToLin(paint), 1], metal: .35, rough: .32 }),
+    glass: meshGroup({ color: [.03, .04, .05, 1], metal: .1, rough: .08 }),
+    tyre: meshGroup({ color: [.02, .02, .02, 1], rough: .9, double: true }),
+    rim: meshGroup({ color: [.55, .56, .58, 1], metal: .9, rough: .3, double: true }),
+    dark: meshGroup({ color: [.04, .04, .045, 1], rough: .7 }),
+    front: meshGroup({ color: [.9, .9, .85, 1], rough: .2, emissive: [.6, .6, .55] }),
+    rear: meshGroup({ color: [.6, .02, .02, 1], rough: .3, emissive: [.5, 0, 0] })
+  };
+  G.dark.box(-2.2, 2.2, .18, .42, -.9, .9);
+  G.paint.box(-2.15, 2.15, .42, .82, -.9, .9);
+  G.paint.quad([1.0, .83, -.88], [1.0, .83, .88], [2.15, .76, .88], [2.15, .76, -.88]);
+  const B = [[-1.35, .82, -.86], [.95, .82, -.86], [.95, .82, .86], [-1.35, .82, .86]], T = [[-1.0, 1.42, -.72], [.25, 1.42, -.72], [.25, 1.42, .72], [-1.0, 1.42, .72]];
+  G.glass.quad(B[1], T[1], T[2], B[2]); G.glass.quad(B[3], T[3], T[0], B[0]);
+  G.glass.quad(B[0], T[0], T[1], B[1]); G.glass.quad(B[2], T[2], T[3], B[3]);
+  G.paint.quad(T[0], T[3], T[2], T[1]);
+  G.paint.box(-.25, -.15, .82, 1.42, -.86, -.72); G.paint.box(-.25, -.15, .82, 1.42, .72, .86);
+  G.front.box(2.12, 2.17, .58, .74, -.82, -.5); G.front.box(2.12, 2.17, .58, .74, .5, .82);
+  G.rear.box(-2.17, -2.12, .58, .74, -.84, -.5); G.rear.box(-2.17, -2.12, .58, .74, .5, .84);
+  G.dark.box(2.1, 2.2, .44, .56, -.4, .4);
+  for (const [cx, cz] of [[1.35, -.8], [1.35, .8], [-1.35, -.8], [-1.35, .8]]) {
+    const r = .33, w = .23, N = 18, z0 = cz - w / 2, z1 = cz + w / 2, out = cz > 0 ? z1 : z0;
+    for (let i = 0; i < N; i++) {
+      const a0 = i / N * Math.PI * 2, a1 = (i + 1) / N * Math.PI * 2, p = (a, z, rr) => [cx + Math.cos(a) * rr, r + Math.sin(a) * rr, z];
+      G.tyre.quad(p(a0, z0, r), p(a0, z1, r), p(a1, z1, r), p(a1, z0, r));
+      G.rim.tri([cx, r, out], p(a0, out, r * .62), p(a1, out, r * .62), [0, 0, Math.sign(cz)]);
+      G.tyre.quad(p(a0, out, r * .62), p(a0, out, r), p(a1, out, r), p(a1, out, r * .62));
+    }
+  }
+  const uri = buildGlb(Object.values(G));
+  carModels.set(paint, uri); return uri;
+}
+function hexToLin(hex) { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(c => Math.pow(c / 255, 2.2)); }
 function addAIEntity(ai) {
   const C = window.Cesium;
   ai.cart = C.Cartesian3.fromDegrees(0, 0, 0); ai.quat = new C.Quaternion();
-  const pos = new C.CallbackProperty(() => ai.cart, false), ori = new C.CallbackProperty(() => ai.quat, false);
-  const color = C.Color.fromCssColorString(ai.color);
-  ai.ent = viewer.entities.add(carModelOk
-    ? { position: pos, orientation: ori, model: { uri: CAR_MODEL, scale: 1, minimumPixelSize: 0, color, colorBlendMode: C.ColorBlendMode.MIX, colorBlendAmount: .45 } }
-    : { position: pos, orientation: ori, box: { dimensions: new C.Cartesian3(4.4, 1.8, 1.45), material: color } });
+  ai.ent = viewer.entities.add({
+    position: new C.CallbackProperty(() => ai.cart, false), orientation: new C.CallbackProperty(() => ai.quat, false),
+    model: { uri: carModelUri(ai.color), scale: 1, minimumPixelSize: 0, shadows: C.ShadowMode.DISABLED }
+  });
+}
+/* =========================================================
+   Détails nets posés sur la ville : chaussée, marquages, feux, panneaux
+   ========================================================= */
+const detail = { prims: [], ents: [], cx: null, cy: null, busy: false };
+const SIGN_IMG = {};
+function signImage(kind, val) {
+  const k = kind + (val || ''); if (SIGN_IMG[k]) return SIGN_IMG[k];
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  g.translate(128, 128);
+  if (kind === 'stop') {
+    g.beginPath(); for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; g.lineTo(Math.cos(a) * 124, Math.sin(a) * 124); } g.closePath(); g.fillStyle = '#fff'; g.fill();
+    g.beginPath(); for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; g.lineTo(Math.cos(a) * 114, Math.sin(a) * 114); } g.closePath(); g.fillStyle = '#C1121F'; g.fill();
+    g.fillStyle = '#fff'; g.font = 'bold 74px Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('STOP', 0, 4);
+  } else if (kind === 'give') {
+    const tri = r => { g.beginPath(); g.moveTo(-r, -r * .78); g.lineTo(r, -r * .78); g.lineTo(0, r * .95); g.closePath(); };
+    tri(124); g.fillStyle = '#fff'; g.fill(); tri(114); g.fillStyle = '#C1121F'; g.fill(); tri(70); g.fillStyle = '#fff'; g.fill();
+  } else if (kind === 'limit') {
+    g.beginPath(); g.arc(0, 0, 124, 0, 7); g.fillStyle = '#C1121F'; g.fill(); g.beginPath(); g.arc(0, 0, 94, 0, 7); g.fillStyle = '#fff'; g.fill();
+    g.fillStyle = '#111'; g.font = 'bold ' + (String(val).length > 2 ? 70 : 92) + 'px Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(val), 0, 6);
+  } else if (kind === 'noentry') {
+    g.beginPath(); g.arc(0, 0, 124, 0, 7); g.fillStyle = '#C1121F'; g.fill(); g.fillStyle = '#fff'; g.fillRect(-84, -20, 168, 40);
+  } else if (kind === 'back') {
+    g.fillStyle = '#9ba0a5'; g.beginPath();
+    if (val === 'stop') for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; g.lineTo(Math.cos(a) * 124, Math.sin(a) * 124); }
+    else if (val === 'give') { g.moveTo(-124, -97); g.lineTo(124, -97); g.lineTo(0, 118); }
+    else g.arc(0, 0, 124, 0, 7);
+    g.closePath(); g.fill();
+  }
+  SIGN_IMG[k] = c; return c;
+}
+function clearDetails() {
+  for (const p of detail.prims) viewer.scene.groundPrimitives.remove(p);
+  for (const e of detail.ents) viewer.entities.remove(e);
+  detail.prims = []; detail.ents = [];
+}
+function travelOK(w, dir) { return !(w.oneway === 1 && dir < 0) && !(w.oneway === -1 && dir > 0); }
+async function buildDetails() {
+  if (detail.busy || !OSM || !viewer) return;
+  detail.busy = true;
+  try { await buildDetailsNow(); } catch (e) { console.error(e); setStatus('Détails 3D : ' + (e && e.message || e)); }
+  detail.busy = false;
+}
+async function buildDetailsNow() {
+  const C = window.Cesium, R = 480, cx = P.x, cy = P.y;
+  const inR = p => Math.abs(p.x - cx) < R && Math.abs(p.y - cy) < R;
+  const ways = OSM.wayList.filter(w => w.pts.some(inR));
+  const cart = (x, y) => { const ll = toLL(x, y); return C.Cartesian3.fromDegrees(ll.lng, ll.lat); };
+  const asphalt = [], white = [];
+  const corridor = (list, pts, width, color) => {
+    const clean = []; for (const p of pts) { const q = clean[clean.length - 1]; if (!q || Math.hypot(p.x - q.x, p.y - q.y) > .05) clean.push(p); }
+    if (clean.length < 2) return;
+    list.push(new C.GeometryInstance({ geometry: new C.CorridorGeometry({ positions: clean.map(p => cart(p.x, p.y)), width, cornerType: C.CornerType.MITERED, vertexFormat: C.PerInstanceColorAppearance.FLAT_VERTEX_FORMAT }),
+      attributes: { color: C.ColorGeometryInstanceAttribute.fromColor(color) } }));
+  };
+  const ASPH = C.Color.fromCssColorString('#3b3e43'), PAINT = C.Color.fromCssColorString('#ecebe6');
+  const jNear = (x, y, r) => { // carrefour le plus proche
+    let best = null, bd = r; const Cc = OSM.CELL;
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (const sg of OSM.grid.get(Math.floor(x / Cc + dx) + ':' + Math.floor(y / Cc + dy)) || [])
+      for (const n of [sg.a, sg.b]) if (OSM.junctions.has(n.id)) { const d = Math.hypot(n.x - x, n.y - y); if (d < bd) { bd = d; best = n; } }
+    return best;
+  };
+  const jHalf = n => Math.max(...(OSM.nodeWays.get(n.id) || []).map(id => (OSM.ways.get(id) || { half: 3 }).half));
+  // 1. trottoirs puis chaussée
+  const curb = [], CURB = C.Color.fromCssColorString('#8e8c86');
+  for (const w of ways) { corridor(curb, w.pts, w.half * 2 + .7, CURB); corridor(asphalt, w.pts, w.half * 2 + .4, ASPH); }
+  // 2. marquages
+  const objs = [];
+  for (const w of ways) {
+    const L = w.len;
+    // axe discontinu (rues à double sens assez larges)
+    if (!w.oneway && w.half * 2 >= 5.8) {
+      for (let s0 = 0; s0 < L - 3; s0 += 8) {
+        const a = posAt(w, s0), b = posAt(w, s0 + 3);
+        const j = jNear(a.x, a.y, 30) || jNear(b.x, b.y, 30);
+        if (j && Math.min(Math.hypot(a.x - j.x, a.y - j.y), Math.hypot(b.x - j.x, b.y - j.y)) < jHalf(j) + 5) continue;
+        if (w.pts.some(n => n.tags.highway === 'crossing' && Math.min(Math.hypot(a.x - n.x, a.y - n.y), Math.hypot(b.x - n.x, b.y - n.y), Math.hypot((a.x + b.x) / 2 - n.x, (a.y + b.y) / 2 - n.y)) < 3)) continue;
+        if (!inR(a)) continue;
+        corridor(white, [a, b], .15, PAINT);
+      }
+    }
+    // signalisation sur cette rue
+    w.pts.forEach((n, i) => {
+      if (!inR(n)) return;
+      const h = n.tags.highway, s = w.cum[i];
+      if (h === 'crossing') {
+        const pa = posAt(w, Math.max(0, s - .01)), ux = pa.ux, uy = pa.uy, rx = uy, ry = -ux;
+        for (let k = -w.half + .45; k <= w.half - .3; k += 1.0) corridor(white, [{ x: n.x + rx * k - ux * 1.25, y: n.y + ry * k - uy * 1.25 }, { x: n.x + rx * k + ux * 1.25, y: n.y + ry * k + uy * 1.25 }], .5, PAINT);
+      }
+      if (h !== 'stop' && h !== 'give_way' && h !== 'traffic_signals') return;
+      for (const dir of [1, -1]) {
+        if (!travelOK(w, dir)) continue;
+        const dt = n.tags.direction;
+        if ((dt === 'forward' && dir < 0) || (dt === 'backward' && dir > 0)) continue;
+        // le panneau concerne le sens qui arrive au carrefour juste après
+        const j = jNear(n.x, n.y, 45);
+        if (h !== 'traffic_signals') {
+          if (!j) continue;
+          const sj = w.nodes.indexOf(j.id); if (sj < 0) continue;
+          if (dir > 0 ? w.cum[sj] < s - .5 : w.cum[sj] > s + .5) continue;
+        }
+        const pa = posAt(w, s), ux = pa.ux * dir, uy = pa.uy * dir, rx = uy, ry = -ux;
+        let lx = n.x, ly = n.y;
+        if (j && h !== 'traffic_signals') { const d = Math.hypot(j.x - n.x, j.y - n.y), back = Math.max(0, jHalf(j) + 1.5 - d); lx -= ux * back; ly -= uy * back; }
+        const k0 = w.oneway ? -w.half : 0, k1 = w.half;
+        if (h === 'give_way') {
+          for (let k = k0 + .3; k < k1 - .2; k += 1.0) corridor(white, [{ x: lx + rx * k, y: ly + ry * k }, { x: lx + rx * (k + .5), y: ly + ry * (k + .5) }], .5, PAINT);
+        } else corridor(white, [{ x: lx + rx * k0, y: ly + ry * k0 }, { x: lx + rx * k1, y: ly + ry * k1 }], h === 'stop' ? .5 : .3, PAINT);
+        const side = w.half + 1.1;
+        objs.push({ kind: h === 'traffic_signals' ? 'light' : h === 'stop' ? 'stop' : 'give', x: lx - ux * 1.2 + rx * side, y: ly - uy * 1.2 + ry * side, b: bearingOf(ux, uy), sig: n });
+      }
+    });
+    // limitations : juste après chaque carrefour où l'on entre dans une rue à limite différente
+    if (w.limit) w.pts.forEach((n, i) => {
+      if (!inR(n) || !OSM.junctions.has(n.id)) return;
+      const others = (OSM.nodeWays.get(n.id) || []).filter(id => id !== w.id).map(id => OSM.ways.get(id)).filter(Boolean);
+      if (!others.length || others.every(o => (o.limit || 50) === w.limit)) return;
+      for (const dir of [1, -1]) {
+        if (!travelOK(w, dir) || (dir > 0 && i === w.pts.length - 1) || (dir < 0 && i === 0)) continue;
+        const s = w.cum[i] + dir * (jHalf(n) + 7);
+        if (s < 0 || s > L) continue;
+        const pa = posAt(w, s), ux = pa.ux * dir, uy = pa.uy * dir;
+        objs.push({ kind: 'limit', val: w.limit, x: pa.x + uy * (w.half + 1.1), y: pa.y - ux * (w.half + 1.1), b: bearingOf(ux, uy) });
+      }
+    });
+    // sens interdit à l'entrée interdite d'une rue à sens unique
+    if (w.oneway) {
+      const end = w.oneway === 1 ? w.nodes.length - 1 : 0, n = w.pts[end];
+      if (inR(n) && OSM.junctions.has(n.id)) {
+        const dir = -w.oneway, s = dir > 0 ? jHalf(n) + 3 : L - jHalf(n) - 3, pa = posAt(w, Math.max(0, Math.min(L, s))), ux = pa.ux * dir, uy = pa.uy * dir;
+        objs.push({ kind: 'noentry', x: pa.x + uy * (w.half + 1.1), y: pa.y - ux * (w.half + 1.1), b: bearingOf(ux, uy) });
+      }
+    }
+  }
+  const ap = new C.PerInstanceColorAppearance({ flat: true, translucent: false });
+  // calcul en arrière-plan ; si les « workers » du navigateur ne répondent pas, on recalcule directement
+  const mk = list => {
+    if (!list.length) return null;
+    const make = async => new C.GroundPrimitive({ geometryInstances: list, appearance: ap, classificationType: C.ClassificationType.CESIUM_3D_TILE, asynchronous: async, releaseGeometryInstances: false });
+    const prim = viewer.scene.groundPrimitives.add(make(true));
+    setTimeout(() => {
+      if (prim.isDestroyed() || prim.ready || !detail.prims.includes(prim)) return;
+      const sync = viewer.scene.groundPrimitives.add(make(false));
+      viewer.scene.groundPrimitives.remove(prim);
+      detail.prims[detail.prims.indexOf(prim)] = sync;
+    }, 6000);
+    return prim;
+  };
+  const old = { prims: detail.prims, ents: detail.ents };
+  const prims = [mk(curb), mk(asphalt), mk(white)].filter(Boolean);
+  // 3. objets : altitude mesurée au pied de chaque poteau
+  const carto = objs.map(o => { const ll = toLL(o.x, o.y); return C.Cartographic.fromDegrees(ll.lng, ll.lat); });
+  let hs = [];
+  try { hs = (await viewer.scene.sampleHeightMostDetailed(carto, [...prims, ...AIS.map(a => a.ent).filter(Boolean)])).map(c => c.height); } catch (_) { hs = []; }
+  const ents = [];
+  objs.forEach((o, i) => {
+    let h = hs[i]; if (h === undefined || !isFinite(h) || Math.abs(h - P.h) > 12) h = P.h;
+    ents.push(...makeRoadObject(o, h));
+  });
+  // remplacement sans trou visuel
+  for (const p of old.prims) viewer.scene.groundPrimitives.remove(p);
+  for (const e of old.ents) viewer.entities.remove(e);
+  detail.prims = prims; detail.ents = ents; detail.cx = cx; detail.cy = cy;
+}
+const objModels = new Map();
+function objectModelUri(kind, val) {
+  const key = kind + (val || ''); if (objModels.has(key)) return objModels.get(key);
+  const metal = meshGroup({ color: [.42, .44, .46, 1], metal: .7, rough: .45 });
+  let uri;
+  if (kind === 'light') {
+    const body = meshGroup({ color: [.05, .055, .06, 1], rough: .6 }), plate = meshGroup({ color: [.03, .03, .035, 1], rough: .8 });
+    metal.cyl(0, 0, 0, 3.0, .055, 14);
+    body.box(-.14, .14, 2.98, 4.0, -.18, .18);      // boîtier (x = vers le conducteur)
+    plate.box(-.18, -.15, 2.9, 4.08, -.27, .27);    // plaque de contraste
+    for (const y of [3.82, 3.5, 3.18]) body.box(.14, .3, y + .1, y + .14, -.15, .15); // visières
+    uri = buildGlb([metal, body, plate]);
+  } else {
+    const H = 2.3, S = kind === 'give' ? .9 : .7;
+    metal.cyl(0, 0, 0, H + S / 2, .045, 12);
+    const front = meshGroup({ color: [1, 1, 1, 1], rough: .5, png: pngBytes(signImage(kind, val)) });
+    const back = meshGroup({ color: [1, 1, 1, 1], rough: .7, png: pngBytes(signImage('back', kind)) });
+    const y0 = H - S / 2, y1 = H + S / 2;
+    // face avant : visible depuis +x (le conducteur) ; à sa droite = -z
+    front.quad([.06, y0, S / 2], [.06, y0, -S / 2], [.06, y1, -S / 2], [.06, y1, S / 2], [[0, 1], [1, 1], [1, 0], [0, 0]]);
+    back.quad([.05, y0, -S / 2], [.05, y0, S / 2], [.05, y1, S / 2], [.05, y1, -S / 2], [[0, 1], [1, 1], [1, 0], [0, 0]]);
+    uri = buildGlb([metal, front, back]);
+  }
+  objModels.set(key, uri); return uri;
+}
+function makeRoadObject(o, h) {
+  const C = window.Cesium, out = [];
+  const at = (fwd, side, z) => { // fwd = vers le conducteur qui arrive
+    const bx = Math.sin(o.b * RAD), by = Math.cos(o.b * RAD), rx = by, ry = -bx;
+    const ll = toLL(o.x - bx * fwd + rx * side, o.y - by * fwd + ry * side); return C.Cartesian3.fromDegrees(ll.lng, ll.lat, h + z);
+  };
+  const base = at(0, 0, 0);
+  // le modèle regarde vers le conducteur (cap opposé au sens de circulation)
+  const facing = C.Transforms.headingPitchRollQuaternion(base, new C.HeadingPitchRoll(C.Math.toRadians(o.b + 180 - 90), 0, 0));
+  out.push(viewer.entities.add({ position: base, orientation: facing, model: { uri: objectModelUri(o.kind, o.val), scale: 1, minimumPixelSize: 0, shadows: C.ShadowMode.DISABLED } }));
+  if (o.kind === 'light') {
+    [['red', 3.82, '#FF2D20', '#3a0d0b'], ['amber', 3.5, '#FFB000', '#3a2a07'], ['green', 3.18, '#21E36A', '#0a2e17']].forEach(([st, z, on, off]) => {
+      const cOn = C.Color.fromCssColorString(on), cOff = C.Color.fromCssColorString(off);
+      out.push(viewer.entities.add({ position: at(.15, 0, z), ellipsoid: { radii: new C.Cartesian3(.1, .1, .1),
+        material: new C.ColorMaterialProperty(new C.CallbackProperty(() => lightState(o.sig, performance.now(), o.b).s === st ? cOn : cOff, false)) } }));
+    });
+  }
+  return out;
 }
 let hSampleIdx = 0, frameN = 0, hOff = 0, hBuf = [];
 function render() {
@@ -740,7 +1064,7 @@ function render() {
   frameN++;
   // hauteur du sol sous la voiture (ignore arbres et toits)
   if (frameN % 3 === 0 && scene.sampleHeightSupported) {
-    const ll = toLL(P.x, P.y); let h; try { h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), AIS.map(a => a.ent).filter(Boolean)); } catch (_) { h = undefined; }
+    const ll = toLL(P.x, P.y); let h; try { h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), [...detail.prims, ...detail.ents, ...AIS.map(a => a.ent).filter(Boolean)]); } catch (_) { h = undefined; }
     if (h !== undefined && isFinite(h)) {
       if (Math.abs(h - P.h) < 1.2) { P.h += (h - P.h) * .35; hOff = 0; }
       else { hOff++; hBuf.push(h); if (hBuf.length > 12) hBuf.shift();
@@ -751,11 +1075,11 @@ function render() {
   // hauteur d'une voiture automatique par image
   if (AIS.length && scene.sampleHeightSupported) {
     const ai = AIS[hSampleIdx++ % AIS.length], ll = toLL(ai.x, ai.y);
-    let h; try { h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), AIS.map(a => a.ent).filter(Boolean)); } catch (_) { h = undefined; }
+    let h; try { h = scene.sampleHeight(C.Cartographic.fromDegrees(ll.lng, ll.lat), [...detail.prims, ...detail.ents, ...AIS.map(a => a.ent).filter(Boolean)]); } catch (_) { h = undefined; }
     if (h !== undefined && isFinite(h) && Math.abs(h - P.h) < 15 && h < ai.h + 1.2) ai.h += (h - ai.h) * .5;
   }
   for (const ai of AIS) {
-    const ll = toLL(ai.x, ai.y), z = ai.h + (carModelOk ? 0 : .72);
+    const ll = toLL(ai.x, ai.y), z = ai.h;
     C.Cartesian3.fromDegrees(ll.lng, ll.lat, z, undefined, ai.cart);
     C.Transforms.headingPitchRollQuaternion(ai.cart, new C.HeadingPitchRoll(C.Math.toRadians(ai.b - 90), 0, 0), undefined, undefined, ai.quat);
   }
@@ -819,7 +1143,7 @@ function renderHUD(now) {
   } else { nx.hidden = true; lastNextHtml = ''; }
   const tl = $('#tlight');
   if (ev && ev.ctrl === 'signals' && ev.sig && d < 100) {
-    const s = lightState(ev.sig, now).s; tl.hidden = false;
+    const s = lightState(ev.sig, now, ev.b0).s; tl.hidden = false;
     tl.children[0].classList.toggle('on', s === 'red'); tl.children[1].classList.toggle('on', s === 'amber'); tl.children[2].classList.toggle('on', s === 'green');
   } else tl.hidden = true;
   $('#lookL').hidden = !keys.lookL; $('#lookR').hidden = !keys.lookR;
@@ -840,6 +1164,7 @@ const QUIZ = {
   roundabout: { t: 'Giratoire', q: 'Vous allez entrer dans un giratoire. Qui est prioritaire ?', o: ['Moi, j\'entre dans l\'anneau', 'Les véhicules déjà engagés dans l\'anneau', 'Les véhicules venant de ma droite'], a: 1, ex: 'À l\'entrée d\'un giratoire, vous cédez le passage aux véhicules qui circulent déjà dans l\'anneau.' }
 };
 function maybeAsk() {
+  if (window.__pev && window.__pev.noQuiz) return;
   if (!ev || asked.has(ev.ctrl) || !QUIZ[ev.ctrl]) return;
   const d = liveDist(); if (d > 45 || d < 10) return;
   asked.add(ev.ctrl); const q = QUIZ[ev.ctrl];
@@ -882,7 +1207,8 @@ function step(now) {
     }
   }
   if (viewer) { try { render(); } catch (e) { if (!loopErr) { loopErr = e && e.message || String(e); setStatus('Erreur 3D : ' + loopErr); console.error(e); } } }
-  if (hudTick++ % 3 === 0) { renderHUD(now); drawMinimap(); }
+  if (hudTick++ % 3 === 0) drawMinimap();
+  renderHUD(now);
 }
 
 /* =========================================================
@@ -927,6 +1253,8 @@ $('#go').onclick = async () => {
     if (h === null) throw new Error('La ville 3D ne s\'affiche pas à cet endroit. Essayez une autre ville ou vérifiez l\'API « Map Tiles ».');
     P.h = h; P.hOk = true;
     if (OSM) for (let i = 0; i < 14; i++) { const ai = spawnAI(); if (ai) { ai.h = h; AIS.push(ai); addAIEntity(ai); } }
+    $('#loadTitle').textContent = 'Pose de la chaussée, des marquages et des feux…';
+    await buildDetails();
     $('#loadOv').hidden = true; paused = false;
     message('↑ pour avancer, ← → pour tourner. Clignotants : A et E.', 6000);
   } catch (e) {
@@ -997,6 +1325,7 @@ $('#endBtn').onclick = () => {
 $('#vBack').onclick = () => { $('#endOv').hidden = true; ended = false; };
 $('#vNew').onclick = () => location.reload();
 
+window.__pev = { detail, P, get OSM() { return OSM; }, get viewer() { return viewer; }, get AIS() { return AIS; } };
 const saved = store.get('pev_key'); if (saved) $('#key').value = saved;
 requestAnimationFrame(loop);
 })();
