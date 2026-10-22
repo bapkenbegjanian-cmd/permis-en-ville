@@ -169,8 +169,9 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
       <span><kbd>A</kbd> / <kbd>E</kbd></span><span>Clignotant gauche / droit</span>
       <span><kbd>Q</kbd> / <kbd>D</kbd></span><span>Regarder à gauche / à droite (maintenir)</span>
       <span><kbd>P</kbd></span><span>Pause</span>
+      <span><kbd>+</kbd> / <kbd>−</kbd></span><span>Monter / baisser la caméra si elle n'est pas au niveau de la route</span>
     </div>
-    <p class="alt">Version 4 (chaussée et signalisation nettes) · Ancienne version photo par photo : <a href="streetview.html">Street View</a></p>
+    <p class="alt">Version 5 (chaussée et signalisation nettes) · Ancienne version photo par photo : <a href="streetview.html">Street View</a></p>
   </div>
 </section>
 
@@ -465,7 +466,8 @@ const P = { x: 0, y: 0, b: 0, v: 0, steer: 0, h: 0, hOk: false };
 const keys = { up: false, down: false, left: false, right: false, brake: false, lookL: false, lookR: false };
 let blinker = null, match = null, ev = null, faults = [], cooldown = {}, asked = new Set(), quizOk = 0, quizCount = 0;
 let paused = true, ended = false, driveTime = 0, overT = 0, leftT = 0, offroad = false, wrongWay = null, lastLimit = null, lastName = '';
-let AIS = [], povLook = 0;
+let AIS = [], povLook = 0, eyeAdj = 0;
+try { eyeAdj = parseFloat(localStorage.getItem('pev_eye')) || 0; } catch (_) {}
 
 function setStatus(t) { $('#status').textContent = t; }
 let toastTimer, msgTimer;
@@ -1014,7 +1016,7 @@ async function buildDetailsNow() {
   for (const p of old.prims) viewer.scene.groundPrimitives.remove(p);
   for (const e of old.ents) viewer.entities.remove(e);
   detail.prims = prims; detail.ents = ents; detail.cx = cx; detail.cy = cy;
-  setStatus(`Version 4 · chaussée nette : ${ways.length} rues, ${objs.length} feux et panneaux · données © OpenStreetMap · ville 3D © Google`);
+  setStatus(`Version 5 · chaussée nette : ${ways.length} rues, ${objs.length} feux et panneaux · données © OpenStreetMap · ville 3D © Google`);
 }
 const objModels = new Map();
 function objectModelUri(kind, val) {
@@ -1093,7 +1095,7 @@ function render() {
   povLook += (look - povLook) * .12;
   const sx = Math.cos(P.b * RAD) * -.38, sy = -Math.sin(P.b * RAD) * -.38;
   const ll = toLL(P.x + sx, P.y + sy);
-  scene.camera.setView({ destination: C.Cartesian3.fromDegrees(ll.lng, ll.lat, P.h + 1.22), orientation: { heading: C.Math.toRadians(P.b + povLook), pitch: C.Math.toRadians(-4), roll: 0 } });
+  scene.camera.setView({ destination: C.Cartesian3.fromDegrees(ll.lng, ll.lat, P.h + 1.22 + eyeAdj), orientation: { heading: C.Math.toRadians(P.b + povLook), pitch: C.Math.toRadians(-4), roll: 0 } });
 }
 
 /* =========================================================
@@ -1295,6 +1297,13 @@ addEventListener('keydown', e => {
   if ($('#drive').hidden || (e.target && e.target.tagName === 'INPUT')) return;
   if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
   if (paused || ended) return;
+  if (e.code === 'PageUp' || e.code === 'PageDown' || e.code === 'NumpadAdd' || e.code === 'NumpadSubtract' || e.key === '+' || e.key === '-') {
+    eyeAdj = Math.round((eyeAdj + ((e.code === 'PageUp' || e.code === 'NumpadAdd' || e.key === '+') ? .25 : -.25)) * 100) / 100;
+    eyeAdj = Math.max(-6, Math.min(6, eyeAdj));
+    try { localStorage.setItem('pev_eye', eyeAdj); } catch (_) {}
+    message('Hauteur des yeux : ' + (eyeAdj >= 0 ? '+' : '') + eyeAdj.toFixed(2).replace('.', ',') + ' m (touches + et −)', 2500);
+    e.preventDefault(); return;
+  }
   if (e.code === 'KeyA' && !e.repeat) { setBlinker(blinker === 'left' ? null : 'left'); return; }
   if (e.code === 'KeyE' && !e.repeat) { setBlinker(blinker === 'right' ? null : 'right'); return; }
   const k = KEYMAP[e.code]; if (k) { keys[k] = true; e.preventDefault(); e.stopPropagation(); }
