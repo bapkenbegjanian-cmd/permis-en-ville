@@ -170,7 +170,7 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
       <span><kbd>Q</kbd> / <kbd>D</kbd></span><span>Regarder à gauche / à droite (maintenir)</span>
       <span><kbd>P</kbd></span><span>Pause</span>
     </div>
-    <p class="alt">Ancienne version photo par photo : <a href="streetview.html">Street View</a></p>
+    <p class="alt">Version 3 (chaussée et signalisation nettes) · Ancienne version photo par photo : <a href="streetview.html">Street View</a></p>
   </div>
 </section>
 
@@ -1012,6 +1012,7 @@ async function buildDetailsNow() {
   for (const p of old.prims) viewer.scene.groundPrimitives.remove(p);
   for (const e of old.ents) viewer.entities.remove(e);
   detail.prims = prims; detail.ents = ents; detail.cx = cx; detail.cy = cy;
+  setStatus(`Version 3 · chaussée nette : ${ways.length} rues, ${objs.length} feux et panneaux · données © OpenStreetMap · ville 3D © Google`);
 }
 const objModels = new Map();
 function objectModelUri(kind, val) {
