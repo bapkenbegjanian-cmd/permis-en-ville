@@ -1,6 +1,6 @@
 # Permis en Ville
 
-Simulateur d'entraînement à l'examen du permis de conduire, dans les vraies rues de Lyon reconstruites en 3D.
+Simulateur d'entraînement à l'examen du permis de conduire, dans les vraies rues du Rhône (Lyon, Villeurbanne, Villefranche, villages…) reconstruites en 3D. La carte (OpenStreetMap) est découpée en tuiles de 1 km (`data/rhone/`, préparées par `outils/tuiles_rhone.py` et l'action « Données du Rhône ») et chargée autour de la voiture.
 
 **Site :** https://bapkenbegjanian-cmd.github.io/permis-en-ville/
 
