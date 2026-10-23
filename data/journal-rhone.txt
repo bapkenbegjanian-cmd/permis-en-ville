@@ -1,0 +1,6 @@
+OK https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf 531426997
+-rw-r--r-- 1 runner runner 106050234 Oct 23 17:37 /tmp/filtre.osm.pbf
+-rw-r--r-- 1 runner runner 531426997 Oct 23 17:36 /tmp/region.osm.pbf
+-rw-r--r-- 1 runner runner 133818868 Oct 23 17:37 /tmp/rhone.osm.pbf
+tuiles 7110 taille totale 365.0 Mo communes 717 routes 177078 immeubles 1179082
+363M	data/rhone
