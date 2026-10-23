@@ -11,13 +11,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Rues, bâtiments et signalisation de la Presqu'île (Lyon)
+        continue-on-error: true
         run: |
+          mkdir -p data
           BB="45.7480,4.8180,45.7700,4.8480"
-          Q="[out:json][timeout:120];(way[\"highway\"]($BB);way[\"building\"]($BB);way[\"leisure\"~\"park|garden\"]($BB);way[\"natural\"=\"water\"]($BB);way[\"waterway\"=\"riverbank\"]($BB);relation[\"natural\"=\"water\"]($BB);node[\"highway\"~\"stop|give_way|traffic_signals|crossing|mini_roundabout|street_lamp\"]($BB);node[\"natural\"=\"tree\"]($BB););out body;>;out skel qt;"
-          for url in https://overpass-api.de/api/interpreter https://overpass.kumi.systems/api/interpreter https://maps.mail.ru/osm/tools/overpass/api/interpreter; do
-            curl -sS -m 200 --data-urlencode "data=$Q" "$url" -o data/lyon-presquile.json && python3 -c "import json;d=json.load(open('data/lyon-presquile.json'));assert len(d['elements'])>1000;print(len(d['elements']))" && break
+          Q="[out:json][timeout:150];(way[\"highway\"]($BB);way[\"building\"]($BB);way[\"leisure\"~\"park|garden|pitch\"]($BB);way[\"natural\"~\"water|wood\"]($BB);way[\"landuse\"~\"grass\"]($BB);relation[\"natural\"=\"water\"]($BB);node[\"highway\"~\"stop|give_way|traffic_signals|crossing|mini_roundabout|street_lamp\"]($BB);node[\"natural\"=\"tree\"]($BB););out body;>;out skel qt;"
+          : > data/journal.txt
+          for url in https://overpass-api.de/api/interpreter https://overpass.private.coffee/api/interpreter https://overpass.kumi.systems/api/interpreter https://maps.mail.ru/osm/tools/overpass/api/interpreter; do
+            for essai in 1 2; do
+              code=$(curl -sS -m 220 -A "permis-en-ville/1.0 (github.com/bapkenbegjanian-cmd/permis-en-ville)" --data-urlencode "data=$Q" "$url" -o /tmp/osm.json -w "%{http_code}" 2>>data/journal.txt || echo erreur)
+              taille=$(stat -c %s /tmp/osm.json 2>/dev/null || echo 0)
+              echo "$url essai $essai : HTTP $code, $taille octets" >> data/journal.txt
+              if [ "$code" = "200" ] && python3 -c "import json,sys;d=json.load(open('/tmp/osm.json'));n=len(d['elements']);print(n);sys.exit(0 if n>2000 else 1)" >> data/journal.txt 2>&1; then
+                mv /tmp/osm.json data/lyon-presquile.json; echo OK >> data/journal.txt; break 2
+              fi
+              head -c 400 /tmp/osm.json >> data/journal.txt 2>/dev/null; echo >> data/journal.txt
+              sleep 20
+            done
           done
-          ls -la data
+          cat data/journal.txt
       - name: Enregistrer
         run: |
           git config user.name "github-actions"
