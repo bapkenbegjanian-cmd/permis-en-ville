@@ -99,6 +99,10 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 .ind.on{color:#3FE07A;animation:blink .7s steps(1) infinite}
 @keyframes blink{50%{opacity:.15}}
 #minimap{display:none;position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));width:190px;height:190px;border-radius:50%;border:3px solid #2a2f37;background:#1b2028}
+.blhud{position:absolute;top:86px;left:50%;transform:translateX(-50%);display:flex;gap:150px;z-index:5}
+.blhud button{width:54px;height:40px;border-radius:12px;border:1px solid var(--glass-line);background:rgba(10,14,20,.55);color:#2a5a3a;font-size:24px;font-weight:900;cursor:pointer}
+.blhud button.on{animation:blk .8s steps(1) infinite;color:#2ee86f;border-color:#2ee86f}
+@keyframes blk{50%{color:#1b3a26;border-color:var(--glass-line)}}
 .touch{position:absolute;left:0;right:0;bottom:calc(29vh + env(safe-area-inset-bottom));display:flex;justify-content:space-between;padding:0 14px;pointer-events:none}
 .touch .grp{display:flex;gap:10px;pointer-events:auto}
 .touch button{width:58px;height:58px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-line);color:var(--ink);font-weight:700;font-size:13px;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -173,15 +177,16 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
     </div>
     <button class="btn primary" id="go" type="button">Démarrer la séance</button>
     <div class="keys">
-      <span><kbd>↑</kbd> / <kbd>↓</kbd></span><span>Accélérer / freiner (puis reculer à l'arrêt)</span>
+      <span><kbd>↑</kbd> / <kbd>↓</kbd></span><span>Accélérer / freiner (puis reculer à l'arrêt) — ou <kbd>Z</kbd> / <kbd>S</kbd></span>
       <span><kbd>←</kbd> / <kbd>→</kbd></span><span>Tourner le volant</span>
       <span><kbd>Espace</kbd></span><span>Freinage appuyé</span>
-      <span><kbd>A</kbd> / <kbd>E</kbd></span><span>Clignotant gauche / droit</span>
+      <span><kbd>A</kbd> / <kbd>E</kbd></span><span>Clignotant gauche / droit (ou clic sur les flèches en haut). Il se coupe seul après le virage.</span>
       <span><kbd>Q</kbd> / <kbd>D</kbd></span><span>Regarder à gauche / à droite (maintenir)</span>
       <span><kbd>P</kbd></span><span>Pause</span>
+      <span><kbd>R</kbd></span><span>Revenir sur la route si vous êtes coincé</span>
       <span><kbd>M</kbd> / <kbd>V</kbd></span><span>Couper le son du moteur / la voix de l'inspecteur</span>
     </div>
-    <p class="alt">Version 11 · ville reconstruite en 3D</p>
+    <p class="alt">Version 12 · ville reconstruite en 3D</p>
   </div>
 </section>
 
@@ -222,6 +227,7 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
     <button class="hbtn" id="endBtn" type="button">Terminer</button>
   </div>
   <div class="glass next" id="next" hidden></div>
+  <div class="blhud"><button type="button" id="hbL" title="Clignotant gauche (touche A)">◀</button><button type="button" id="hbR" title="Clignotant droit (touche E)">▶</button></div>
   <div class="glass tlight" id="tlight" hidden><i class="r"></i><i class="a"></i><i class="g"></i><span>Feu</span></div>
   <div class="glass msg" id="msg" hidden></div>
   <div class="glass insp" id="insp" hidden><span class="insp-ic" id="inspIc"></span><div><small>Inspecteur</small><b id="inspTx"></b></div></div>
@@ -1252,21 +1258,21 @@ function updatePlayer(dt) {
   const rate = target ? 70 : 110;
   P.steer += Math.max(-rate * dt, Math.min(rate * dt, target * maxSteer - P.steer));
   // pédales : l'accélérateur et le frein s'enfoncent progressivement
-  P.throttle = Math.min(1, Math.max(0, (P.throttle || 0) + (keys.up ? 2.2 : -5) * dt));
-  P.brakeT = keys.down ? (P.brakeT || 0) + dt * 2.5 : 0;
+  P.throttle = Math.min(1, Math.max(0, (P.throttle || 0) + (keys.up ? 3.5 : -8) * dt));
+  P.brakeT = keys.down ? (P.brakeT || 0) + dt * 6 : 0;
   updateGear(v, dt);
   let a;
   const grip = WEATHER === 'rain' ? .7 : 1;
   if (keys.brake) a = -Math.sign(v) * Math.min(9.5 * grip, Math.abs(v) / dt);
   else if (keys.up && !keys.down) a = v < -.1 ? 7 : P.throttle * gearAccel(v);
-  else if (keys.down) a = v > .1 ? -7 * grip * Math.min(1, .35 + P.brakeT) : (v > -3 ? -1.6 : 0);
-  else a = -Math.sign(v) * Math.min(Math.abs(v) / dt, .45 + Math.abs(v) * .03);   // frein moteur
-  if (offroad) a -= Math.sign(v) * Math.min(Math.abs(v) / dt, 4);
+  else if (keys.down) a = v > .1 ? -8.5 * grip * Math.min(1, .6 + P.brakeT) : (v > -3 ? -1.6 : 0);
+  else a = -Math.sign(v) * Math.min(Math.abs(v) / dt, .9 + Math.abs(v) * .05);   // frein moteur : la voiture ralentit dès qu'on lâche
+  if (offroad && v > 5.5) a = Math.min(a, -2); else if (offroad && v < -5.5) a = Math.max(a, 2);   // hors chaussée : vitesse limitée, mais on peut toujours rouler
   P.v += a * dt; P.acc = a;
   if (Math.abs(P.v) < .03 && !keys.up && !keys.down) P.v = 0;
   P.b = (P.b + (P.v / 2.65) * Math.tan(P.steer * RAD) / RAD * dt + 360) % 360;
   // retour du volant : le clignotant se coupe tout seul, comme dans une vraie voiture
-  if (blinker) { const turned = blinker === 'left' ? -P.steer : P.steer; if (turned > 12) P.bTurn = true; else if (P.bTurn && turned < 3) { P.bTurn = false; setBlinker(null); } }
+  if (blinker) { const turned = blinker === 'left' ? -P.steer : P.steer; if (turned > 12 && Math.abs(P.v) > 1.5) P.bTurn = true; else if (P.bTurn && turned < 3) { P.bTurn = false; setBlinker(null); } }
   else P.bTurn = false;
   const ox = P.x, oy = P.y;
   P.x += Math.sin(P.b * RAD) * P.v * dt; P.y += Math.cos(P.b * RAD) * P.v * dt;
@@ -1278,6 +1284,7 @@ function updatePlayer(dt) {
     if (wall || park) {
       if (Math.abs(P.v) > 1) addFault(wall ? 'wall' : 'parked', wall ? 'Choc contre un bâtiment' : 'Accrochage d\'une voiture en stationnement', true);
       P.x = ox; P.y = oy; P.v = 0;
+      if (!cooldown.stuckMsg || driveTime - cooldown.stuckMsg > 4) { cooldown.stuckMsg = driveTime; message('Obstacle : reculez avec ↓, ou touche R pour revenir sur la route', 3500); }
     }
   }
   // collisions avec les autres voitures
@@ -1880,7 +1887,7 @@ function render3D(now) {
 let cockpit = null, clusterCtx = null, clusterTex = null, screenTex = null, wheelObj = null, mirrors = [];
 function buildCockpit() {
   cockpit = new THREE.Group(); camera.add(cockpit);
-  const soft = canvasTex(256, 256, (g, w, h) => noise(g, w, h, '#24272c', .1, 9000, 61, 1));
+  const soft = canvasTex(256, 256, (g, w, h) => noise(g, w, h, '#33363c', .1, 9000, 61, 1));
   const dashMat = new THREE.MeshStandardMaterial({ map: soft, roughness: .9, metalness: 0, side: THREE.DoubleSide });
   const trim = new THREE.MeshStandardMaterial({ color: '#3a3e45', roughness: .6, metalness: .2, side: THREE.DoubleSide });
   const black = new THREE.MeshStandardMaterial({ color: '#0e0f11', roughness: .7, side: THREE.DoubleSide });
@@ -1888,39 +1895,68 @@ function buildCockpit() {
   const q = (mat, a, b, c, d) => { const g = new Geo(); const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
     const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]], L = Math.hypot(...n) || 1;
     g.quad(a, b, c, d, n.map(k => k / L), [[0, 0], [2, 0], [2, 1], [0, 1]]); const m = g.mesh(mat); m.renderOrder = 10; cockpit.add(m); return m; };
-  // planche de bord (dessus incliné + face côté conducteur)
-  q(dashMat, [-1.3, -.36, -.66], [1.6, -.36, -.66], [1.6, -.43, -1.15], [-1.3, -.43, -1.15]);
-  q(dashMat, [-1.3, -.78, -.6], [1.6, -.78, -.6], [1.6, -.36, -.66], [-1.3, -.36, -.66]);
-  q(trim, [-1.3, -.49, -.585], [1.6, -.49, -.585], [1.6, -.47, -.59], [-1.3, -.47, -.59]);            // jonc décoratif
-  // casquette du combiné d'instruments
-  q(dashMat, [-.28, -.215, -.69], [.28, -.215, -.69], [.3, -.2, -.82], [-.3, -.2, -.82]);   // casquette au-dessus du compteur
-  q(dashMat, [-.28, -.36, -.69], [-.28, -.215, -.69], [-.3, -.2, -.82], [-.3, -.36, -.8]);
-  q(dashMat, [.28, -.36, -.69], [.28, -.215, -.69], [.3, -.2, -.82], [.3, -.36, -.8]);
+  const add = (geo, mat, ro) => { const m = new THREE.Mesh(geo, mat); m.renderOrder = ro || 10; cockpit.add(m); return m; };
+  // profil latéral (d = distance devant l'œil, y = hauteur) extrudé sur la largeur x0..x1
+  const profile = (pts, x0, x1, bevel) => { const sh = new THREE.Shape(); pts.forEach(([d, y], i) => i ? sh.lineTo(d, y) : sh.moveTo(d, y)); sh.closePath();
+    const g = new THREE.ExtrudeGeometry(sh, { depth: x1 - x0, bevelEnabled: !!bevel, bevelThickness: bevel || 0, bevelSize: bevel || 0, bevelSegments: 3, curveSegments: 6 });
+    g.rotateY(Math.PI / 2); g.translate(x0, 0, 0); g.computeVertexNormals(); return g; };
+  const curve = (p0, c, p1, n) => { const out = []; for (let i = 0; i <= n; i++) { const t = i / n, u = 1 - t; out.push([u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0], u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1]]); } return out; };
+  // planche de bord moulée : dessus bombé qui plonge vers le pare-brise, face arrondie côté conducteur
+  const dashPts = [...curve([.6, -.52], [.56, -.39], [.68, -.38], 6), ...curve([.68, -.38], [.95, -.35], [1.2, -.42], 8), [1.2, -.6], [.62, -.9]];
+  add(profile(dashPts, -.78, 1.55, .02), dashMat);
+  // jonc décoratif et bandeau d'aération sur toute la largeur
+  add(profile([[.58, -.5], [.6, -.47], [.62, -.47], [.6, -.5]], -.74, 1.5), trim, 11);
+  // casquette du combiné : visière arrondie au-dessus des compteurs
+  add(profile([...curve([.74, -.205], [.76, -.17], [.88, -.168], 5), [.95, -.34], [.9, -.35], ...curve([.85, -.18], [.78, -.185], [.765, -.208], 4)], -.25, .25, .012), dashMat, 11);
   // combiné : compteur, vitesse, limitation, clignotants (texture redessinée en direct)
   const cc = document.createElement('canvas'); cc.width = 768; cc.height = 288; clusterCtx = cc.getContext('2d');
   clusterTex = new THREE.CanvasTexture(cc); clusterTex.colorSpace = THREE.SRGBColorSpace;
-  const cl = new THREE.Mesh(new THREE.PlaneGeometry(.46, .172), new THREE.MeshBasicMaterial({ map: clusterTex, toneMapped: false }));
-  cl.position.set(0, -.315, -.745); cl.rotation.x = -.18; cl.renderOrder = 11; cockpit.add(cl);
-  // écran central (plan du quartier)
+  const cl = new THREE.Mesh(new THREE.PlaneGeometry(.42, .157), new THREE.MeshBasicMaterial({ map: clusterTex, toneMapped: false }));
+  cl.position.set(0, -.312, -.81); cl.rotation.x = -.18; cl.renderOrder = 11; cockpit.add(cl);
+  // console centrale : écran tactile posé sur la planche, aérateurs, commandes de climatisation
   screenTex = new THREE.CanvasTexture(mm); screenTex.colorSpace = THREE.SRGBColorSpace;
-  const scr = new THREE.Mesh(new THREE.PlaneGeometry(.2, .2), new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false }));
-  scr.position.set(.47, -.33, -.68); scr.rotation.set(-.15, -.28, 0); scr.renderOrder = 11; cockpit.add(scr);
-  const bez = new THREE.Mesh(new THREE.PlaneGeometry(.23, .23), black); bez.position.set(.47, -.33, -.682); bez.rotation.copy(scr.rotation); bez.renderOrder = 10; cockpit.add(bez);
-  // volant (jante, trois branches, moyeu)
+  const scr = new THREE.Mesh(new THREE.PlaneGeometry(.21, .21), new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false }));
+  scr.position.set(.47, -.27, -.7); scr.rotation.set(-.12, -.3, 0); scr.renderOrder = 12; cockpit.add(scr);
+  const bez = new THREE.Mesh(new THREE.BoxGeometry(.25, .24, .02), black); bez.position.set(.47, -.27, -.712); bez.rotation.copy(scr.rotation); bez.renderOrder = 11; cockpit.add(bez);
+  const vent = (x, y, z, ry, w) => { const v = new THREE.Group(); const fr = new THREE.Mesh(new THREE.BoxGeometry(w, .07, .02), trim); v.add(fr);
+    const hole = new THREE.Mesh(new THREE.PlaneGeometry(w - .02, .055), black); hole.position.z = .011; v.add(hole);
+    for (let k = 0; k < 4; k++) { const sl = new THREE.Mesh(new THREE.BoxGeometry(w - .03, .005, .012), trim); sl.position.set(0, -.02 + k * .013, .015); v.add(sl); }
+    v.position.set(x, y, z); v.rotation.set(-.35, ry, 0); v.traverse(o => { if (o.isMesh) o.renderOrder = 12; }); cockpit.add(v); };
+  vent(.38, -.46, -.6, -.25, .09); vent(.56, -.46, -.6, -.25, .09); vent(-.58, -.43, -.6, .35, .1); vent(1.2, -.43, -.66, -.5, .1);
+  for (const x of [.4, .47, .54]) { const kb = new THREE.Mesh(new THREE.CylinderGeometry(.018, .02, .02, 20), trim); kb.rotation.x = Math.PI / 2 - .35; kb.position.set(x, -.53, -.58); kb.renderOrder = 12; cockpit.add(kb); }
+  // bouton de warning au centre
+  { const hz = new THREE.Mesh(new THREE.BoxGeometry(.03, .02, .012), new THREE.MeshStandardMaterial({ color: '#c0202a', roughness: .5 })); hz.position.set(.47, -.425, -.62); hz.rotation.x = -.35; hz.renderOrder = 13; cockpit.add(hz); }
+  // volant : jante gainée de cuir, coussin d'airbag, trois branches, colonne et commodos
   wheelObj = new THREE.Group();
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(.19, .021, 12, 48), new THREE.MeshStandardMaterial({ color: '#17181b', roughness: .55 }));
-  const hub = new THREE.Mesh(new THREE.CylinderGeometry(.06, .07, .05, 24), trim); hub.rotation.x = Math.PI / 2;
-  wheelObj.add(rim, hub);
-  for (const a of [Math.PI / 2 + .05, -Math.PI / 2 - .05, Math.PI]) { const sp = new THREE.Mesh(new THREE.BoxGeometry(.15, .035, .018), trim); sp.position.set(Math.cos(a) * .11, Math.sin(a) * .11 - .02, 0); sp.rotation.z = a; wheelObj.add(sp); }
-  wheelObj.position.set(0, -.5, -.5); wheelObj.rotation.x = -.42;
+  const leather = new THREE.MeshStandardMaterial({ color: '#19191b', roughness: .62 });
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(.185, .024, 16, 64), leather); rim.scale.set(1, .96, 1);
+  const padSh = new THREE.Shape(); { const w = .085, h = .062, r = .028; padSh.moveTo(-w + r, -h); padSh.lineTo(w - r, -h); padSh.quadraticCurveTo(w, -h, w, -h + r); padSh.lineTo(w, h - r); padSh.quadraticCurveTo(w, h, w - r, h); padSh.lineTo(-w + r, h); padSh.quadraticCurveTo(-w, h, -w, h - r); padSh.lineTo(-w, -h + r); padSh.quadraticCurveTo(-w, -h, -w + r, -h); }
+  const pad = new THREE.Mesh(new THREE.ExtrudeGeometry(padSh, { depth: .03, bevelEnabled: true, bevelThickness: .015, bevelSize: .012, bevelSegments: 4 }), leather); pad.position.set(0, -.01, .005);
+  wheelObj.add(rim, pad);
+  for (const [a, len] of [[0, .12], [Math.PI, .12], [-Math.PI / 2, .13]]) { const sp = new THREE.Mesh(new THREE.BoxGeometry(len, .04, .016), trim); sp.position.set(Math.cos(a) * (.08 + len / 2 - .02), Math.sin(a) * (.06 + len / 2 - .02) - .01, .01); sp.rotation.z = a; wheelObj.add(sp); }
+  wheelObj.position.set(0, -.455, -.5); wheelObj.rotation.x = -.42;
   wheelObj.traverse(o => { if (o.isMesh) o.renderOrder = 12; });
   const wheelPivot = new THREE.Group(); wheelPivot.add(wheelObj); cockpit.add(wheelPivot);
-  // montants de pare-brise, pavillon, bas de pare-brise
-  q(black, [-.84, -.36, -.98], [-.77, -.36, -1.0], [-.52, .5, -.4], [-.59, .5, -.38]);
-  q(black, [1.42, -.36, -1.05], [1.5, -.36, -1.0], [1.1, .5, -.36], [1.03, .5, -.38]);
+  const col = new THREE.Mesh(new THREE.CylinderGeometry(.045, .06, .26, 16), black); col.position.set(0, -.515, -.62); col.rotation.x = Math.PI / 2 - .42; col.renderOrder = 11; cockpit.add(col);
+  // commodo de clignotant (bouge quand on met le clignotant)
+  const stalk = new THREE.Group(); const st = new THREE.Mesh(new THREE.CylinderGeometry(.008, .011, .17, 8), black); st.rotation.z = Math.PI / 2; st.position.x = -.085; stalk.add(st);
+  stalk.position.set(-.05, -.525, -.6); stalk.rotation.x = -.42; stalk.traverse(o => { if (o.isMesh) o.renderOrder = 11; }); cockpit.add(stalk); cockpit.userData.stalk = stalk;
+  // montants de pare-brise arrondis (habillage tissu), pavillon, pare-soleil
+  const pillarMat = new THREE.MeshStandardMaterial({ color: '#6a6b6e', roughness: .95, side: THREE.DoubleSide });
+  const beam = (p0, p1, r0, r1, mat) => { const A = new THREE.Vector3(...p0), B = new THREE.Vector3(...p1), L = A.distanceTo(B);
+    const g = new THREE.CylinderGeometry(r1, r0, L, 12); const m = new THREE.Mesh(g, mat); m.position.copy(A).add(B).multiplyScalar(.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize()); m.scale.z = .6; m.renderOrder = 10; cockpit.add(m); return m; };
+  beam([-.8, -.37, -1.0], [-.57, .46, -.38], .036, .028, pillarMat);
+  beam([1.45, -.37, -1.04], [1.08, .46, -.38], .05, .04, pillarMat);
   q(fabric, [-.9, .44, -.4], [1.3, .44, -.4], [1.3, .55, .4], [-.9, .55, .4]);
-  q(black, [-.9, .38, -.42], [1.3, .38, -.42], [1.3, .45, -.39], [-.9, .45, -.39]);
-  q(black, [-1.3, -.36, -1.12], [1.6, -.36, -1.12], [1.6, -.33, -1.15], [-1.3, -.33, -1.15]);
+  q(pillarMat, [-.9, .4, -.41], [1.3, .4, -.41], [1.3, .45, -.39], [-.9, .45, -.39]);
+  for (const x of [-.2, .62]) { const sv = new THREE.Mesh(new THREE.BoxGeometry(.38, .025, .17), fabric); sv.position.set(x, .43, -.33); sv.rotation.x = .12; sv.renderOrder = 11; cockpit.add(sv); }
+  // joint noir au bas du pare-brise + porte conducteur (accoudoir et rebord de vitre)
+  q(black, [-1.3, -.38, -1.18], [1.6, -.38, -1.18], [1.6, -.36, -1.22], [-1.3, -.36, -1.22]);
+  add(profile([[-.3, -.3], [.95, -.36], [.95, -.42], [-.3, -.4]], -.68, -.6, .01), dashMat);
+  add(profile([[-.3, -.42], [.9, -.44], [.9, -.9], [-.3, -.9]], -.7, -.66), trim);
+  // essuie-glaces au repos sur le capot
+  for (const [x0, x1] of [[-.75, .25], [.3, 1.25]]) beam([x0, -.4, -1.35], [x1, -.39, -1.42], .008, .008, black);
   // rétroviseurs (images réelles de ce qui se trouve derrière)
   const addMirror = (w, h, pos, rot, side) => {
     const rt = new THREE.WebGLRenderTarget(side ? 256 : 512, side ? 160 : 150);
@@ -1955,6 +1991,7 @@ function renderMirrors() {
 function updateCockpit(now) {
   if (!cockpit) return;
   cockpit.userData.wheelPivot.children[0].rotation.z = -P.steer * 8 * RAD;
+  const stk = cockpit.userData.stalk; if (stk) stk.rotation.z += ((blinker === 'right' ? .12 : blinker === 'left' ? -.12 : 0) - stk.rotation.z) * .3;
   if (frameN % 3) return;
   const g = clusterCtx, W = 768, H = 288, kmh = Math.abs(P.v) * 3.6, on = Math.floor(now / 400) % 2 === 0;
   g.fillStyle = '#05070a'; g.fillRect(0, 0, W, H);
@@ -2087,6 +2124,7 @@ function renderHUD(now) {
 function setBlinker(side) {
   blinker = side;
   $('#indL').classList.toggle('on', side === 'left'); $('#indR').classList.toggle('on', side === 'right');
+  $('#hbL').classList.toggle('on', side === 'left'); $('#hbR').classList.toggle('on', side === 'right');
 }
 
 /* =========================================================
@@ -2190,7 +2228,7 @@ $('#go').onclick = async () => {
     started = true;
     exam.on = $('#mode').value === 'exam';
     $('#loadOv').hidden = true; paused = false;
-    setStatus(`Version 11 · ${OSM.ways.size} rues, ${DATA.buildings.length} immeubles, ${LIGHTS.length} feux · données © contributeurs OpenStreetMap`);
+    setStatus(`Version 12 · ${OSM.ways.size} rues, ${DATA.buildings.length} immeubles, ${LIGHTS.length} feux · données © contributeurs OpenStreetMap`);
     message('↑ pour avancer, ← → pour tourner. Clignotants : A et E.', 6000);
     if (exam.on) { say('Bonjour. Nous allons commencer. Démarrez quand vous êtes prêt, et suivez mes indications.'); showInsp('🎧', 'Démarrez quand vous êtes prêt et suivez mes indications'); setTimeout(() => { if (!ev || !ev.said) $('#insp').hidden = true; }, 7000); }
   } catch (e) {
@@ -2219,7 +2257,9 @@ function placeStart(at) {
 /* =========================================================
    Commandes
    ========================================================= */
-const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', ArrowRight: 'right', Space: 'brake', KeyQ: 'lookL', KeyD: 'lookR' };
+// touches lues d'après la lettre affichée (claviers AZERTY et QWERTY)
+const KEYMAP = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Space: 'brake', z: 'up', w: 'up', s: 'down', q: 'lookL', d: 'lookR' };
+const keyOf = e => e.key && e.key.length === 1 && e.key !== ' ' ? e.key.toLowerCase() : e.code;
 addEventListener('keydown', e => {
   if ($('#drive').hidden || (e.target && e.target.tagName === 'INPUT')) return;
   if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
@@ -2234,11 +2274,13 @@ addEventListener('keydown', e => {
   startSound();
   if (e.code === 'KeyV' && !e.repeat) { exam.voice = !exam.voice; message(exam.voice ? 'Voix de l\'inspecteur activée' : 'Voix de l\'inspecteur coupée', 1500); if (!exam.voice) try { speechSynthesis.cancel(); } catch (_) {} return; }
   if (e.code === 'KeyM' && !e.repeat) { soundOn = !soundOn; message(soundOn ? 'Son du moteur activé' : 'Son du moteur coupé', 1500); return; }
-  if (e.code === 'KeyA' && !e.repeat) { setBlinker(blinker === 'left' ? null : 'left'); return; }
-  if (e.code === 'KeyE' && !e.repeat) { setBlinker(blinker === 'right' ? null : 'right'); return; }
-  const k = KEYMAP[e.code]; if (k) { keys[k] = true; e.preventDefault(); e.stopPropagation(); }
+  const kn = keyOf(e);
+  if (kn === 'r' && !e.repeat) { backToRoad(); return; }
+  if (kn === 'a' || kn === 'ArrowLeft' && e.shiftKey) { if (!e.repeat) setBlinker(blinker === 'left' ? null : 'left'); e.preventDefault(); return; }
+  if (kn === 'e' || kn === 'ArrowRight' && e.shiftKey) { if (!e.repeat) setBlinker(blinker === 'right' ? null : 'right'); e.preventDefault(); return; }
+  const k = KEYMAP[kn]; if (k) { keys[k] = true; e.preventDefault(); e.stopPropagation(); }
 }, true);
-addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; }, true);
+addEventListener('keyup', e => { const k = KEYMAP[keyOf(e)] || KEYMAP[e.code]; if (k) keys[k] = false; if (e.code === 'KeyQ' || e.code === 'KeyA') keys.lookL = false; if (e.code === 'KeyD') keys.lookR = false; }, true);
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 document.querySelectorAll('.touch button').forEach(b => {
   const k = b.dataset.k;
@@ -2251,11 +2293,23 @@ document.querySelectorAll('.touch button').forEach(b => {
   const off = () => { if (k in keys) keys[k] = false; b.classList.remove('on'); };
   b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
 });
+// touche R : replace la voiture au milieu de sa voie, dans le sens de la circulation
+function backToRoad() {
+  const m = matchWay(P.x, P.y, P.b, 80); if (!m) return;
+  const w = m.w; let i = m.i; const a = w.pts[i], b = w.pts[i + 1];
+  let dir = m.dir; if (w.oneway) dir = w.oneway;
+  const ux = (b.x - a.x), uy = (b.y - a.y), L = Math.hypot(ux, uy) || 1, fx = ux / L * dir, fy = uy / L * dir;
+  const lane = w.oneway ? 0 : Math.min(w.half * .5, 1.8);
+  P.x = m.qx + fy * lane; P.y = m.qy - fx * lane; P.b = bearingOf(fx, fy); P.v = 0; P.steer = 0; offroad = false;
+  message('Voiture replacée sur la route', 2000);
+}
 function togglePause() {
   if (ended || !$('#quizOv').hidden || !$('#loadOv').hidden) return;
   paused = !paused; $('#pauseOv').hidden = !paused;
 }
 $('#resume').onclick = togglePause;
+$('#hbL').onclick = e => { e.currentTarget.blur(); if (!paused && !ended) setBlinker(blinker === 'left' ? null : 'left'); };
+$('#hbR').onclick = e => { e.currentTarget.blur(); if (!paused && !ended) setBlinker(blinker === 'right' ? null : 'right'); };
 $('#endBtn').onclick = () => {
   ended = true; P.v = 0;
   const s = scoreOf(), on31 = Math.max(0, Math.round(31 * s.s / 100) - Math.min(4, exam.missed)), ok = s.g === 0 && (exam.on ? on31 >= 20 : s.s >= 75);
