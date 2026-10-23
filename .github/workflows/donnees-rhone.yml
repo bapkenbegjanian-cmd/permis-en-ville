@@ -1,0 +1,40 @@
+name: Données du Rhône (tuiles)
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/donnees-rhone.yml', 'outils/tuiles_rhone.py']
+permissions:
+  contents: write
+jobs:
+  tuiles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Outils
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q osmium-tool
+          pip install osmium shapely
+      - name: Extrait OpenStreetMap (Geofabrik) puis Rhône + Métropole de Lyon
+        run: |
+          mkdir -p data && : > data/journal-rhone.txt
+          for url in https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf https://download.openstreetmap.fr/extracts/europe/france/rhone_alpes-latest.osm.pbf; do
+            if curl -sSfL -m 1800 -o /tmp/region.osm.pbf "$url"; then echo "OK $url $(stat -c %s /tmp/region.osm.pbf)" >> data/journal-rhone.txt; break; fi
+            echo "échec $url" >> data/journal-rhone.txt
+          done
+          osmium extract -b 4.23,45.44,5.18,46.32 /tmp/region.osm.pbf -o /tmp/rhone.osm.pbf --overwrite
+          osmium tags-filter /tmp/rhone.osm.pbf n/highway n/crossing n/natural=tree n/place w/highway wa/building wa/natural=water,wood,grassland,scrub wa/waterway=riverbank wa/leisure=park,garden,pitch wa/landuse=grass,forest,meadow,farmland,vineyard,orchard,recreation_ground,village_green -o /tmp/filtre.osm.pbf --overwrite
+          ls -la /tmp/*.pbf >> data/journal-rhone.txt
+      - name: Découpage en tuiles de 1 km
+        run: |
+          rm -rf data/rhone
+          python3 outils/tuiles_rhone.py /tmp/filtre.osm.pbf data/rhone 2>&1 | tee -a data/journal-rhone.txt
+          du -sh data/rhone >> data/journal-rhone.txt
+      - name: Enregistrer
+        if: always()
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add data
+          git commit -qm "Tuiles OpenStreetMap du Rhône" || echo rien
+          git pull --rebase -q origin main && git push
