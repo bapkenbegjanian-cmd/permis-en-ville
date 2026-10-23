@@ -1,0 +1,27 @@
+name: Données OpenStreetMap
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/donnees-osm.yml']
+permissions:
+  contents: write
+jobs:
+  telecharger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rues, bâtiments et signalisation de la Presqu'île (Lyon)
+        run: |
+          BB="45.7480,4.8180,45.7700,4.8480"
+          Q="[out:json][timeout:120];(way[\"highway\"]($BB);way[\"building\"]($BB);way[\"leisure\"~\"park|garden\"]($BB);way[\"natural\"=\"water\"]($BB);way[\"waterway\"=\"riverbank\"]($BB);relation[\"natural\"=\"water\"]($BB);node[\"highway\"~\"stop|give_way|traffic_signals|crossing|mini_roundabout|street_lamp\"]($BB);node[\"natural\"=\"tree\"]($BB););out body;>;out skel qt;"
+          for url in https://overpass-api.de/api/interpreter https://overpass.kumi.systems/api/interpreter https://maps.mail.ru/osm/tools/overpass/api/interpreter; do
+            curl -sS -m 200 --data-urlencode "data=$Q" "$url" -o data/lyon-presquile.json && python3 -c "import json;d=json.load(open('data/lyon-presquile.json'));assert len(d['elements'])>1000;print(len(d['elements']))" && break
+          done
+          ls -la data
+      - name: Enregistrer
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add data
+          git commit -m "Données OpenStreetMap de la Presqu'île" || echo rien
+          git push
