@@ -42,7 +42,7 @@ for theme, queries in THEMES.items():
         for p in pages:
             if n >= 8 or p['title'] in seen: continue
             ii = (p.get('imageinfo') or [{}])[0]; url = ii.get('thumburl') or ii.get('url')
-            if not url or not re.search(r'\.(jpe?g|png)$', url, re.I): continue
+            if not url or not re.search(r'\.(jpe?g|png)(\?|$)', url, re.I): continue
             seen.add(p['title'])
             try: img = get(url)
             except Exception: continue
