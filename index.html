@@ -187,7 +187,7 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
       <span><kbd>R</kbd></span><span>Revenir sur la route si vous êtes coincé</span>
       <span><kbd>M</kbd> / <kbd>V</kbd></span><span>Couper le son du moteur / la voix de l'inspecteur</span>
     </div>
-    <p class="alt">Version 15 · flèche verte de guidage</p>
+    <p class="alt">Version 16 · feux corrigés</p>
   </div>
 </section>
 
@@ -854,7 +854,7 @@ function* buildCityGen(T, D, WAYS, JN) {
         // concerne le sens qui arrive au carrefour le plus proche
         let j = null, sj = null;
         for (let k = i; k >= 0 && k < w.pts.length; k += dir) { if (OSM.junctions.has(w.nodes[k])) { j = w.pts[k]; sj = w.cum[k]; break; } if (Math.abs(w.cum[k] - s) > 45) break; }
-        if (!j) continue;
+        if (!j) { if (h !== 'traffic_signals') continue; j = { jr: 0 }; sj = s; }   // feu sans carrefour proche (ex. passage piéton) : ligne au pied du feu
         const pa = posAt(w, s), ux = pa.ux * dir, uy = pa.uy * dir, rx = uy, ry = -ux;
         let lx = n.x, ly = n.y;
         const dJ = Math.abs(sj - s), back = Math.max(0, j.jr + 1.5 - dJ); lx -= ux * back; ly -= uy * back;
@@ -1574,7 +1574,7 @@ function updatePlayer(dt) {
 }
 
 /* Règles vérifiées en continu */
-let ruleClock = 0;
+let ruleClock = 0, SIGLINE = null;
 function updateRules(dt, now) {
   const kmh = Math.abs(P.v) * 3.6;
   if (lastLimit && kmh > lastLimit + 5) { overT += dt; if (overT > 2) { addFault('speed', `Excès de vitesse : ${Math.round(kmh)} km/h pour ${lastLimit}`, kmh > lastLimit + 20); overT = -4; } }
@@ -1624,6 +1624,22 @@ function updateRules(dt, now) {
     if (ev.minDist < 25 && dJ < 40) judge(ev);
     hideGuide(); ev = null;
   }
+  // ligne d'arrêt du feu à venir : on la garde même si le carrefour suivi change juste avant
+  if (ev && ev.ctrl === 'signals' && ev.sig && (!SIGLINE || SIGLINE.sig !== ev.sig)) {
+    const ux = Math.sin(ev.b0 * RAD), uy = Math.cos(ev.b0 * RAD), sg = ev.sig, n = ev.node, dJ = Math.hypot(sg.x - n.x, sg.y - n.y);
+    const back = sg === n ? (n.jr || 0) + 1.5 : Math.max(0, (n.jr || 0) + 1.5 - dJ);
+    SIGLINE = { sig: sg, b0: ev.b0, ux, uy, x: sg.x - ux * back, y: sg.y - uy * back, rel: null, where: ev.cross ? ' (' + ev.cross + ')' : '' };
+  }
+  if (SIGLINE) {   // le feu est jugé à l'instant où l'avant de la voiture franchit la ligne
+    const L = SIGLINE, fx = P.x + Math.sin(P.b * RAD) * 2.1, fy = P.y + Math.cos(P.b * RAD) * 2.1, rel = (fx - L.x) * L.ux + (fy - L.y) * L.uy;
+    if (L.rel !== null && L.rel < 0 && rel >= 0) {
+      const st = lightState(L.sig, now, L.b0);
+      if (st.s === 'red' && st.e > .5) addFault('red', 'Feu rouge grillé' + L.where, true);
+      else if (st.s === 'amber' && st.e > 1.2) addFault('amber', 'Feu orange franchi alors que l\'arrêt était possible', false);
+      SIGLINE = null;
+    } else if (rel > 6 || Math.hypot(P.x - L.x, P.y - L.y) > 80 || Math.abs(angDiff(P.b, L.b0)) > 100) SIGLINE = null;
+    else L.rel = rel;
+  }
   if (next) {
     if (!ev) { ev = Object.assign(next, { b0: P.b, minSpeed: Infinity, minDist: next.dist, lookedL: false, lookedR: false, blink: null, bIn: null, at: { x: P.x, y: P.y } }); if (ah && ah.node === next.node) planInstruction(ev, match.w); }
     else { ev.dist = next.dist; ev.minDist = Math.min(ev.minDist, next.dist); ev.at = { x: P.x, y: P.y }; }
@@ -1639,11 +1655,6 @@ function nearJunction(x, y) {
 function liveDist() { return ev ? Math.max(0, ev.dist - Math.hypot(P.x - ev.at.x, P.y - ev.at.y)) : 999; }
 function judge(e) {
   const where = e.cross ? ' (' + e.cross + ')' : '';
-  if (e.ctrl === 'signals' && e.sig) {
-    const L = lightState(e.sig, performance.now(), e.b0);
-    if (L.s === 'red' && L.e > .5) addFault('red', 'Feu rouge grillé' + where, true);
-    else if (L.s === 'amber' && L.e > 1.2) addFault('amber', 'Feu orange franchi alors que l\'arrêt était possible', false);
-  }
   if (e.ctrl === 'stop') {
     if (e.minSpeed > 1) addFault('stop', 'STOP : arrêt non marqué' + where, true);
     else if (!(e.lookedL && e.lookedR)) addFault('stoplook', 'STOP : pas de contrôle à gauche et à droite', false);
@@ -2649,7 +2660,7 @@ $('#go').onclick = async () => {
     started = true;
     exam.on = $('#mode').value === 'exam';
     $('#loadOv').hidden = true; paused = false;
-    setStatus(`Version 15 · ${TILESET.T ? 'Rhône : ' + TILESET.meta.size + ' km² de carte, chargés autour de vous' : 'centre de Lyon'} · données © contributeurs OpenStreetMap`);
+    setStatus(`Version 16 · ${TILESET.T ? 'Rhône : ' + TILESET.meta.size + ' km² de carte, chargés autour de vous' : 'centre de Lyon'} · données © contributeurs OpenStreetMap`);
     message('↑ pour avancer, ← → pour tourner. Clignotants : A et E.', 6000);
     if (exam.on) { say('Bonjour. Nous allons commencer. Démarrez quand vous êtes prêt, et suivez mes indications.'); showInsp('🎧', 'Démarrez quand vous êtes prêt et suivez mes indications'); setTimeout(() => { if (!ev || !ev.said) $('#insp').hidden = true; }, 7000); }
   } catch (e) {
@@ -2755,7 +2766,7 @@ $('#vNew').onclick = () => location.reload();
 
 
 
-window.__pev = { P, THREE, get parkedCount() { return [...PARKED_GRID.values()].reduce((a, l) => a + l.length, 0); }, get camera() { return camera; }, get OSM() { return OSM; }, get AIS() { return AIS; }, get PEDS() { return PEDS; }, get WALKERS() { return WALKERS; }, get TILES() { return TILES; }, backToRoad, get cockpit() { return cockpit; }, get ev() { return ev; }, forceInstr: k => { if (!ev) return 'pas de carrefour'; const r = planInstruction(ev, null, k); if (r) return r; sayInstruction(ev); return 'ok ' + ev.cross; }, get exam() { return exam; }, get hood() { return hoodGroup; }, makePedestrian, rng, get scene() { return scene; }, get renderer() { return renderer; } };
+window.__pev = { P, THREE, get parkedCount() { return [...PARKED_GRID.values()].reduce((a, l) => a + l.length, 0); }, get camera() { return camera; }, get OSM() { return OSM; }, get AIS() { return AIS; }, get PEDS() { return PEDS; }, get WALKERS() { return WALKERS; }, get TILES() { return TILES; }, backToRoad, get cockpit() { return cockpit; }, get ev() { return ev; }, get sigline() { return SIGLINE; }, get faults() { return faults; }, forceInstr: k => { if (!ev) return 'pas de carrefour'; const r = planInstruction(ev, null, k); if (r) return r; sayInstruction(ev); return 'ok ' + ev.cross; }, get exam() { return exam; }, get hood() { return hoodGroup; }, makePedestrian, rng, get scene() { return scene; }, get renderer() { return renderer; } };
 requestAnimationFrame(loop);
 </script>
 </body>
