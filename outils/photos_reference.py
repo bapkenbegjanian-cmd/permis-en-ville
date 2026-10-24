@@ -33,10 +33,11 @@ for theme, queries in THEMES.items():
     d = os.path.join(out, theme); os.makedirs(d, exist_ok=True); n = 0; seen = set()
     credits.append(f'\n## {theme}\n')
     for q in queries:
-        params = {'action': 'query', 'format': 'json', 'generator': 'search', 'gsrsearch': q + ' filetype:bitmap', 'gsrnamespace': 6, 'gsrlimit': 12,
+        params = {'action': 'query', 'format': 'json', 'generator': 'search', 'gsrsearch': q, 'gsrnamespace': 6, 'gsrlimit': 12,
                   'prop': 'imageinfo', 'iiprop': 'url|extmetadata|size', 'iiurlwidth': 1024}
         try: data = json.loads(get(API + '?' + urllib.parse.urlencode(params)))
         except Exception as e: credits.append(f'- erreur recherche « {q} » : {e}\n'); continue
+        if theme == 'bellecour' and q == queries[0]: open(os.path.join(out, 'debug.json'), 'w').write(json.dumps(data)[:20000])
         pages = sorted((data.get('query') or {}).get('pages', {}).values(), key=lambda p: p.get('index', 99))
         for p in pages:
             if n >= 8 or p['title'] in seen: continue
