@@ -10,8 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20 }
       - name: Télécharger 9 carrés de 200 m autour de la rue de la Barre (photomaillage 2023, Métropole de Lyon)
         run: |
           B=https://data.grandlyon.com/files/grandlyon/2023/mesh
@@ -21,16 +19,7 @@ jobs:
             if [ $x = 101 ] && [ $y = 168 ]; then L="u-00001 u-00008 u-00017 u-00022"; else L="u-00000"; fi
             for f in $L; do curl -sSf -A permis-en-ville -o /tmp/m/$T/$f.b3dm $B/$T/$f.b3dm && echo "$T/$f ok"; done
           done; done
-      - name: Conversion glTF 1 -> glTF 2 (3d-tiles-tools) et extraction en .glb
+      - name: Enregistrer les fichiers bruts sur la branche « maillage-brut »
         run: |
-          npm install --silent 3d-tiles-tools@0.4.4
-          mkdir -p demo-maillage/tuiles
-          for f in /tmp/m/*/*.b3dm; do n=$(basename $(dirname $f))-$(basename $f .b3dm)
-            npx 3d-tiles-tools upgrade -i $f -o /tmp/up-$n.b3dm --targetVersion 1.0 -f > /dev/null 2>&1 || { echo "échec $n"; continue; }
-            python3 -c "import sys;d=open(sys.argv[1],'rb').read();open(sys.argv[2],'wb').write(d[d.find(b'glTF'):])" /tmp/up-$n.b3dm demo-maillage/tuiles/$n.glb
-          done
-          ls demo-maillage/tuiles > demo-maillage/tuiles/liste.txt; du -sh demo-maillage
-      - name: Enregistrer
-        run: |
-          git config user.name github-actions && git config user.email github-actions@users.noreply.github.com
-          git add demo-maillage && git commit -qm "Démo : photomaillage 3D 2023 de la Métropole de Lyon (Licence Ouverte), quartier rue de la Barre" && git pull --rebase -q origin main && git push
+          cd /tmp/m && git init -q -b maillage-brut && git config user.name gha && git config user.email gha@users.noreply.github.com
+          git add . && git commit -qm "photomaillage brut" && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" maillage-brut
