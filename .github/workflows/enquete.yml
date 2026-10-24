@@ -2,39 +2,17 @@ name: Enquête données 3D
 on:
   workflow_dispatch:
   push:
-    paths: ['.github/workflows/enquete.yml']
+    paths: ['.github/workflows/enquete.yml', 'outils/explore_mesh.py']
 permissions:
   contents: write
 jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Lire les fiches officielles
-        run: |
-          mkdir -p /tmp/e && cd /tmp/e
-          UA="permis-en-ville/1.0"
-          get() { curl -sSL -m 60 -A "$UA" "$2" -o "$1" -w "$1 %{http_code} %{size_download}\n" >> journal.txt 2>&1 || echo "$1 erreur" >> journal.txt; }
-          curl -sS -m 60 -I -H "Origin: https://bapkenbegjanian-cmd.github.io" "https://data.grandlyon.com/files/grandlyon/2023/mesh/tileset.json" > entetes.txt 2>&1
-          get tileset.json "https://data.grandlyon.com/files/grandlyon/2023/mesh/tileset.json"
-          python3 - <<'PY' >> journal.txt
-          import json
-          t=json.load(open('tileset.json')); print('ASSET', t.get('asset')); r=t['root']; print('ROOT bv', r.get('boundingVolume'), 'err', r.get('geometricError'), 'transform', r.get('transform'))
-          def walk(n,d=0,out=[]):
-              c=n.get('content') or {}; u=c.get('uri') or c.get('url')
-              if u and len(out)<15: out.append((d,u,n.get('geometricError')))
-              for k in n.get('children',[])[:6]: walk(k,d+1,out)
-              return out
-          for x in walk(r): print('NODE', x)
-          print('NCHILD root', len(r.get('children',[])))
-          PY
-          python3 - <<'PY' >> journal.txt
-          import json,re
-          try:
-              d=json.load(open('datagouv.json')); print('TITRE', d.get('title')); print('LICENCE', d.get('license')); print('DESC', (d.get('description') or '')[:3000])
-              for r in d.get('resources',[]): print('RES', r.get('title'), r.get('format'), r.get('url'), r.get('filesize'))
-          except Exception as e: print('datagouv parse', e)
-          PY
+      - uses: actions/checkout@v4
+      - name: Branche du photomaillage au-dessus de la rue de la Barre
+        run: python3 outils/explore_mesh.py 4.8357 45.7577 /tmp/e 40 || true
       - name: Enregistrer sur la branche « enquete »
         run: |
-          cd /tmp/e && git init -q -b enquete && git config user.name gha && git config user.email gha@users.noreply.github.com
+          cd /tmp/e && du -sh . > taille.txt && git init -q -b enquete && git config user.name gha && git config user.email gha@users.noreply.github.com
           git add . && git commit -qm enquete && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" enquete
