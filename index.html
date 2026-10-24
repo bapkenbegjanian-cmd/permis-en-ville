@@ -77,7 +77,7 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 .insp{position:absolute;left:calc(12px + env(safe-area-inset-left));top:calc(84px + env(safe-area-inset-top));display:flex;align-items:center;gap:12px;padding:10px 16px;max-width:min(420px,70vw)}
 .insp small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .insp b{font-family:var(--font-display);font-size:20px;font-weight:600;line-height:1.15}
-.insp-ic{width:44px;height:44px;border-radius:50%;background:#1D4F9C;display:grid;place-items:center;font-size:26px;color:#fff;flex:none}
+.insp-ic{width:52px;height:52px;border-radius:50%;background:#1a9c4e;display:grid;place-items:center;font-size:26px;color:#fff;flex:none}
 .msg{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(31vh + env(safe-area-inset-bottom));padding:10px 16px;max-width:min(560px,90vw);text-align:center}
 .toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(96px + env(safe-area-inset-top));background:var(--red);color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:16px;box-shadow:0 8px 24px rgba(0,0,0,.35);max-width:90vw;text-align:center}
 .toast.light{background:var(--amber);color:#1a1300}
@@ -99,8 +99,9 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 .ind.on{color:#3FE07A;animation:blink .7s steps(1) infinite}
 @keyframes blink{50%{opacity:.15}}
 #minimap{display:none;position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));width:190px;height:190px;border-radius:50%;border:3px solid #2a2f37;background:#1b2028}
-.blhud{position:absolute;top:86px;left:50%;transform:translateX(-50%);display:flex;gap:150px;z-index:5}
-.blhud button{width:54px;height:40px;border-radius:12px;border:1px solid var(--glass-line);background:rgba(10,14,20,.55);color:#2a5a3a;font-size:24px;font-weight:900;cursor:pointer}
+.blhud{position:absolute;top:calc(168px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;gap:min(150px,30vw);z-index:30}
+.insp,.next,.msg,.toast{pointer-events:none}
+.blhud button{width:64px;height:48px;touch-action:manipulation;border-radius:12px;border:1px solid var(--glass-line);background:rgba(10,14,20,.55);color:#2a5a3a;font-size:24px;font-weight:900;cursor:pointer}
 .blhud button.on{animation:blk .8s steps(1) infinite;color:#2ee86f;border-color:#2ee86f}
 @keyframes blk{50%{color:#1b3a26;border-color:var(--glass-line)}}
 .touch{position:absolute;left:0;right:0;bottom:calc(29vh + env(safe-area-inset-bottom));display:flex;justify-content:space-between;padding:0 14px;pointer-events:none}
@@ -186,7 +187,7 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
       <span><kbd>R</kbd></span><span>Revenir sur la route si vous êtes coincé</span>
       <span><kbd>M</kbd> / <kbd>V</kbd></span><span>Couper le son du moteur / la voix de l'inspecteur</span>
     </div>
-    <p class="alt">Version 14 · Lyon centre refait d’après photos</p>
+    <p class="alt">Version 15 · flèche verte de guidage</p>
   </div>
 </section>
 
@@ -230,7 +231,7 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
   <div class="blhud"><button type="button" id="hbL" title="Clignotant gauche (touche A)">◀</button><button type="button" id="hbR" title="Clignotant droit (touche E)">▶</button></div>
   <div class="glass tlight" id="tlight" hidden><i class="r"></i><i class="a"></i><i class="g"></i><span>Feu</span></div>
   <div class="glass msg" id="msg" hidden></div>
-  <div class="glass insp" id="insp" hidden><span class="insp-ic" id="inspIc"></span><div><small>Inspecteur</small><b id="inspTx"></b></div></div>
+  <div class="glass insp" id="insp" hidden><span class="insp-ic" id="inspIc"></span><div><small>Inspecteur <span id="inspD"></span></small><b id="inspTx"></b></div></div>
   <div class="glass look l" id="lookL" hidden>◀ Contrôle gauche</div>
   <div class="glass look r" id="lookR" hidden>Contrôle droite ▶</div>
   <div class="toast" id="toast" hidden></div>
@@ -745,7 +746,8 @@ function followGround() { if (GROUND) GROUND.position.set(Math.round(P.x / 1500)
 // bord d'une tuile : les surfaces découpées au carré n'ont pas de mur de quai le long de la coupure
 const onTileCut = (a, b) => { const T = TILESET && TILESET.T; if (!T) return false; const c = v => { const r = ((v % T) + T) % T; return r < 1 || r > T - 1; };
   return (Math.abs(a[0] - b[0]) < .05 && c(a[0])) || (Math.abs(a[1] - b[1]) < .05 && c(a[1])); };
-function buildCity(T, D, WAYS, JN) {
+function buildCity(T, D, WAYS, JN) { const it = buildCityGen(T, D, WAYS, JN); let r; while (!(r = it.next()).done); return r.value; }
+function* buildCityGen(T, D, WAYS, JN) {
   const group = new THREE.Group(), M = cityMaterials(T);
   const recv = { cast: false, receive: true };
   const mask = new Geo();
@@ -815,6 +817,7 @@ function buildCity(T, D, WAYS, JN) {
   const objs = [];
   const bar = (a, b, width) => { const seg = cleanPts([a, b]); if (seg.length > 1) strip(paint.at(a.x, a.y), seg, width / 2, -width / 2, .045, 1); };
   for (const w of WAYS) {
+    yield;
     const L = w.len;
     // axe et séparations de voies (lignes discontinues 3 m / 5 m)
     if (w.half * 2 >= 5.4 && w.rank >= 1) {
@@ -941,7 +944,9 @@ function buildCity(T, D, WAYS, JN) {
     return out;
   };
   const village = D.tile && D.buildings.length < 900;   // bourgs et villages : maisons basses
+  let nb0 = 0;
   for (const b of D.buildings) {
+    if ((++nb0 & 31) === 0) yield;   // laisse la main pour garder la conduite fluide
     const r = rng(b.id % 2147483647);
     let area = 0; for (let i = 0; i < b.p.length; i++) { const [x0, y0] = b.p[i], [x1, y1] = b.p[(i + 1) % b.p.length]; area += x0 * y1 - x1 * y0; } area /= 2;
     const A = Math.abs(area); if (A < 6) continue;
@@ -1513,8 +1518,10 @@ function updatePlayer(dt) {
   // volant
   const maxSteer = 34 / (1 + Math.abs(v) * .09);
   const target = (keys.left ? -1 : 0) + (keys.right ? 1 : 0);
-  const rate = target ? 70 : 110;
-  P.steer += Math.max(-rate * dt, Math.min(rate * dt, target * maxSteer - P.steer));
+  // le volant tourne progressivement (pas d'à-coup) et revient au centre tout seul, plus vite quand on roule
+  const goal = target * maxSteer, k = target ? 5.5 : 4 + Math.min(4, Math.abs(v) * .3);
+  P.steer += (goal - P.steer) * (1 - Math.exp(-k * dt));
+  if (!target && Math.abs(P.steer) < .05) P.steer = 0;
   // pédales : l'accélérateur et le frein s'enfoncent progressivement
   P.throttle = Math.min(1, Math.max(0, (P.throttle || 0) + (keys.up ? 3.5 : -8) * dt));
   P.brakeT = keys.down ? (P.brakeT || 0) + dt * 6 : 0;
@@ -1615,7 +1622,7 @@ function updateRules(dt, now) {
   if (ev && (!next || next.id !== ev.id)) {
     const dJ = Math.hypot(ev.node.x - P.x, ev.node.y - P.y);
     if (ev.minDist < 25 && dJ < 40) judge(ev);
-    ev = null;
+    hideGuide(); ev = null;
   }
   if (next) {
     if (!ev) { ev = Object.assign(next, { b0: P.b, minSpeed: Infinity, minDist: next.dist, lookedL: false, lookedR: false, blink: null, bIn: null, at: { x: P.x, y: P.y } }); if (ah && ah.node === next.node) planInstruction(ev, match.w); }
@@ -1674,8 +1681,8 @@ function say(text) {
   try { const u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.rate = 1; const v = speechSynthesis.getVoices().find(v => /^fr/i.test(v.lang)); if (v) u.voice = v; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (_) {}
 }
 function showInsp(icon, text) { $('#inspIc').textContent = icon; $('#inspTx').textContent = text; $('#insp').hidden = false; }
-function planInstruction(e, w) {
-  if (!exam.on || exam.finishing) return;
+function planInstruction(e, w, forced) {
+  if (!forced && (!exam.on || exam.finishing)) return;
   const n = e.node, opts = [];
   for (const id of OSM.nodeWays.get(n.id) || []) {
     const w2 = OSM.ways.get(id); if (!w2 || w2.rank < 1) continue;
@@ -1684,19 +1691,51 @@ function planInstruction(e, w) {
       const j = i + dir; if (j < 0 || j >= w2.nodes.length || !travelOK(w2, dir)) continue;
       const q = w2.pts[j], b = bearingOf(q.x - n.x, q.y - n.y), rel = angDiff(e.b0, b);
       if (Math.abs(rel) > 150) continue;
-      opts.push(Math.abs(rel) < 35 ? 'straight' : rel > 0 ? 'right' : 'left');
+      opts.push({ kind: Math.abs(rel) < 35 ? 'straight' : rel > 0 ? 'right' : 'left', w2, i, dir, rel });
     }
   }
-  const kinds = [...new Set(opts)]; if (kinds.length < 2) return;   // pas de choix : rien à annoncer
+  const kinds = [...new Set(opts.map(o => o.kind))]; if (forced) { if (!kinds.includes(forced)) return 'impossible: ' + kinds.join(','); kinds.length = 0; kinds.push(forced); } else if (kinds.length < 2) return;   // pas de choix : rien à annoncer
   const weights = { straight: .45, right: .3, left: .25 }, r = Math.random() * kinds.reduce((a, k) => a + weights[k], 0);
   let acc = 0; for (const k of kinds) { acc += weights[k]; if (r <= acc) { e.instr = k; break; } }
+  // la rue de sortie exacte : celle dont l'angle est le plus proche de la direction demandée
+  const ideal = { straight: 0, right: 90, left: -90 }[e.instr];
+  e.target = opts.filter(o => o.kind === e.instr).sort((a, b) => Math.abs(a.rel - ideal) - Math.abs(b.rel - ideal))[0];
+  if (e.target && e.target.w2.tags.name) e.cross = e.target.w2.tags.name;
 }
+/* Flèche verte peinte sur la chaussée : de la voie d'approche jusque dans la rue à prendre */
+let GUIDE = null;
+function showGuide(e) {
+  hideGuide(); if (!e.target) return;
+  const n = e.node, t = e.target, R = Math.min(12, (n.jr || 5) + 3), ib = (e.b0 + 180) * RAD;
+  const path = [];
+  for (let k = 32; k > R; k -= 4) path.push({ x: n.x + Math.sin(ib) * k, y: n.y + Math.cos(ib) * k });
+  const pin = { x: n.x + Math.sin(ib) * R, y: n.y + Math.cos(ib) * R };
+  // sortie : on suit les points de la vraie rue sur 30 m
+  const out = [{ x: n.x, y: n.y }]; let L = 0;
+  for (let j = t.i + t.dir; j >= 0 && j < t.w2.pts.length && L < 34; j += t.dir) { const a = out[out.length - 1], q = t.w2.pts[j]; L += Math.hypot(q.x - a.x, q.y - a.y); out.push({ x: q.x, y: q.y }); }
+  const along = (pts, d) => { let acc = 0; for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], l = Math.hypot(b.x - a.x, b.y - a.y); if (acc + l >= d) { const u = (d - acc) / l; return { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u }; } acc += l; } return pts[pts.length - 1]; };
+  const pout = along(out, R);
+  for (let k = 0; k <= 10; k++) { const u = k / 10, v = 1 - u; path.push({ x: v * v * pin.x + 2 * u * v * n.x + u * u * pout.x, y: v * v * pin.y + 2 * u * v * n.y + u * u * pout.y }); }
+  for (let d = R + 4; d < L - 1; d += 4) path.push(along(out, d));
+  const lane = e.target.w2.oneway ? 0 : -Math.min(1.8, e.target.w2.half * .45);   // côté droit de la chaussée
+  const P2 = offsetLine(cleanPts(path), lane);
+  const g = new Geo(); strip(g, P2.slice(0, -2), .55, -.55, .08, 1);
+  // pointe de flèche
+  const a = P2[P2.length - 3], b = P2[P2.length - 1], dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l;
+  const tip = { x: a.x + ux * 3.2, y: a.y + uy * 3.2 };
+  g.tri([a.x - uy * 1.5, .08, -(a.y + ux * 1.5)], [tip.x, .08, -tip.y], [a.x + uy * 1.5, .08, -(a.y - ux * 1.5)], [0, 1, 0], [0, 0], [0, 0], [0, 0]);
+  g.tri([a.x + uy * 1.5, .08, -(a.y - ux * 1.5)], [tip.x, .08, -tip.y], [a.x - uy * 1.5, .08, -(a.y + ux * 1.5)], [0, 1, 0], [0, 0], [0, 0], [0, 0]);
+  GUIDE = g.mesh(new THREE.MeshBasicMaterial({ color: '#19d46a', transparent: true, opacity: .8, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+  GUIDE.renderOrder = -3; GUIDE.frustumCulled = false; scene.add(GUIDE);
+  e.guidePath = P2;
+}
+function hideGuide() { if (GUIDE) { scene.remove(GUIDE); GUIDE.geometry.dispose(); GUIDE = null; } }
 function sayInstruction(e) {
   e.said = true;
   const where = e.cross ? (e.instr === 'straight' ? '' : ', ' + e.cross) : '';
   const txt = e.instr === 'straight' ? 'Au prochain carrefour, continuez tout droit.' : e.instr === 'right' ? 'Au prochain carrefour, tournez à droite' + where + '.' : 'Au prochain carrefour, tournez à gauche' + where + '.';
   showInsp(e.instr === 'straight' ? '⬆' : e.instr === 'right' ? '➡' : '⬅', txt.replace('Au prochain carrefour, ', '').replace(/^./, c => c.toUpperCase()));
-  say(txt);
+  say(txt); showGuide(e);
 }
 function examTick(dt) {
   if (!exam.on || !exam.finishing || ended) return;
@@ -2047,13 +2086,17 @@ function defaultLimits(ws) {
     w.limit = urban(pa.x, pa.y) || urban(pb.x, pb.y) || urban(pc.x, pc.y) ? 50 : (w.hw === 'trunk' && w.oneway ? 110 : 80);
   }
 }
-function buildTile(k, D) {
+function buildTile(k, D) { const it = buildTileGen(k, D); while (!it.next().done); }
+function* buildTileGen(k, D) {
   const res = addGraph(OSM, D);
   buildBuildingGrid(D.buildings);
   defaultLimits(res.ways);
   const cars = planParking(res.ways);
-  const city = buildCity(TEX, D, res.ways, res.junctions);
-  const group = new THREE.Group(); group.add(city.group, buildParkedCars(cars), buildStreetFurniture(D));
+  yield;
+  const city = yield* buildCityGen(TEX, D, res.ways, res.junctions);
+  const group = new THREE.Group(); group.add(city.group); yield;
+  group.add(buildParkedCars(cars)); yield;
+  group.add(buildStreetFurniture(D)); yield;
   const sig = buildSignals(city.objs); group.add(sig);
   if (WEATHER === 'night') { group.add(nightLamps(D)); nightWindows(group); }
   const crossings = city.objs.filter(o => o.kind === 'crossing' && o.w.rank >= 1);
@@ -2076,10 +2119,16 @@ async function loadAround(x, y, onProgress) {
   for (const [k, d] of datas) if (!TILES.has(k)) { buildTile(k, d); await new Promise(r => setTimeout(r, 0)); }
 }
 // pendant la conduite : une tuile à la fois, sans bloquer la conduite
-let tileCheckT = 0, tileBuildQ = [];
+let tileCheckT = 0, tileBuildQ = [], tileBuilding = null;
 function streamTiles(dt) {
   if (!TILESET || !TILESET.T) return;
-  if (tileBuildQ.length) { const [k, d] = tileBuildQ.shift(); if (!TILES.has(k)) { try { buildTile(k, d); } catch (e) { console.error(e); } } TILE_PENDING.delete(k); return; }
+  if (tileBuilding) {   // au plus ~6 ms de construction par image
+    const t0 = performance.now();
+    try { while (performance.now() - t0 < 6) if (tileBuilding.it.next().done) { TILE_PENDING.delete(tileBuilding.k); tileBuilding = null; break; } }
+    catch (e) { console.error(e); TILE_PENDING.delete(tileBuilding.k); tileBuilding = null; }
+    return;
+  }
+  if (tileBuildQ.length) { const [k, d] = tileBuildQ.shift(); if (!TILES.has(k)) tileBuilding = { k, it: buildTileGen(k, d) }; else TILE_PENDING.delete(k); return; }
   tileCheckT -= dt; if (tileCheckT > 0) return; tileCheckT = .5;
   const fx = Math.sin(P.b * RAD), fy = Math.cos(P.b * RAD), ax = P.x + fx * Math.min(250, Math.abs(P.v) * 12), ay = P.y + fy * Math.min(250, Math.abs(P.v) * 12);
   for (const k of wantedTiles(ax, ay, LOAD_R)) {
@@ -2448,6 +2497,7 @@ function drawMinimap() {
       if (!mg.fillStyle || h === 'crossing') continue; mg.beginPath(); mg.arc(n.x, n.y, 4, 0, 7); mg.fill();
     }
   }
+  if (GUIDE && ev && ev.guidePath) { mg.strokeStyle = '#19d46a'; mg.lineWidth = 7; mg.beginPath(); ev.guidePath.forEach((p, i) => i ? mg.lineTo(p.x, p.y) : mg.moveTo(p.x, p.y)); mg.stroke(); }
   mg.fillStyle = '#c9d1db'; for (const ai of AIS) { mg.beginPath(); mg.arc(ai.x, ai.y, 3.2, 0, 7); mg.fill(); }
   for (const f of faults) { mg.fillStyle = f.grave ? '#E0373D' : '#F0B43A'; mg.beginPath(); mg.arc(f.x, f.y, 5, 0, 7); mg.fill(); }
   mg.restore();
@@ -2467,6 +2517,9 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 let lastNextHtml = '';
 function renderLimit() { const el = $('#lim'); if (lastLimit) { el.textContent = lastLimit; el.classList.remove('unknown'); } else { el.textContent = '—'; el.classList.add('unknown'); } }
 function renderHUD(now) {
+  // distance restante jusqu'au carrefour annoncé par l'inspecteur
+  $('#inspD').textContent = ev && ev.said && ev.instr ? '· dans ' + Math.round(liveDist()) + ' m' : '';
+  if (GUIDE) GUIDE.material.opacity = .55 + .3 * Math.sin(now / 250);
   const kmh = Math.round(Math.abs(P.v) * 3.6), sp = $('#spd');
   sp.firstChild.nodeValue = kmh; sp.classList.toggle('over', !!lastLimit && kmh > lastLimit + 4);
   $('#wheel').style.transform = `rotate(${P.steer * 9}deg)`;
@@ -2596,7 +2649,7 @@ $('#go').onclick = async () => {
     started = true;
     exam.on = $('#mode').value === 'exam';
     $('#loadOv').hidden = true; paused = false;
-    setStatus(`Version 14 · ${TILESET.T ? 'Rhône : ' + TILESET.meta.size + ' km² de carte, chargés autour de vous' : 'centre de Lyon'} · données © contributeurs OpenStreetMap`);
+    setStatus(`Version 15 · ${TILESET.T ? 'Rhône : ' + TILESET.meta.size + ' km² de carte, chargés autour de vous' : 'centre de Lyon'} · données © contributeurs OpenStreetMap`);
     message('↑ pour avancer, ← → pour tourner. Clignotants : A et E.', 6000);
     if (exam.on) { say('Bonjour. Nous allons commencer. Démarrez quand vous êtes prêt, et suivez mes indications.'); showInsp('🎧', 'Démarrez quand vous êtes prêt et suivez mes indications'); setTimeout(() => { if (!ev || !ev.said) $('#insp').hidden = true; }, 7000); }
   } catch (e) {
@@ -2702,7 +2755,7 @@ $('#vNew').onclick = () => location.reload();
 
 
 
-window.__pev = { P, THREE, get parkedCount() { return [...PARKED_GRID.values()].reduce((a, l) => a + l.length, 0); }, get camera() { return camera; }, get OSM() { return OSM; }, get AIS() { return AIS; }, get PEDS() { return PEDS; }, get WALKERS() { return WALKERS; }, get TILES() { return TILES; }, backToRoad, get cockpit() { return cockpit; }, get hood() { return hoodGroup; }, makePedestrian, rng, get scene() { return scene; }, get renderer() { return renderer; } };
+window.__pev = { P, THREE, get parkedCount() { return [...PARKED_GRID.values()].reduce((a, l) => a + l.length, 0); }, get camera() { return camera; }, get OSM() { return OSM; }, get AIS() { return AIS; }, get PEDS() { return PEDS; }, get WALKERS() { return WALKERS; }, get TILES() { return TILES; }, backToRoad, get cockpit() { return cockpit; }, get ev() { return ev; }, forceInstr: k => { if (!ev) return 'pas de carrefour'; const r = planInstruction(ev, null, k); if (r) return r; sayInstruction(ev); return 'ok ' + ev.cross; }, get exam() { return exam; }, get hood() { return hoodGroup; }, makePedestrian, rng, get scene() { return scene; }, get renderer() { return renderer; } };
 requestAnimationFrame(loop);
 </script>
 </body>
