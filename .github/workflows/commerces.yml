@@ -1,0 +1,28 @@
+name: Commerces du Rhône
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/commerces.yml', 'outils/poi_rhone.py']
+permissions:
+  contents: write
+jobs:
+  poi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Outils
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q osmium-tool
+          pip install osmium
+      - name: Extrait et commerces nommés
+        run: |
+          curl -sSfL -m 1800 -o /tmp/region.osm.pbf https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf
+          osmium extract -b 4.23,45.44,5.18,46.32 /tmp/region.osm.pbf -o /tmp/rhone.osm.pbf --overwrite
+          osmium tags-filter /tmp/rhone.osm.pbf nwa/shop nwa/amenity -o /tmp/poi.osm.pbf --overwrite
+          rm -rf data/rhone-poi && python3 outils/poi_rhone.py /tmp/poi.osm.pbf data/rhone-poi | tee data/journal-commerces.txt
+      - name: Enregistrer
+        run: |
+          git config user.name github-actions && git config user.email github-actions@users.noreply.github.com
+          git add data && git commit -qm "Commerces nommés du Rhône (OpenStreetMap)" || echo rien
+          git pull --rebase -q origin main && git push
