@@ -101,6 +101,14 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
 #minimap{display:none;position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));width:190px;height:190px;border-radius:50%;border:3px solid #2a2f37;background:#1b2028}
 .blhud{position:absolute;top:calc(168px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;gap:min(150px,30vw);z-index:30}
 .insp,.next,.msg,.toast{pointer-events:none}
+/* écran allégé : seules les infos utiles au moment présent */
+.blhud{display:none}
+.tlight{display:none!important}
+.hud-tl{transition:opacity .6s} .hud-tl.fade{opacity:0}
+.status{transition:opacity .8s} .status.fade{opacity:0}
+.score{padding:6px 12px} .score b{font-size:18px} .score span{font-size:11px}
+.next{padding:6px 12px;gap:8px} .next svg{width:28px;height:28px} .next .t b{font-size:15px} .next .t span{font-size:11px} .next .d{font-size:16px}
+.touch button.bl.on{background:#1a9c4e;animation:blk2 .8s steps(1) infinite} @keyframes blk2{50%{background:var(--glass)}}
 .blhud button{width:64px;height:48px;touch-action:manipulation;border-radius:12px;border:1px solid var(--glass-line);background:rgba(10,14,20,.55);color:#2a5a3a;font-size:24px;font-weight:900;cursor:pointer}
 .blhud button.on{animation:blk .8s steps(1) infinite;color:#2ee86f;border-color:#2ee86f}
 @keyframes blk{50%{color:#1b3a26;border-color:var(--glass-line)}}
@@ -187,7 +195,7 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
       <span><kbd>R</kbd></span><span>Revenir sur la route si vous êtes coincé</span>
       <span><kbd>M</kbd> / <kbd>V</kbd></span><span>Couper le son du moteur / la voix de l'inspecteur</span>
     </div>
-    <p class="alt">Version 16 · feux corrigés</p>
+    <p class="alt">Version 17 · commerces réels, fleuves, écran allégé</p>
   </div>
 </section>
 
@@ -237,7 +245,7 @@ kbd{font-family:var(--font-mono);font-size:12px;border:1px solid var(--line);bor
   <div class="toast" id="toast" hidden></div>
   <div class="status" id="status"></div>
   <div class="touch">
-    <div class="grp"><button data-k="left" type="button">◀</button><button data-k="right" type="button">▶</button><button data-k="blL" type="button">Clign. G</button><button data-k="blR" type="button">Clign. D</button></div>
+    <div class="grp"><button data-k="left" type="button">◀</button><button data-k="right" type="button">▶</button><button data-k="blL" class="bl" type="button">◀ Clign.</button><button data-k="blR" class="bl" type="button">Clign. ▶</button></div>
     <div class="grp"><button data-k="down" type="button">Frein</button><button data-k="up" type="button">Gaz</button></div>
   </div>
 
@@ -384,6 +392,7 @@ function buildBuildingGrid(list) {
     }
   }
 }
+function ringArea(r) { let a = 0; for (let i = 0; i < r.length - 1; i++) a += r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1]; return a / 2; }
 function pointInPoly(x, y, p) {
   let ins = false;
   for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
@@ -636,7 +645,14 @@ function makeTextures() {
     noise(g, w, h, '#9a5440', .2, 8000, 41, 1.5); g.strokeStyle = 'rgba(60,25,15,.35)'; g.lineWidth = 2;
     for (let i = 0; i <= 16; i++) { g.beginPath(); g.moveTo(0, i * 16); g.lineTo(w, i * 16); g.stroke(); }
   });
-  T.water = canvasTex(512, 512, (g, w, h) => { noise(g, w, h, '#36525c', .1, 9000, 51, 3); });
+  T.water = canvasTex(512, 512, (g, w, h) => { noise(g, w, h, '#5f8a92', .07, 9000, 51, 3); });
+  // carte de normales des vaguelettes (somme de houles + bruit), répétable
+  T.waterN = (() => { const N = 256, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d'), img = g.createImageData(N, N), r = rng(57);
+    const waves = Array.from({ length: 9 }, () => ({ kx: Math.round((r() - .5) * 16), ky: Math.round((r() - .5) * 16) || 3, a: .4 + r(), p: r() * 7 }));
+    const H = (x, y) => waves.reduce((s, w) => s + w.a * Math.sin((w.kx * x + w.ky * y) / N * 2 * Math.PI + w.p), 0);
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const dx = H(x + 1, y) - H(x - 1, y), dy = H(x, y + 1) - H(x, y - 1), l = Math.hypot(dx * .35, dy * .35, 1), i = (y * N + x) * 4;
+      img.data[i] = 128 + dx * .35 / l * 127; img.data[i + 1] = 128 + dy * .35 / l * 127; img.data[i + 2] = 255 / l; img.data[i + 3] = 255; }
+    g.putImageData(img, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })();
   return T;
 }
 
@@ -724,7 +740,7 @@ function cityMaterials(T) {
     paint: new THREE.MeshStandardMaterial({ color: '#e4e3dc', roughness: .6, depthWrite: false }),
     curb: new THREE.MeshStandardMaterial({ color: '#d8d6d0', roughness: .8 }),
     stone: new THREE.MeshStandardMaterial({ map: T.stone, roughness: .9 }),
-    water: new THREE.MeshStandardMaterial({ map: T.water, color: '#8fb3bb', roughness: .22, metalness: 0, envMapIntensity: .55 }),
+    water: new THREE.MeshStandardMaterial({ map: T.water, color: '#d6e8ea', normalMap: T.waterN, normalScale: new THREE.Vector2(.3, .3), roughness: .05, metalness: .4, envMapIntensity: 1.5 }),
     roof: new THREE.MeshStandardMaterial({ map: T.roof, roughness: .85 }),
     corniche: new THREE.MeshStandardMaterial({ map: T.corniche, vertexColors: true, roughness: .85, side: THREE.DoubleSide }),
     awning: new THREE.MeshStandardMaterial({ map: T.awning, vertexColors: true, roughness: .9, side: THREE.DoubleSide })
@@ -771,13 +787,38 @@ function* buildCityGen(T, D, WAYS, JN) {
         const [x0, y0] = r[i], [x1, y1] = r[i + 1], L = Math.hypot(x1 - x0, y1 - y0); if (L < .01 || onTileCut(r[i], r[i + 1])) continue;
         const nx = (y1 - y0) / L, ny = -(x1 - x0) / L; // normale (côté droit) ; les murs sont doubles faces
         walls.quad([x0, depth, -y0], [x1, depth, -y1], [x1, .02, -y1], [x0, .02, -y0], [nx, 0, -ny], [[0, 0], [L / 4, 0], [L / 4, -depth / 4], [0, -depth / 4]]);
+        // parapet de pierre côté ville (pas à l'entrée des ponts ni sur les rampes)
+        if (big && !w.basin) {
+          const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, mw = matchWay(mx, my, 0, 25);
+          if (mw && (mw.w.bridge || mw.d < mw.w.half + 1.5)) continue;
+          const land = ringArea(r) > 0 ? -1 : 1, ox = nx * land * .45, oy = ny * land * .45;   // décalage vers la terre
+          walls.quad([x0, .02, -y0], [x1, .02, -y1], [x1, .95, -y1], [x0, .95, -y0], [-nx * land, 0, ny * land], [[0, 0], [L / 4, 0], [L / 4, .25], [0, .25]]);
+          walls.quad([x0 + ox, .95, -(y0 + oy)], [x1 + ox, .95, -(y1 + oy)], [x1 + ox, .02, -(y1 + oy)], [x0 + ox, .02, -(y0 + oy)], [nx * land, 0, -ny * land], [[0, 0], [L / 4, 0], [L / 4, .25], [0, .25]]);
+          walls.quad([x0, .95, -y0], [x1, .95, -y1], [x1 + ox, .95, -(y1 + oy)], [x0 + ox, .95, -(y0 + oy)], [0, 1, 0], [[0, 0], [L / 4, 0], [L / 4, .1], [0, .1]]);
+        }
       }
     }
   }
   if (water.p.length) { const wm = water.mesh(M.water, recv); wm.renderOrder = -11; group.add(wm); }
+  // piles des ponts dans l'eau et sous-face du tablier
+  const inBigWater = (x, y) => D.water.some(w => !w.basin && w.outer.some(r => r.length > 3 && pointInPoly(x, y, r)) && !(w.inner || []).some(r => pointInPoly(x, y, r)));
+  for (const w of WAYS) if (w.bridge) {
+    const pts = cleanPts(w.pts); if (pts.length >= 2) strip(walls, pts, w.half + 2.15, -w.half - 2.15, -.8, 4);
+    for (let s0 = 14; s0 < w.len - 8; s0 += 32) {
+      const pa = posAt(w, s0); if (!inBigWater(pa.x, pa.y)) continue;
+      const ux = pa.ux, uy = pa.uy, rx = uy, ry = -ux, hw = w.half + 2.4, ht = 1.6;
+      const C = [[-hw, -ht], [hw, -ht], [hw, ht], [-hw, ht]].map(([a, b]) => [pa.x + rx * a + ux * b, pa.y + ry * a + uy * b]);
+      for (let k = 0; k < 4; k++) { const a = C[k], b = C[(k + 1) % 4], ex = b[0] - a[0], ey = b[1] - a[1], l = Math.hypot(ex, ey);
+        walls.quad([a[0], WL - .3, -a[1]], [b[0], WL - .3, -b[1]], [b[0], -.8, -b[1]], [a[0], -.8, -a[1]], [ey / l, 0, ex / l], [[0, 0], [l / 4, 0], [l / 4, 1.2], [0, 1.2]]); }
+      // avant-bec en pointe face au courant
+      for (const sg of [-1, 1]) { const tip = [pa.x + ux * sg * (ht + 1.6), pa.y + uy * sg * (ht + 1.6)];
+        for (const side of [-1, 1]) { const a = [pa.x + rx * hw * side + ux * sg * ht, pa.y + ry * hw * side + uy * sg * ht];
+          walls.quad([a[0], WL - .3, -a[1]], [tip[0], WL - .3, -tip[1]], [tip[0], -1.6, -tip[1]], [a[0], -1.6, -a[1]], [ux * sg, 0, -uy * sg], [[0, 0], [1, 0], [1, 1], [0, 1]]); } }
+    }
+  }
   if (walls.p.length) { const wl = walls.mesh(M.wallMat, recv); wl.renderOrder = -10; group.add(wl); }
   // chaussées, carrefours, ponts
-  const road = new Chunks(), curb = new Chunks(), paint = new Chunks(), deck = new Chunks(), barrier = new Chunks();
+  const road = new Chunks(), curb = new Chunks(), paint = new Chunks(), deck = new Chunks(), barrier = new Chunks(), bridgeStone = new Chunks();
   for (const w of WAYS) {
     const pts = cleanPts(w.pts); if (pts.length < 2) continue;
     const mid = posAt(w, w.len / 2);
@@ -794,11 +835,12 @@ function* buildCityGen(T, D, WAYS, JN) {
       if (!junctionClear(w, mid)) continue;
       const seg = subPts(w, s, s1); if (seg.length < 2) continue;
       const cg = curb.at(seg[0].x, seg[0].y);
-      if (w.bridge) {
+      if (w.bridge) {   // parapets de pierre des ponts (tablier épais vu depuis les quais)
+        const bg = bridgeStone.at(seg[0].x, seg[0].y);
         for (const side of [1, -1]) { const o = side * (w.half + 1.8); const A = offsetLine(seg, o), B = offsetLine(seg, o - side * .35);
-          for (let i = 0; i < A.length - 1; i++) { const a = A[i], b = A[i + 1], c = B[i + 1], d = B[i];
-            cg.quad([a.x, 1.05, -a.y], [b.x, 1.05, -b.y], [c.x, 1.05, -c.y], [d.x, 1.05, -d.y], [0, 1, 0]);
-            for (const [p, q] of [[a, b], [d, c]]) cg.quad([p.x, -.8, -p.y], [q.x, -.8, -q.y], [q.x, 1.05, -q.y], [p.x, 1.05, -p.y], [0, 0, 1]); } }
+          for (let i = 0; i < A.length - 1; i++) { const a = A[i], b = A[i + 1], c = B[i + 1], d = B[i], l = Math.hypot(b.x - a.x, b.y - a.y);
+            bg.quad([a.x, .95, -a.y], [b.x, .95, -b.y], [c.x, .95, -c.y], [d.x, .95, -d.y], [0, 1, 0], [[0, 0], [l / 4, 0], [l / 4, .1], [0, .1]]);
+            for (const [p, q] of [[a, b], [d, c]]) bg.quad([p.x, -.9, -p.y], [q.x, -.9, -q.y], [q.x, .95, -q.y], [p.x, .95, -p.y], [0, 0, 1], [[0, 0], [l / 4, 0], [l / 4, .46], [0, .46]]); } }
         continue;
       }
       for (const side of [1, -1]) {
@@ -813,6 +855,7 @@ function* buildCityGen(T, D, WAYS, JN) {
   }
   curb.addTo(group, M.curbMat, { cast: false, receive: true });
   deck.addTo(group, M.sidewalk, recv, -6);
+  bridgeStone.addTo(group, M.wallMat, { cast: true, receive: true });
   // marquages au sol
   const objs = [];
   const bar = (a, b, width) => { const seg = cleanPts([a, b]); if (seg.length > 1) strip(paint.at(a.x, a.y), seg, width / 2, -width / 2, .045, 1); };
@@ -944,6 +987,24 @@ function* buildCityGen(T, D, WAYS, JN) {
     return out;
   };
   const village = D.tile && D.buildings.length < 900;   // bourgs et villages : maisons basses
+  // commerces réels : chaque commerce est rattaché au pan de façade le plus proche (moins de 25 m)
+  const edgePOI = new Map();
+  if (D.pois && D.pois.length) {
+    const grid = new Map(); for (const b of D.buildings) { const [x, y] = b.p[0], k = Math.floor(x / 50) + ':' + Math.floor(y / 50); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(b); }
+    for (const q of D.pois) {
+      let best = null, bd = 25;
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (const b of grid.get((Math.floor(q.x / 50) + dx) + ':' + (Math.floor(q.y / 50) + dy)) || []) {
+        let ar = 0; for (let i = 0; i < b.p.length; i++) { const [a0, a1] = b.p[i], [c0, c1] = b.p[(i + 1) % b.p.length]; ar += a0 * c1 - c0 * a1; }
+        const p = ar > 0 ? b.p : b.p.slice().reverse();
+        for (let i = 0; i < p.length; i++) { const [x0, y0] = p[i], [x1, y1] = p[(i + 1) % p.length], vx = x1 - x0, vy = y1 - y0, L2 = vx * vx + vy * vy; if (L2 < 4) continue;
+          const t = Math.max(0, Math.min(1, ((q.x - x0) * vx + (q.y - y0) * vy) / L2)), d = Math.hypot(x0 + vx * t - q.x, y0 + vy * t - q.y);
+          if (d < bd && onRoad(x0 + vx * t + vy / Math.sqrt(L2) * 9, y0 + vy * t - vx / Math.sqrt(L2) * 9, 3)) { bd = d; best = { k: b.id + ':' + i, t }; } }
+      }
+      if (best) { if (!edgePOI.has(best.k)) edgePOI.set(best.k, []); edgePOI.get(best.k).push({ ...q, t: best.t }); }
+    }
+  }
+  const signs = edgePOI.size ? signAtlas([...edgePOI.values()].flat()) : null;
+  const signGeo = signs ? signs.atlases.map(() => new Chunks()) : [], blade = new Chunks();
   let nb0 = 0;
   for (const b of D.buildings) {
     if ((++nb0 & 31) === 0) yield;   // laisse la main pour garder la conduite fluide
@@ -973,7 +1034,17 @@ function* buildCityGen(T, D, WAYS, JN) {
         band(L < 2.5 ? HOUSE[2].geo.at(cx0, cy0) : hs.geo.at(cx0, cy0), x0, y0, x1, y1, 0, H, n, 0, Math.max(1, Math.round(L / 3.1)), 0, H / 3.1, hc, true); continue; }
       if (L < 1.6) { band(ATT.geo.at(cx0, cy0), x0, y0, x1, y1, 0, H, n, .02, .12, 0, H / FL, c); continue; }   // petit retour de mur : pierre nue
       // rez-de-chaussée
-      let gfSet = r() < shopP ? SHOPS[Math.floor(r() * SHOPS.length)] : RUST;
+      const here = edgePOI.get(b.id + ':' + i);
+      let gfSet = here ? SHOPS[Math.floor(r() * SHOPS.length)] : r() < (D.pois ? shopP * .45 : shopP) ? SHOPS[Math.floor(r() * SHOPS.length)] : RUST;
+      if (here && signs) for (const q of here) {   // enseigne au nom du vrai commerce, au-dessus de la vitrine
+        const sl = signs.slot.get(q), w = Math.min(L - .4, Math.max(2.4, Math.min(7, q.n.length * .34))), c0 = Math.max(w / 2 + .2, Math.min(L - w / 2 - .2, q.t * L));
+        const ux = (x1 - x0) / L, uy = (y1 - y0) / L, ox = n2[0] * .09, oy = n2[1] * .09, ax = x0 + ux * (c0 - w / 2) + ox, ay = y0 + uy * (c0 - w / 2) + oy, bx = x0 + ux * (c0 + w / 2) + ox, by = y0 + uy * (c0 + w / 2) + oy;
+        signGeo[sl.a].at(cx0, cy0).quad([ax, 3.3, -ay], [bx, 3.3, -by], [bx, 3.95, -by], [ax, 3.95, -ay], n, [[sl.u0, sl.v0], [sl.u1, sl.v0], [sl.u1, sl.v1], [sl.u0, sl.v1]]);
+        if (q.k === 'pharmacy') {   // croix verte en drapeau
+          const px = x0 + ux * c0 + n2[0] * .55, py = y0 + uy * c0 + n2[1] * .55;
+          blade.at(cx0, cy0).quad([px - n2[0] * .4, 3.6, -(py - n2[1] * .4)], [px + n2[0] * .4, 3.6, -(py + n2[1] * .4)], [px + n2[0] * .4, 4.4, -(py + n2[1] * .4)], [px - n2[0] * .4, 4.4, -(py - n2[1] * .4)], [ux, 0, -uy]);
+        }
+      }
       if (!entryDone && L > 4 && L < 14 && r() < .5) { gfSet = ENTRY; entryDone = true; }
       band(gfSet.geo.at(cx0, cy0), x0, y0, x1, y1, 0, GF, n, 0, nb, 0, 1, c, true);
       if (SHOPS.includes(gfSet) && L > 3.5 && r() < .35) { // store banne
@@ -1061,6 +1132,9 @@ function* buildCityGen(T, D, WAYS, JN) {
     M.brick = new THREE.MeshStandardMaterial({ map: T.brick, vertexColors: true, roughness: .95 });
   }
   tileRoof.addTo(group, M.tiles, { cast: true, receive: true });
+  if (signs) { signs.atlases.forEach((tex, i) => signGeo[i].addTo(group, new THREE.MeshStandardMaterial({ map: tex, roughness: .5, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: WEATHER === 'night' ? .9 : .05 }), { cast: false, receive: true }));
+    if (!M.cross) M.cross = new THREE.MeshStandardMaterial({ map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#0c0c0c'; g.fillRect(0, 0, w, h); g.fillStyle = '#19d35b'; g.fillRect(44, 12, 40, 104); g.fillRect(12, 44, 104, 40); }, false), emissive: '#19d35b', emissiveIntensity: .8, side: THREE.DoubleSide });
+    blade.addTo(group, M.cross, { cast: false, receive: false }); }
   zinc.addTo(group, M.zinc, bsh); dorm.addTo(group, M.dormer, bsh); rail.addTo(group, M.rail, { cast: true, receive: false }); brick.addTo(group, M.brick, bsh);
   return { group, objs, materials: M };
 }
@@ -1125,6 +1199,27 @@ function fourviere() {
   tg.setAttribute('uv', new THREE.Float32BufferAttribute([].concat(...Array(4).fill([0, 0, 1, 0, 1, 9, 0, 0, 1, 9, 0, 9])), 2)); tg.computeVertexNormals();
   const tm = new THREE.Mesh(tg, lat); tm.position.set(tx, tb, -ty); g.add(tm);
   return g;
+}
+
+/* ---------- Enseignes : noms réels des commerces dessinés dans une texture commune ---------- */
+const SIGN_STYLE = k => k === 'pharmacy' ? ['#0f7a3b', '#ffffff'] : k === 'bank' || k === 'bureau_de_change' ? ['#173a6b', '#ffffff'] : /bakery|pastry/.test(k) ? ['#5a3a22', '#f3d58c']
+  : /restaurant|fast_food|cafe|bar|pub|ice_cream/.test(k) ? ['#1c1c1c', '#f1e2b8'] : /supermarket|convenience/.test(k) ? ['#b3171e', '#ffffff'] : /clothes|shoes|jewelry|boutique/.test(k) ? ['#101010', '#e9e4da'] : ['#2b2f35', '#f5f2ea'];
+function signAtlas(list) {
+  // plusieurs textures de 2048 × 4096 au besoin (8 × 85 enseignes chacune)
+  const W = 2048, SW = 256, SH = 48, cols = W / SW, per = cols * 85, atlases = [], slot = new Map();
+  for (let start = 0; start < list.length; start += per) {
+    const part = list.slice(start, start + per), rows = Math.ceil(part.length / cols), H = rows * SH;
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+    part.forEach((q, i) => {
+      const x = (i % cols) * SW, y = Math.floor(i / cols) * SH, [bg, fg] = SIGN_STYLE(q.k);
+      g.fillStyle = bg; g.fillRect(x, y, SW, SH); g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(x, y, SW, 2);
+      const txt = q.n.toUpperCase(); let fs = 30; g.font = `700 ${fs}px Georgia, 'Times New Roman', serif`; while (g.measureText(txt).width > SW - 16 && fs > 11) { fs--; g.font = `700 ${fs}px Georgia, 'Times New Roman', serif`; }
+      g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, x + SW / 2, y + SH / 2 + 1);
+      slot.set(q, { a: atlases.length, u0: x / W, u1: (x + SW) / W, v0: 1 - (y + SH) / H, v1: 1 - y / H });
+    });
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; atlases.push(tex);
+  }
+  return { atlases, slot };
 }
 
 /* ---------- Stationnement le long des trottoirs ---------- */
@@ -1495,7 +1590,7 @@ let blinker = null, match = null, ev = null, faults = [], cooldown = {}, asked =
 let paused = true, ended = false, driveTime = 0, overT = 0, leftT = 0, offroad = false, wrongWay = null, lastLimit = null, lastName = '';
 let AIS = [], povLook = 0, eyeAdj = 0, bodyPitch = 0, bodyRoll = 0;
 
-function setStatus(t) { $('#status').textContent = t; }
+function setStatus(t) { $('#status').textContent = t; statusT = performance.now(); }
 let toastTimer, msgTimer;
 function toast(t, grave) { const el = $('#toast'); el.textContent = t; el.className = 'toast' + (grave ? '' : ' light'); el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.hidden = true, 3200); }
 function message(t, ms) { const el = $('#msg'); el.textContent = t; el.hidden = false; clearTimeout(msgTimer); msgTimer = setTimeout(() => el.hidden = true, ms || 3500); }
@@ -2085,7 +2180,10 @@ function wantedTiles(x, y, R) {
 async function fetchTile(k) {
   const r = await fetch(k === 'all' ? 'data/lyon.json' : 'data/rhone/' + k + '.json');
   if (!r.ok) throw new Error('Morceau de carte introuvable (' + k + ', ' + r.status + ').');
-  return r.json();
+  const D = await r.json();
+  // commerces réels de ce carré (fichier facultatif)
+  if (k !== 'all') try { const q = await fetch('data/rhone-poi/' + k + '.json'); if (q.ok) D.pois = await q.json(); } catch (_) {}
+  return D;
 }
 // limitation par défaut quand la rue n'en indique pas : 50 en ville, 80 hors agglomération
 function defaultLimits(ws) {
@@ -2120,6 +2218,7 @@ function unloadTile(k) {
   scene.remove(t.group);
   t.group.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   t.sig.traverse(o => { if (o.material && o.material.map) o.material.map.dispose(); });
+  t.group.traverse(o => { if (o.material && o.material.emissiveMap && o.material.emissiveMap === o.material.map) { o.material.map.dispose(); o.material.dispose(); } });
   const gone = new Set(t.crossings); CROSSINGS = CROSSINGS.filter(c => !gone.has(c));
   removeParked(t.cars); TILES.delete(k);
 }
@@ -2261,6 +2360,7 @@ function render3D(now) {
   }
   if (frameN % 6 === 0) for (const t of TILES.values()) updateLamps(t.sig, now);
   followGround();
+  if (CITY_M && CITY_M.water.normalMap) { const t = now / 1000; CITY_M.water.normalMap.offset.set(t * .012, t * .02); }
   for (const bd of BACKDROPS) bd.visible = P.x > -640;   // décor de colline masqué quand on roule sur la rive droite de la Saône
   // caméra : place du conducteur (à gauche), mouvements de caisse
   const look = keys.lookL ? -75 : keys.lookR ? 75 : 0;
@@ -2383,7 +2483,7 @@ function buildCockpit() {
     const frame = new THREE.Mesh(new THREE.PlaneGeometry(w + .025, h + .025), black); frame.position.set(pos[0], pos[1], pos[2] - .004); frame.rotation.set(...rot); frame.renderOrder = 12;
     cockpit.add(frame, mesh);
     const cam = new THREE.PerspectiveCamera(side ? 30 : 24, w / h, .3, 600);
-    mirrors.push({ rt, cam, side });
+    mirrors.push({ rt, cam, side, mesh, frame, pos });
   };
   addMirror(.24, .07, [.27, .27, -.7], [.05, -.08, 0], 0);
   { const hb = new THREE.Mesh(new THREE.BoxGeometry(.14, .05, .05), black); hb.position.set(.27, .282, -.735); hb.renderOrder = 11; cockpit.add(hb);       // boîtier du rétroviseur (capteurs)
@@ -2412,6 +2512,10 @@ function renderMirrors() {
 function updateCockpit(now) {
   if (!cockpit) return;
   cockpit.userData.wheelPivot.children[0].rotation.z = -P.steer * 8 * RAD;
+  for (const m of mirrors) if (m.side) {   // contrôle dans le rétroviseur : il grossit quand on clignote ou qu'on regarde de son côté
+    const want = (m.side < 0 && (blinker === 'left' || keys.lookL)) || (m.side > 0 && (blinker === 'right' || keys.lookR)) ? 1.9 : 1;
+    const k = m.mesh.scale.x + (want - m.mesh.scale.x) * .15; m.mesh.scale.setScalar(k); m.frame.scale.setScalar(k);
+  }
   const stk = cockpit.userData.stalk; if (stk) stk.rotation.z += ((blinker === 'right' ? .12 : blinker === 'left' ? -.12 : 0) - stk.rotation.z) * .3;
   if (frameN % 3) return;
   const g = clusterCtx, W = 768, H = 288, kmh = Math.abs(P.v) * 3.6, on = Math.floor(now / 400) % 2 === 0;
@@ -2525,7 +2629,7 @@ const ICON = {
 };
 const LABEL = { stop: 'STOP : arrêt complet', give: 'Cédez le passage', right: 'Priorité à droite', roundabout: 'Giratoire : cédez le passage', priority: 'Vous êtes prioritaire', signals: 'Feu tricolore' };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-let lastNextHtml = '';
+let lastNextHtml = '', hudName = '', hudNameT = 0, statusT = 0;
 function renderLimit() { const el = $('#lim'); if (lastLimit) { el.textContent = lastLimit; el.classList.remove('unknown'); } else { el.textContent = '—'; el.classList.add('unknown'); } }
 function renderHUD(now) {
   // distance restante jusqu'au carrefour annoncé par l'inspecteur
@@ -2535,21 +2639,22 @@ function renderHUD(now) {
   sp.firstChild.nodeValue = kmh; sp.classList.toggle('over', !!lastLimit && kmh > lastLimit + 4);
   $('#wheel').style.transform = `rotate(${P.steer * 9}deg)`;
   const nx = $('#next'), d = liveDist();
-  if (ev && d < 120) {
+  // panneau du prochain carrefour : seulement à l'approche, et pas en même temps que la consigne de l'inspecteur
+  if (ev && d < 60 && $('#insp').hidden) {
     const html = ICON[ev.ctrl] + `<div class="t"><b>${LABEL[ev.ctrl]}</b><span>${ev.cross ? 'Croisement ' + esc(ev.cross) : ''}</span></div><div class="d">${Math.round(d)} m</div>`;
     if (html !== lastNextHtml) { nx.innerHTML = html; lastNextHtml = html; } nx.hidden = false;
   } else { nx.hidden = true; lastNextHtml = ''; }
-  const tl = $('#tlight');
-  if (ev && ev.ctrl === 'signals' && ev.sig && d < 100) {
-    const s = lightState(ev.sig, now, ev.b0).s; tl.hidden = false;
-    tl.children[0].classList.toggle('on', s === 'red'); tl.children[1].classList.toggle('on', s === 'amber'); tl.children[2].classList.toggle('on', s === 'green');
-  } else tl.hidden = true;
+  // nom de la rue : affiché 4 s quand on change de rue
+  if (lastName !== hudName) { hudName = lastName; hudNameT = now; }
+  $('.hud-tl').classList.toggle('fade', now - hudNameT > 4000);
+  $('#status').classList.toggle('fade', now - statusT > 7000);
   $('#lookL').hidden = !keys.lookL; $('#lookR').hidden = !keys.lookR;
 }
 function setBlinker(side) {
   blinker = side;
   $('#indL').classList.toggle('on', side === 'left'); $('#indR').classList.toggle('on', side === 'right');
   $('#hbL').classList.toggle('on', side === 'left'); $('#hbR').classList.toggle('on', side === 'right');
+  document.querySelector('.touch [data-k=blL]').classList.toggle('on', side === 'left'); document.querySelector('.touch [data-k=blR]').classList.toggle('on', side === 'right');
 }
 
 /* =========================================================
@@ -2660,7 +2765,7 @@ $('#go').onclick = async () => {
     started = true;
     exam.on = $('#mode').value === 'exam';
     $('#loadOv').hidden = true; paused = false;
-    setStatus(`Version 16 · ${TILESET.T ? 'Rhône : ' + TILESET.meta.size + ' km² de carte, chargés autour de vous' : 'centre de Lyon'} · données © contributeurs OpenStreetMap`);
+    setStatus(`Version 17 · ${TILESET.T ? 'Rhône : ' + TILESET.meta.size + ' km² de carte, chargés autour de vous' : 'centre de Lyon'} · données © contributeurs OpenStreetMap`);
     message('↑ pour avancer, ← → pour tourner. Clignotants : A et E.', 6000);
     if (exam.on) { say('Bonjour. Nous allons commencer. Démarrez quand vous êtes prêt, et suivez mes indications.'); showInsp('🎧', 'Démarrez quand vous êtes prêt et suivez mes indications'); setTimeout(() => { if (!ev || !ev.said) $('#insp').hidden = true; }, 7000); }
   } catch (e) {
