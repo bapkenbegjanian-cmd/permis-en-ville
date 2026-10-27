@@ -2,17 +2,34 @@ name: Enquête données 3D
 on:
   workflow_dispatch:
   push:
-    paths: ['.github/workflows/enquete.yml', 'outils/explore_mesh.py']
+    paths: ['.github/workflows/enquete.yml']
 permissions:
   contents: write
 jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Branche du photomaillage au-dessus de la rue de la Barre
-        run: python3 outils/explore_mesh.py 4.8357 45.7577 /tmp/e 40 || true
+      - name: Informations publiques sur starlyn.com
+        run: |
+          mkdir -p /tmp/e && cd /tmp/e
+          { echo "== RDAP (registre .com)"; curl -sS -m 30 https://rdap.verisign.com/com/v1/domain/starlyn.com | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          print('nom', d.get('ldhName'))
+          for e in d.get('events',[]): print(e.get('eventAction'), e.get('eventDate'))
+          print('statut', d.get('status'))
+          print('serveurs DNS', [n.get('ldhName') for n in d.get('nameservers',[])])
+          for ent in d.get('entities',[]):
+            if 'registrar' in ent.get('roles',[]):
+              v=ent.get('vcardArray',[None,[]])[1]; print('registraire', [x[3] for x in v if x[0]=='fn'])
+          " || echo "pas de réponse RDAP"
+            for t in A AAAA CNAME NS MX TXT; do echo "== DNS $t"; dig +short starlyn.com $t; done
+            echo "== DNS www CNAME/A"; dig +short www.starlyn.com
+            for u in https://starlyn.com https://www.starlyn.com http://starlyn.com; do echo "== HTTP $u"; curl -sS -m 30 -I -L "$u" 2>&1 | grep -iE "^HTTP|^location|^server|^x-vercel|^x-github|^x-powered" ; done
+            echo "== Titre de la page"; curl -sS -m 30 -L https://starlyn.com 2>/dev/null | python3 -c "import sys,re; s=sys.stdin.read(); m=re.search(r'<title[^>]*>(.*?)</title>', s, re.S|re.I); print(m.group(1).strip() if m else '(pas de titre)'); print('taille', len(s))"
+          } > journal.txt 2>&1
+          cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         run: |
-          cd /tmp/e && du -sh . > taille.txt && git init -q -b enquete && git config user.name gha && git config user.email gha@users.noreply.github.com
+          cd /tmp/e && git init -q -b enquete && git config user.name gha && git config user.email gha@users.noreply.github.com
           git add . && git commit -qm enquete && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" enquete
