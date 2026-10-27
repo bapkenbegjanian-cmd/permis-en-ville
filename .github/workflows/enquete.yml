@@ -13,7 +13,7 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          { echo "== GET scores"; curl -sS -m 30 -w "\nHTTP %{http_code}\n" -H "apikey: sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h" "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=pseudo,quiz,points,created_at&order=created_at.desc&limit=5"; } > journal.txt 2>&1
+          { echo "== GET scores"; curl -sS -m 30 -w "\nHTTP %{http_code}\n" -H "apikey: sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h" "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=pseudo,quiz,points,created_at&order=created_at.desc&limit=5"; echo; echo "== OPTIONS"; curl -sS -m 30 -o /dev/null -w "HTTP %{http_code}\n" -H "apikey: sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h" "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=count"; } > journal.txt 2>&1
           cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
