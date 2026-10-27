@@ -195,7 +195,7 @@ async function ranking(sel) {
     lb.innerHTML = rowsHTML([...tot].map(([pseudo, points]) => ({ pseudo, points })).sort((a, b) => b.points - a.points).slice(0, 50), me); }
   catch (_) { lb.innerHTML = '<p class="note">Classement indisponible pour le moment.</p>'; }
 }
-const AD = '<div class="ad" aria-label="Espace publicitaire">Publicité</div>';   // à remplacer par le code Google AdSense
+const AD = '';   // emplacements publicitaires retirés (remettre le code AdSense ici plus tard)
 const FOOT = '<footer><span>© QuiSait · quiz gratuits</span><span><button type="button" data-go="confidentialite">Confidentialité</button> · <button type="button" data-ck>Cookies</button></span></footer>';
 const head = right => `<div class="top"><button class="logo" type="button" data-go=""><span class="q">?</span><span>Qui<span>Sait</span></span></button>${right || ''}</div>`;
 const tint = c => `background:${c}22;`;
