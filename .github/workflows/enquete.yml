@@ -11,6 +11,7 @@ jobs:
     steps:
       - name: Informations publiques sur starlyn.com
         run: |
+          set +e +o pipefail
           mkdir -p /tmp/e && cd /tmp/e
           { echo "== RDAP (registre .com)"; curl -sS -m 30 https://rdap.verisign.com/com/v1/domain/starlyn.com | python3 -c "
           import json,sys
@@ -30,6 +31,7 @@ jobs:
           } > journal.txt 2>&1
           cat journal.txt
       - name: Enregistrer sur la branche « enquete »
+        if: always()
         run: |
           cd /tmp/e && git init -q -b enquete && git config user.name gha && git config user.email gha@users.noreply.github.com
           git add . && git commit -qm enquete && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" enquete
