@@ -26,6 +26,18 @@ body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); mar
 .logo .q { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-size: 22px; transform: rotate(-8deg); animation: wob 3s ease-in-out infinite; }
 .logo > span:last-child { color: var(--ink); } .logo > span:last-child span { color: var(--accent); }
 @keyframes wob { 50% { transform: rotate(8deg) } }
+.board { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 18px; display: grid; gap: 10px; }
+.board h2 { margin: 0; }
+.board ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.board li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--bg); font-weight: 700; }
+.board li.me { background: color-mix(in srgb, var(--accent) 16%, var(--card)); outline: 2px solid var(--accent); }
+.board li .r { width: 28px; text-align: center; font-weight: 900; color: var(--muted); }
+.board li .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board li .p { font-variant-numeric: tabular-nums; }
+.board .note { color: var(--muted); font-size: 14px; margin: 0; }
+.board .join { display: flex; gap: 8px; } .board .join input { flex: 1; min-width: 0; }
+.board select { font: inherit; font-weight: 700; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+button.pill { cursor: pointer; font-family: inherit; }
 .pill { font-size: 13px; color: var(--muted); font-weight: 800; background: var(--card); border: 1px solid var(--line); padding: 5px 10px; border-radius: 99px; white-space: nowrap; }
 h1 { font: 800 clamp(28px, 7vw, 40px)/1.02 var(--display); margin: 0; text-wrap: balance; letter-spacing: -.02em; }
 h2 { font: 800 22px/1.1 var(--display); margin: 0; letter-spacing: -.01em; }
@@ -135,6 +147,54 @@ const $ = s => document.querySelector(s), app = $('#app');
 const store = { get(k) { try { return JSON.parse(localStorage.getItem('qs_' + k)); } catch (_) { return null; } }, set(k, v) { try { localStorage.setItem('qs_' + k, JSON.stringify(v)); } catch (_) {} } };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const typeOf = q => q.type || 'qcm';
+
+/* ---------- classement (Supabase) ---------- */
+const SB_URL = 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co', SB_KEY = 'sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h';
+const sb = (path, opt = {}) => fetch(SB_URL + '/rest/v1/' + path, { ...opt, headers: { apikey: SB_KEY, 'Content-Type': 'application/json', ...(opt.headers || {}) } })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.status === 201 || r.status === 204 ? null : r.json(); });
+const weekStart = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.toISOString(); };   // lundi 0 h
+const BAD = /(encul|connard|connass|salop|pute|batard|bâtard|nique|fdp|pd\b|negr|nègr|bougnoul|hitler|nazi|merde|bite|couille|chatte)/i;
+const cleanPseudo = v => { v = String(v || '').replace(/[^\p{L}\p{N} _.-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 16); return v.length >= 2 && !BAD.test(v) ? v : ''; };
+// meilleur score de chaque joueur (un pseudo n'apparaît qu'une fois)
+const bestBy = (rows, key = 'pseudo') => { const m = new Map(); for (const r of rows) if (!m.has(r[key]) || r.points > m.get(r[key]).points) m.set(r[key], r); return [...m.values()].sort((a, b) => b.points - a.points); };
+const rowsHTML = (list, me) => list.length ? `<ol>${list.map((r, i) => `<li class="${r.pseudo === me ? 'me' : ''}"><span class="r">${['🥇', '🥈', '🥉'][i] || i + 1}</span><span class="n">${esc(r.pseudo)}</span><span class="p">${r.points} pts</span></li>`).join('')}</ol>` : '<p class="note">Personne cette semaine. Sois le premier !</p>';
+async function quizBoard(k, el) {
+  try { const rows = await sb(`scores?select=pseudo,points&quiz=eq.${k}&created_at=gte.${encodeURIComponent(weekStart())}&order=points.desc&limit=300`);
+    el.innerHTML = rowsHTML(bestBy(rows).slice(0, 10), store.get('pseudo')); }
+  catch (_) { el.innerHTML = '<p class="note">Classement indisponible pour le moment.</p>'; }
+}
+async function postScore() {
+  const me = store.get('pseudo'); if (!me || cur.posted) return; cur.posted = true;
+  try { await sb('scores', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ pseudo: me, quiz: cur.k, points: cur.pts, bonnes: cur.good }) }); } catch (_) {}
+}
+function boardBox() {
+  const me = store.get('pseudo');
+  return `<div class="board"><h2>🏆 Classement de la semaine</h2>
+    ${me ? `<p class="note">Tu joues en tant que <b>${esc(me)}</b> · <button type="button" class="linkish" id="chg" style="all:unset;cursor:pointer;color:var(--accent);font-weight:800">changer</button></p>`
+         : `<p class="note">Choisis un pseudo pour entrer au classement. Pas d'e-mail, pas de mot de passe.</p><div class="join"><input id="pseudo" maxlength="16" placeholder="Ton pseudo" autocomplete="nickname"><button class="btn" type="button" id="join" style="width:auto;padding:0 18px">Valider</button></div><p class="note" id="perr" aria-live="polite"></p>`}
+    <div id="lb"><p class="note">Chargement…</p></div>
+    <button class="btn ghost" type="button" data-go="classement">Voir le classement général</button></div>`;
+}
+function wireBoard(onJoin) {
+  const j = $('#join'); if (j) j.onclick = () => { const v = cleanPseudo($('#pseudo').value); if (!v) { $('#perr').textContent = '2 à 16 caractères, sans gros mots.'; return; } store.set('pseudo', v); if (!store.get('name')) store.set('name', v); onJoin(); };
+  const c = $('#chg'); if (c) c.onclick = () => { store.set('pseudo', null); onJoin(true); };
+}
+async function ranking(sel) {
+  setHash('classement'); sel = sel || 'tous';
+  const me = store.get('pseudo'), opts = KEYS.filter(k => typeOf(QUIZ[k]) !== 'perso');
+  app.innerHTML = `${head(`<button class="pill" type="button" data-go="">← Quiz</button>`)}
+    <div><h1>🏆 Classement</h1><p class="lead">Remis à zéro chaque lundi. ${sel === 'tous' ? 'Le total additionne ton meilleur score dans chaque quiz.' : 'Ton meilleur score de la semaine.'}</p></div>
+    <div class="board"><select id="lsel" aria-label="Choisir un quiz"><option value="tous">🌍 Général (tous les quiz)</option>${opts.map(k => `<option value="${k}" ${k === sel ? 'selected' : ''}>${QUIZ[k].emo} ${esc(QUIZ[k].name)}</option>`).join('')}</select>
+      ${me ? `<p class="note">Tu joues en tant que <b>${esc(me)}</b>.</p>` : '<p class="note">Joue un quiz et choisis un pseudo à la fin pour apparaître ici.</p>'}
+      <div id="lb"><p class="note">Chargement…</p></div></div>${AD}${FOOT}`;
+  $('#lsel').onchange = e => ranking(e.target.value);
+  const lb = $('#lb');
+  if (sel !== 'tous') return quizBoard(sel, lb);
+  try { const rows = await sb(`scores?select=pseudo,quiz,points&created_at=gte.${encodeURIComponent(weekStart())}&order=points.desc&limit=5000`);
+    const tot = new Map(); for (const r of bestBy(rows.map(r => ({ ...r, id: r.pseudo + '|' + r.quiz })), 'id')) tot.set(r.pseudo, (tot.get(r.pseudo) || 0) + r.points);
+    lb.innerHTML = rowsHTML([...tot].map(([pseudo, points]) => ({ pseudo, points })).sort((a, b) => b.points - a.points).slice(0, 50), me); }
+  catch (_) { lb.innerHTML = '<p class="note">Classement indisponible pour le moment.</p>'; }
+}
 const AD = '<div class="ad" aria-label="Espace publicitaire">Publicité</div>';   // à remplacer par le code Google AdSense
 const FOOT = '<footer><span>© QuiSait · quiz gratuits</span><span><button type="button" data-go="confidentialite">Confidentialité</button> · <button type="button" data-ck>Cookies</button></span></footer>';
 const head = right => `<div class="top"><button class="logo" type="button" data-go=""><span class="q">?</span><span>Qui<span>Sait</span></span></button>${right || ''}</div>`;
@@ -147,8 +207,8 @@ let filter = 'tous';
 function home() {
   setHash('');
   const dk = dailyKey(), d = QUIZ[dk], played = store.get('played') || 0;
-  app.innerHTML = `${head(`<span class="pill">🎯 ${played} quiz joués</span>`)}
-    <div><h1>Teste-toi, puis défie tes potes</h1><p class="lead">${KEYS.length} quiz, ${Math.floor(KEYS.reduce((n, k) => n + QUIZ[k].qs.length, 0) / 50) * 50}+ questions, des parties différentes à chaque fois. Réponds vite pour gagner plus de points.</p></div>
+  app.innerHTML = `${head(`<button class="pill" type="button" data-go="classement">🏆 Classement</button>`)}
+    <div><h1>Teste-toi, puis défie tes potes</h1><p class="lead">${played ? `🎯 ${played} quiz joués · ` : ''}${KEYS.length} quiz, ${Math.floor(KEYS.reduce((n, k) => n + QUIZ[k].qs.length, 0) / 50) * 50}+ questions, des parties différentes à chaque fois. Réponds vite pour gagner plus de points.</p></div>
     <button class="daily" type="button" data-go="${dk}" style="background:linear-gradient(135deg, ${d.color}, var(--accent))">
       <small>Quiz du jour</small><b>${d.emo} ${esc(d.name)}</b><span>${esc(d.sub)}</span><span class="go">Jouer maintenant →</span></button>
     <div class="cats" role="toolbar" aria-label="Catégories">${[{ id: 'tous', name: 'Tous', emo: '🔥' }, ...CATS].map(c => `<button class="cat" type="button" data-cat="${c.id}" aria-pressed="${c.id === filter}">${c.emo} ${esc(c.name)}</button>`).join('')}</div>
@@ -237,13 +297,16 @@ function result() {
   const name = store.get('name') || '';
   app.innerHTML = `${head(`<span class="pill">${q.emo} ${esc(q.name)}</span>`)}
     <div class="result">${body}</div>
+    ${t === 'perso' ? '' : boardBox()}
     <div class="share"><h2>⚔️ Défie tes potes</h2><p class="lead" style="margin:0">Ils jouent le même quiz et voient ton score à battre.</p>
       <label for="pname">Ton prénom</label><input id="pname" maxlength="16" autocomplete="given-name" placeholder="Ex. Karim" value="${esc(name)}">
       <div class="row"><button class="btn gold" type="button" id="share">Envoyer le défi</button><button class="btn ghost" type="button" data-go="${cur.k}">Rejouer</button></div>
       <div class="copied" id="copied" aria-live="polite"></div></div>
     ${AD}<h2>Continue avec…</h2>
     <div class="tiles">${KEYS.filter(k => k !== cur.k).sort(() => Math.random() - .5).slice(0, 4).map((k, i) => { const x = QUIZ[k]; return `<button class="tile" type="button" data-go="${k}" style="animation-delay:${i * 50}ms"><span class="ic" style="${tint(x.color)}">${x.emo}</span><b>${esc(x.name)}</b><small>${esc(x.sub)}</small></button>`; }).join('')}</div>${FOOT}`;
-  if (t !== 'perso') countUp($('#count'), cur.pts);
+  if (t !== 'perso') { countUp($('#count'), cur.pts);
+    const refresh = edit => { const b = $('.board'); b.outerHTML = boardBox(); wireBoard(refresh); if (!edit) postScore().then(() => quizBoard(cur.k, $('#lb'))); else quizBoard(cur.k, $('#lb')); };
+    wireBoard(refresh); postScore().then(() => quizBoard(cur.k, $('#lb'))); }
   $('#share').onclick = async () => {
     const nm = ($('#pname').value.trim() || 'Un ami').slice(0, 16); store.set('name', nm);
     const token = 'defi.' + cur.k + '.' + (t === 'perso' ? 0 : cur.pts) + '.' + (nm.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'Ami') + '.' + cur.seed;
@@ -265,7 +328,8 @@ const typeOfQ = k => typeOf(QUIZ[k]);
 function privacy() {
   setHash('confidentialite');
   app.innerHTML = `${head()}<div class="privacy"><h2>Confidentialité</h2>
-    <p>QuiSait ne demande aucun compte. Tes scores, ton record et ton prénom sont gardés uniquement dans ton navigateur.</p>
+    <p>QuiSait ne demande aucun compte. Ton record et ton prénom sont gardés dans ton navigateur.</p>
+    <p>Si tu choisis un pseudo, ton pseudo et tes scores sont envoyés au classement public (hébergé par Supabase, en Europe). N'utilise pas ton nom complet. Aucune autre donnée n'est collectée.</p>
     <p>Si tu acceptes les cookies, des partenaires publicitaires (comme Google) peuvent utiliser des cookies pour afficher des publicités et mesurer leur efficacité. Si tu refuses, des publicités non personnalisées peuvent quand même s'afficher.</p>
     <p>Tu peux changer ton choix à tout moment avec le lien « Cookies » en bas de page.</p></div>
     <div class="row"><button class="btn" type="button" data-go="">Retour aux quiz</button></div>`;
@@ -291,7 +355,7 @@ function tick() {
 /* ---------- navigation ---------- */
 function setHash(h) { try { history.replaceState(null, '', h ? '#' + h : location.pathname + location.search); } catch (_) {} }
 document.addEventListener('click', e => {
-  const g = e.target.closest('[data-go]'); if (g) { const k = g.dataset.go; clearTimeout(timerId); k === 'confidentialite' ? privacy() : k ? start(k) : home(); window.scrollTo(0, 0); return; }
+  const g = e.target.closest('[data-go]'); if (g) { const k = g.dataset.go; clearTimeout(timerId); k === 'confidentialite' ? privacy() : k === 'classement' ? ranking() : k ? start(k) : home(); window.scrollTo(0, 0); return; }
   const c = e.target.closest('[data-cat]'); if (c) { filter = c.dataset.cat; document.querySelectorAll('.cat').forEach(b => b.setAttribute('aria-pressed', b.dataset.cat === filter)); tiles(); return; }
   const p = e.target.closest('[data-pick]'); if (p && !p.disabled) { pick(+p.dataset.pick); return; }
   if (e.target.closest('#nx')) { next(); return; }
@@ -303,7 +367,7 @@ $('#ckYes').onclick = () => { store.set('consent', true); $('#cookie').hidden = 
 $('#ckNo').onclick = () => { store.set('consent', false); $('#cookie').hidden = true; };
 // au chargement : défi reçu (#defi.quiz.points.prenom.tirage), quiz direct (#foot) ou accueil
 function route() { clearTimeout(timerId); const h = location.hash.slice(1), m = h.match(/^defi\.([a-z]+)\.(\d{1,5})\.([A-Za-z0-9-]{0,24})(?:\.(\d{1,6}))?$/);
-  if (m && QUIZ[m[1]]) challenge(m[1], +m[2], m[3], +m[4] || 0); else if (h === 'confidentialite') privacy(); else if (QUIZ[h]) start(h); else home(); window.scrollTo(0, 0); }
+  if (m && QUIZ[m[1]]) challenge(m[1], +m[2], m[3], +m[4] || 0); else if (h === 'confidentialite') privacy(); else if (h === 'classement') ranking(); else if (QUIZ[h]) start(h); else home(); window.scrollTo(0, 0); }
 addEventListener('hashchange', route);   // un lien de défi ouvert alors que le site est déjà affiché
 route();
 </script>
