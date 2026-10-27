@@ -9,11 +9,11 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Informations publiques sur starlyn.com
+      - name: Informations publiques sur staralyn.com
         run: |
           set +e +o pipefail
           mkdir -p /tmp/e && cd /tmp/e
-          { echo "== RDAP (registre .com)"; curl -sS -m 30 https://rdap.verisign.com/com/v1/domain/starlyn.com | python3 -c "
+          { echo "== RDAP (registre .com)"; curl -sS -m 30 https://rdap.verisign.com/com/v1/domain/staralyn.com | python3 -c "
           import json,sys
           d=json.load(sys.stdin)
           print('nom', d.get('ldhName'))
@@ -24,10 +24,10 @@ jobs:
             if 'registrar' in ent.get('roles',[]):
               v=ent.get('vcardArray',[None,[]])[1]; print('registraire', [x[3] for x in v if x[0]=='fn'])
           " || echo "pas de réponse RDAP"
-            for t in A AAAA CNAME NS MX TXT; do echo "== DNS $t"; dig +short starlyn.com $t; done
-            echo "== DNS www CNAME/A"; dig +short www.starlyn.com
-            for u in https://starlyn.com https://www.starlyn.com http://starlyn.com; do echo "== HTTP $u"; curl -sS -m 30 -I -L "$u" 2>&1 | grep -iE "^HTTP|^location|^server|^x-vercel|^x-github|^x-powered" ; done
-            echo "== Titre de la page"; curl -sS -m 30 -L https://starlyn.com 2>/dev/null | python3 -c "import sys,re; s=sys.stdin.read(); m=re.search(r'<title[^>]*>(.*?)</title>', s, re.S|re.I); print(m.group(1).strip() if m else '(pas de titre)'); print('taille', len(s))"
+            for t in A AAAA CNAME NS MX TXT; do echo "== DNS $t"; dig +short staralyn.com $t; done
+            echo "== DNS www CNAME/A"; dig +short www.staralyn.com
+            for u in https://staralyn.com https://www.staralyn.com http://staralyn.com; do echo "== HTTP $u"; curl -sS -m 30 -I -L "$u" 2>&1 | grep -iE "^HTTP|^location|^server|^x-vercel|^x-github|^x-powered" ; done
+            echo "== Titre de la page"; curl -sS -m 30 -L https://www.staralyn.com/fr/ 2>/dev/null | python3 -c "import sys,re; s=sys.stdin.read(); m=re.search(r'<title[^>]*>(.*?)</title>', s, re.S|re.I); print(m.group(1).strip() if m else '(pas de titre)'); print('taille', len(s)); d=re.search(r'name=.description.[^>]*content=.([^\"\']*)', s, re.I); print('description', d.group(1) if d else '-'); t=re.sub(r'<script.*?</script>|<style.*?</style>','',s,flags=re.S|re.I); t=re.sub(r'<[^>]+>',' ',t); print('texte', ' '.join(t.split())[:1500]); print('techno', sorted(set(re.findall(r'(wp-content|_next|shopify|wix|webflow|framer|squarespace|vercel|netlify|lovable|gstatic|googletagmanager|adsbygoogle)', s, re.I))))"
           } > journal.txt 2>&1
           cat journal.txt
       - name: Enregistrer sur la branche « enquete »
