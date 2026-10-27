@@ -44,7 +44,7 @@ h2 { font: 800 22px/1.1 var(--display); margin: 0; letter-spacing: -.01em; }
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 400px) { .tiles { grid-template-columns: 1fr } }
 .tile { position: relative; overflow: hidden; text-align: left; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 18px; padding: 16px; cursor: pointer; display: grid; gap: 4px; font: inherit; animation: rise .45s cubic-bezier(.2,.8,.2,1) both; transition: transform .15s; }
-.tile:hover { transform: translateY(-3px); }
+@media (hover: hover) { .tile:hover { transform: translateY(-3px); } }
 .tile:active { transform: scale(.97); }
 .tile .ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 26px; margin-bottom: 6px; }
 .tile b { font: 800 18px/1.1 var(--display); }
@@ -75,7 +75,7 @@ h2 { font: 800 22px/1.1 var(--display); margin: 0; letter-spacing: -.01em; }
 .opt { text-align: left; border: 2px solid var(--line); background: var(--card); color: var(--ink); border-radius: 16px; padding: 15px 16px; font: 700 16px var(--body); cursor: pointer; display: flex; gap: 12px; align-items: center; animation: rise .35s both; transition: transform .12s, border-color .12s; }
 .opts.vf .opt { justify-content: center; font-size: 20px; padding: 22px; }
 .opt .k { flex: none; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--soft); font-size: 13px; font-weight: 800; }
-.opt:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-2px); }
+@media (hover: hover) { .opt:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-2px); } }
 .opt.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 15%, var(--card)); animation: pop .35s both; }
 .opt.bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 13%, var(--card)); animation: shake .4s both; }
 .opt:disabled { cursor: default; }
@@ -126,6 +126,7 @@ footer button { background: none; border: 0; color: var(--muted); text-decoratio
 </div>
 
 <script src="questions.js"></script>
+<script src="questions-plus.js"></script>
 <script>
 // Adresse publique du site, utilisée dans les liens de défi (à renseigner une fois le site en ligne)
 const SITE_URL = 'https://bapkenbegjanian-cmd.github.io/permis-en-ville/quiz/';
@@ -147,7 +148,7 @@ function home() {
   setHash('');
   const dk = dailyKey(), d = QUIZ[dk], played = store.get('played') || 0;
   app.innerHTML = `${head(`<span class="pill">🎯 ${played} quiz joués</span>`)}
-    <div><h1>Teste-toi, puis défie tes potes</h1><p class="lead">${KEYS.length} quiz gratuits. Réponds vite pour gagner plus de points.</p></div>
+    <div><h1>Teste-toi, puis défie tes potes</h1><p class="lead">${KEYS.length} quiz, ${Math.floor(KEYS.reduce((n, k) => n + QUIZ[k].qs.length, 0) / 50) * 50}+ questions, des parties différentes à chaque fois. Réponds vite pour gagner plus de points.</p></div>
     <button class="daily" type="button" data-go="${dk}" style="background:linear-gradient(135deg, ${d.color}, var(--accent))">
       <small>Quiz du jour</small><b>${d.emo} ${esc(d.name)}</b><span>${esc(d.sub)}</span><span class="go">Jouer maintenant →</span></button>
     <div class="cats" role="toolbar" aria-label="Catégories">${[{ id: 'tous', name: 'Tous', emo: '🔥' }, ...CATS].map(c => `<button class="cat" type="button" data-cat="${c.id}" aria-pressed="${c.id === filter}">${c.emo} ${esc(c.name)}</button>`).join('')}</div>
@@ -163,14 +164,27 @@ function tiles() {
 
 /* ---------- partie ---------- */
 let cur = null, timerId = null;
-function start(k, rival) {
+const PER = 10;   // questions par partie, tirées au hasard dans le quiz
+// hasard « reproductible » : le même tirage donne les mêmes questions, pour que l'ami défié joue la même partie
+const rng = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+function deal(q, seed) {
+  if (typeOf(q) === 'perso') return q.qs;
+  const r = rng(seed), mix = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  return mix(q.qs).slice(0, PER).map(([txt, ch, ok, why]) => {
+    if (typeOf(q) === 'vf') return [txt, ch, ok, why];
+    const order = mix(ch.map((_, j) => j));
+    return [txt, order.map(j => ch[j]), order.indexOf(ok), why];
+  });
+}
+function start(k, rival, seed) {
   const q = QUIZ[k]; if (!q) return home();
-  setHash(k); cur = { k, i: 0, pts: 0, good: 0, picks: [], rival: rival || null };
+  seed = seed || 1 + Math.floor(Math.random() * 999999);
+  setHash(k); cur = { k, i: 0, pts: 0, good: 0, picks: [], rival: rival || null, seed, qs: deal(q, seed) };
   question();
 }
 function question() {
   clearTimeout(timerId);
-  const q = QUIZ[cur.k], t = typeOf(q), [txt, raw] = q.qs[cur.i], opts = t === 'vf' ? ['Vrai', 'Faux'] : raw, n = q.qs.length;
+  const q = QUIZ[cur.k], t = typeOf(q), [txt, raw] = cur.qs[cur.i], opts = t === 'vf' ? ['Vrai', 'Faux'] : raw, n = cur.qs.length;
   app.innerHTML = `${head(`<span class="pill">${q.emo} ${esc(q.name)}</span>`)}
     <div class="qtop"><div class="bar"><i style="width:${cur.i / n * 100}%"></i></div>${t === 'perso' ? '' : `<span class="pts">${cur.pts} pts</span>`}</div>
     ${t === 'perso' ? '' : `<div class="timer" id="timer" style="--t:${TIME}s"><i></i></div>`}
@@ -182,7 +196,7 @@ function question() {
 }
 function pick(j) {
   clearTimeout(timerId);
-  const q = QUIZ[cur.k], t = typeOf(q), item = q.qs[cur.i];
+  const q = QUIZ[cur.k], t = typeOf(q), item = cur.qs[cur.i];
   if (t === 'perso') { cur.picks.push(j); return next(); }
   const tm = $('#timer'); if (tm) { const el = tm.querySelector('i'); const st = getComputedStyle(el).transform; tm.classList.remove('run'); el.style.transform = st === 'none' ? '' : st; }
   const ok = j === item[2], left = Math.max(0, TIME - (performance.now() - cur.t0) / 1000), gain = ok ? 100 + Math.round(50 * left / TIME) : 0;
@@ -190,17 +204,17 @@ function pick(j) {
   document.querySelectorAll('.opt').forEach((b, n) => { b.disabled = true; if (n === item[2]) b.classList.add('good'); else if (n === j) b.classList.add('bad'); else b.classList.add('dim'); });
   $('.pts').textContent = cur.pts + ' pts';
   $('#after').innerHTML = `<div class="why"><div><b>${j < 0 ? '⏱️ Temps écoulé !' : ok ? '✅ Bonne réponse !' : '❌ Raté.'}</b> ${esc(item[3])}</div>${ok ? `<span class="plus">+${gain} points${gain > 130 ? ' · rapide ⚡' : ''}</span>` : ''}
-    <button class="btn" type="button" id="nx">${cur.i + 1 < q.qs.length ? 'Question suivante →' : 'Voir mon score 🎉'}</button></div>`;
+    <button class="btn" type="button" id="nx">${cur.i + 1 < cur.qs.length ? 'Question suivante →' : 'Voir mon score 🎉'}</button></div>`;
   if (ok) burst(12);
   $('#nx').focus({ preventScroll: true });
   $('#after').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-function next() { cur.i++; window.scrollTo(0, 0); if (cur.i < QUIZ[cur.k].qs.length) question(); else result(); }
+function next() { cur.i++; window.scrollTo(0, 0); if (cur.i < cur.qs.length) question(); else result(); }
 
 /* ---------- résultat et défi ---------- */
 function result() {
   clearTimeout(timerId); setHash(cur.k);
-  const q = QUIZ[cur.k], t = typeOf(q), n = q.qs.length; store.set('played', (store.get('played') || 0) + 1);
+  const q = QUIZ[cur.k], t = typeOf(q), n = cur.qs.length; store.set('played', (store.get('played') || 0) + 1);
   let body, shareText;
   if (t === 'perso') {
     const count = [0, 0, 0, 0]; cur.picks.forEach(p => count[p]++); const top = count.indexOf(Math.max(...count)), [name, desc] = q.profiles[top];
@@ -232,20 +246,20 @@ function result() {
   if (t !== 'perso') countUp($('#count'), cur.pts);
   $('#share').onclick = async () => {
     const nm = ($('#pname').value.trim() || 'Un ami').slice(0, 16); store.set('name', nm);
-    const token = 'defi.' + cur.k + '.' + (t === 'perso' ? 0 : cur.pts) + '.' + (nm.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'Ami');
+    const token = 'defi.' + cur.k + '.' + (t === 'perso' ? 0 : cur.pts) + '.' + (nm.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'Ami') + '.' + cur.seed;
     const url = (SITE_URL || location.origin + location.pathname) + '#' + token, msg = shareText + ' 👉 ' + url;
     try { if (navigator.share) { await navigator.share({ title: 'QuiSait', text: shareText, url }); $('#copied').textContent = 'Défi envoyé ✅'; return; } } catch (e) { if (e && e.name === 'AbortError') return; }
     try { await navigator.clipboard.writeText(msg); $('#copied').textContent = 'Lien copié ! Colle-le dans WhatsApp, Snap ou Insta.'; } catch (_) { $('#copied').textContent = msg; }
   };
 }
-function challenge(k, pts, name) {
+function challenge(k, pts, name, seed) {
   const q = QUIZ[k]; name = name.replace(/-/g, ' ').slice(0, 16) || 'Un ami';
   app.innerHTML = `${head()}
     <div class="challenge"><div class="vs">⚔️</div><h1 style="font-size:28px">${esc(name)} te défie !</h1>
       <p class="lead" style="margin:0">Quiz « ${q.emo} ${esc(q.name)} »</p>
       ${typeOf(q) === 'perso' ? '' : `<div class="big" style="font-size:52px">${pts}<small> pts</small></div><p class="lead" style="margin:0">C'est le score à battre. Réponds juste et vite !</p>`}
       <button class="btn gold" type="button" id="accept">Relever le défi 💪</button></div>${AD}${FOOT}`;
-  $('#accept').onclick = () => start(k, typeOfQ(k) === 'perso' ? null : { pts, name });
+  $('#accept').onclick = () => start(k, typeOfQ(k) === 'perso' ? null : { pts, name }, seed);
 }
 const typeOfQ = k => typeOf(QUIZ[k]);
 function privacy() {
@@ -287,9 +301,9 @@ document.addEventListener('click', e => {
 $('#cookie').hidden = store.get('consent') !== null;
 $('#ckYes').onclick = () => { store.set('consent', true); $('#cookie').hidden = true; };
 $('#ckNo').onclick = () => { store.set('consent', false); $('#cookie').hidden = true; };
-// au chargement : défi reçu (#defi.quiz.points.prenom), quiz direct (#foot) ou accueil
-function route() { clearTimeout(timerId); const h = location.hash.slice(1), m = h.match(/^defi\.([a-z]+)\.(\d{1,5})\.([A-Za-z0-9-]{0,24})$/);
-  if (m && QUIZ[m[1]]) challenge(m[1], +m[2], m[3]); else if (h === 'confidentialite') privacy(); else if (QUIZ[h]) start(h); else home(); window.scrollTo(0, 0); }
+// au chargement : défi reçu (#defi.quiz.points.prenom.tirage), quiz direct (#foot) ou accueil
+function route() { clearTimeout(timerId); const h = location.hash.slice(1), m = h.match(/^defi\.([a-z]+)\.(\d{1,5})\.([A-Za-z0-9-]{0,24})(?:\.(\d{1,6}))?$/);
+  if (m && QUIZ[m[1]]) challenge(m[1], +m[2], m[3], +m[4] || 0); else if (h === 'confidentialite') privacy(); else if (QUIZ[h]) start(h); else home(); window.scrollTo(0, 0); }
 addEventListener('hashchange', route);   // un lien de défi ouvert alors que le site est déjà affiché
 route();
 </script>

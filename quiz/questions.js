@@ -90,7 +90,7 @@ const QUIZ = {
     ['Quel pays a gagné l\'Euro 2016 ?', ['France', 'Allemagne', 'Portugal', 'Espagne'], 2, 'Victoire 1-0 contre la France, en prolongation.'],
     ['Qui est le premier Ballon d\'or africain ?', ['Samuel Eto\'o', 'Didier Drogba', 'George Weah', 'Sadio Mané'], 2, 'George Weah, en 1995.'],
     ['« Le Classique » oppose quels clubs ?', ['OL et ASSE', 'PSG et OM', 'OM et OL', 'PSG et OL'], 1, 'Le grand match entre Paris et Marseille.'],
-    ['Quels pays organisent la Coupe du monde 2026 ?', ['Qatar', 'Espagne, Portugal, Maroc', 'États-Unis, Canada, Mexique', 'Brésil'], 2, 'La première Coupe du monde à 48 équipes.'],
+    ['Quels pays ont organisé la Coupe du monde 2026 ?', ['Qatar', 'Espagne, Portugal, Maroc', 'États-Unis, Canada, Mexique', 'Brésil'], 2, 'La première Coupe du monde à 48 équipes.'],
   ]},
   jeux: { cat: 'sport', emo: '🎮', name: 'Jeux vidéo', sub: 'Des consoles aux légendes', color: '#d0393f', qs: [
     ['Comment s\'appelle le plombier moustachu de Nintendo ?', ['Luigi', 'Mario', 'Wario', 'Toad'], 1, 'Luigi est son frère.'],
