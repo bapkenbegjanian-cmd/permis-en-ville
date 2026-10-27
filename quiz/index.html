@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8">
+<title>QuiSait</title>
+<meta name="description" content="Quiz gratuits : culture générale, foot, cinéma, musique, code de la route, tests de personnalité. Joue, marque des points et défie tes potes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap">
+<style>
+/* Mise en page : une colonne façon appli mobile. Accueil (quiz du jour, catégories, tuiles) → question plein écran → résultat + défi */
+:root {
+  --bg: #f3f1fb; --card: #ffffff; --ink: #1d1838; --muted: #6a6585; --line: #e1ddf0;
+  --accent: #5b3df5; --accent-ink: #ffffff; --good: #138a54; --bad: #d23b3b; --soft: #ebe6ff; --ad: #f7f6fb; --gold: #e0a100;
+  --display: "Bricolage Grotesque", "Arial Black", sans-serif; --body: "Nunito Sans", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #120f24; --card: #1c1834; --ink: #efeefb; --muted: #a7a2c4; --line: #2f2a4d; --accent: #8a74ff; --accent-ink: #120f24; --good: #3fcf8e; --bad: #ff6b6b; --soft: #2a2350; --ad: #17142b; --gold: #ffc53d; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #120f24; --card: #1c1834; --ink: #efeefb; --muted: #a7a2c4; --line: #2f2a4d; --accent: #8a74ff; --accent-ink: #120f24; --good: #3fcf8e; --bad: #ff6b6b; --soft: #2a2350; --ad: #17142b; --gold: #ffc53d; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); margin: 0; }
+[hidden] { display: none !important; }
+.app { max-width: 680px; margin: 0 auto; padding-block: 18px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.logo { font: 800 30px/1 var(--display); letter-spacing: -.03em; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.logo .q { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-size: 22px; transform: rotate(-8deg); animation: wob 3s ease-in-out infinite; }
+.logo > span:last-child { color: var(--ink); } .logo > span:last-child span { color: var(--accent); }
+@keyframes wob { 50% { transform: rotate(8deg) } }
+.pill { font-size: 13px; color: var(--muted); font-weight: 800; background: var(--card); border: 1px solid var(--line); padding: 5px 10px; border-radius: 99px; white-space: nowrap; }
+h1 { font: 800 clamp(28px, 7vw, 40px)/1.02 var(--display); margin: 0; text-wrap: balance; letter-spacing: -.02em; }
+h2 { font: 800 22px/1.1 var(--display); margin: 0; letter-spacing: -.01em; }
+.lead { color: var(--muted); margin: 6px 0 0; }
+/* quiz du jour */
+.daily { position: relative; overflow: hidden; border-radius: 22px; padding: 20px; color: #fff; display: grid; gap: 8px; cursor: pointer; border: 0; text-align: left; font: inherit; }
+.daily::after { content: ""; position: absolute; inset: -40% -20% auto auto; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,.14); }
+.daily small { font-weight: 800; letter-spacing: .1em; text-transform: uppercase; font-size: 11px; opacity: .9; }
+.daily b { font: 800 26px/1.05 var(--display); }
+.daily .go { justify-self: start; background: #fff; color: #1d1838; font-weight: 800; border-radius: 99px; padding: 8px 14px; font-size: 14px; margin-top: 4px; }
+/* catégories */
+.cats { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.cats::-webkit-scrollbar { display: none; }
+.cat { flex: none; border: 2px solid var(--line); background: var(--card); color: var(--ink); border-radius: 99px; padding: 8px 14px; font: 800 14px var(--body); cursor: pointer; }
+.cat[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 400px) { .tiles { grid-template-columns: 1fr } }
+.tile { position: relative; overflow: hidden; text-align: left; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 18px; padding: 16px; cursor: pointer; display: grid; gap: 4px; font: inherit; animation: rise .45s cubic-bezier(.2,.8,.2,1) both; transition: transform .15s; }
+.tile:hover { transform: translateY(-3px); }
+.tile:active { transform: scale(.97); }
+.tile .ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 26px; margin-bottom: 6px; }
+.tile b { font: 800 18px/1.1 var(--display); }
+.tile small { color: var(--muted); }
+.tile .best { font-size: 12px; font-weight: 800; color: var(--gold); }
+.tile .tag { position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+@keyframes rise { from { opacity: 0; transform: translateY(14px) } }
+.ad { border: 1px dashed var(--line); background: var(--ad); color: var(--muted); border-radius: 14px; min-height: 100px; display: grid; place-items: center; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+/* défi reçu */
+.challenge { background: var(--card); border: 2px solid var(--gold); border-radius: 22px; padding: 20px; display: grid; gap: 10px; text-align: center; animation: pop .5s cubic-bezier(.2,1.4,.4,1) both; }
+.challenge .vs { font-size: 46px; line-height: 1; }
+@keyframes pop { from { opacity: 0; transform: scale(.85) } }
+/* question */
+.qtop { display: flex; align-items: center; gap: 12px; }
+.bar { flex: 1; height: 10px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .4s; border-radius: 99px; }
+.pts { font: 800 16px var(--display); font-variant-numeric: tabular-nums; min-width: 72px; text-align: right; }
+.timer { height: 6px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+.timer i { display: block; height: 100%; width: 100%; background: var(--good); transform-origin: left; }
+.timer.run i { animation: drain var(--t) linear forwards; }
+@keyframes drain { to { transform: scaleX(0); background: var(--bad) } }
+.qcard { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 22px 18px; display: grid; gap: 6px; animation: rise .35s both; }
+.qnum { font-size: 13px; font-weight: 800; color: var(--muted); }
+.qtext { font: 800 clamp(21px, 5.4vw, 27px)/1.18 var(--display); margin: 0; text-wrap: balance; }
+.qtext.emoji { font-size: clamp(54px, 15vw, 76px); text-align: center; letter-spacing: .08em; padding-block: 8px; }
+.opts { display: grid; gap: 10px; }
+.opts.vf { grid-template-columns: 1fr 1fr; }
+.opt { text-align: left; border: 2px solid var(--line); background: var(--card); color: var(--ink); border-radius: 16px; padding: 15px 16px; font: 700 16px var(--body); cursor: pointer; display: flex; gap: 12px; align-items: center; animation: rise .35s both; transition: transform .12s, border-color .12s; }
+.opts.vf .opt { justify-content: center; font-size: 20px; padding: 22px; }
+.opt .k { flex: none; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--soft); font-size: 13px; font-weight: 800; }
+.opt:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-2px); }
+.opt.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 15%, var(--card)); animation: pop .35s both; }
+.opt.bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 13%, var(--card)); animation: shake .4s both; }
+.opt:disabled { cursor: default; }
+.opt.dim { opacity: .45; }
+@keyframes shake { 20%, 60% { transform: translateX(-6px) } 40%, 80% { transform: translateX(6px) } }
+.why { background: var(--soft); border-radius: 16px; padding: 14px 16px; animation: rise .3s both; display: grid; gap: 10px; }
+.why b { font-family: var(--display); }
+.plus { font: 800 15px var(--display); color: var(--good); }
+.btn { border: 0; border-radius: 16px; padding: 15px 18px; font: 800 16px var(--body); cursor: pointer; background: var(--accent); color: var(--accent-ink); transition: transform .12s; }
+.btn:active { transform: scale(.97); }
+.btn.ghost { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+.btn.gold { background: var(--gold); color: #1d1838; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row .btn { flex: 1; min-width: 140px; }
+/* résultat */
+.result { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 24px 20px; display: grid; gap: 8px; text-align: center; animation: pop .5s cubic-bezier(.2,1.4,.4,1) both; }
+.big { font: 800 68px/1 var(--display); color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+.big small { font-size: 22px; color: var(--muted); }
+.verdict { font: 800 22px/1.15 var(--display); }
+.stars { font-size: 28px; letter-spacing: 4px; }
+.duel { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; background: var(--soft); border-radius: 18px; padding: 14px; }
+.duel div { display: grid; }
+.duel b { font: 800 26px var(--display); font-variant-numeric: tabular-nums; }
+.duel span { font-size: 13px; color: var(--muted); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.duel .win b { color: var(--good); }
+.share { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 18px; display: grid; gap: 10px; }
+.share label { font-weight: 800; font-size: 14px; }
+.share input { padding: 13px 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); font: 700 16px var(--body); min-width: 0; }
+.share input:focus { border-color: var(--accent); outline: none; }
+.copied { font-size: 13px; color: var(--good); font-weight: 700; min-height: 1.2em; overflow-wrap: anywhere; }
+footer { font-size: 12px; color: var(--muted); text-align: center; display: grid; gap: 4px; }
+footer button { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; }
+.cookie { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line); padding: 14px max(16px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); display: grid; gap: 10px; z-index: 5; box-shadow: 0 -8px 24px rgba(0,0,0,.1); }
+.cookie p { margin: 0; font-size: 14px; }
+.privacy { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 9; width: 100%; height: 100%; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; } .timer.run i { animation: none } }
+</style>
+
+</head>
+<body>
+<div class="app" id="app"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="cookie" id="cookie" hidden>
+  <p>On utilise des cookies pour afficher de la publicité et mesurer l'audience. Tu peux accepter ou refuser, le site marche pareil.</p>
+  <div class="row"><button class="btn" id="ckYes" type="button">Accepter</button><button class="btn ghost" id="ckNo" type="button">Refuser</button></div>
+</div>
+
+<script src="questions.js"></script>
+<script>
+// Adresse publique du site, utilisée dans les liens de défi (à renseigner une fois le site en ligne)
+const SITE_URL = 'https://bapkenbegjanian-cmd.github.io/permis-en-ville/quiz/';
+const TIME = 20;   // secondes par question
+const $ = s => document.querySelector(s), app = $('#app');
+const store = { get(k) { try { return JSON.parse(localStorage.getItem('qs_' + k)); } catch (_) { return null; } }, set(k, v) { try { localStorage.setItem('qs_' + k, JSON.stringify(v)); } catch (_) {} } };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const typeOf = q => q.type || 'qcm';
+const AD = '<div class="ad" aria-label="Espace publicitaire">Publicité</div>';   // à remplacer par le code Google AdSense
+const FOOT = '<footer><span>© QuiSait · quiz gratuits</span><span><button type="button" data-go="confidentialite">Confidentialité</button> · <button type="button" data-ck>Cookies</button></span></footer>';
+const head = right => `<div class="top"><button class="logo" type="button" data-go=""><span class="q">?</span><span>Qui<span>Sait</span></span></button>${right || ''}</div>`;
+const tint = c => `background:${c}22;`;
+const KEYS = Object.keys(QUIZ);
+const dailyKey = () => { const d = new Date(), n = d.getFullYear() * 400 + d.getMonth() * 31 + d.getDate(); const pool = KEYS.filter(k => typeOf(QUIZ[k]) !== 'perso'); return pool[n % pool.length]; };
+
+/* ---------- accueil ---------- */
+let filter = 'tous';
+function home() {
+  setHash('');
+  const dk = dailyKey(), d = QUIZ[dk], played = store.get('played') || 0;
+  app.innerHTML = `${head(`<span class="pill">🎯 ${played} quiz joués</span>`)}
+    <div><h1>Teste-toi, puis défie tes potes</h1><p class="lead">${KEYS.length} quiz gratuits. Réponds vite pour gagner plus de points.</p></div>
+    <button class="daily" type="button" data-go="${dk}" style="background:linear-gradient(135deg, ${d.color}, var(--accent))">
+      <small>Quiz du jour</small><b>${d.emo} ${esc(d.name)}</b><span>${esc(d.sub)}</span><span class="go">Jouer maintenant →</span></button>
+    <div class="cats" role="toolbar" aria-label="Catégories">${[{ id: 'tous', name: 'Tous', emo: '🔥' }, ...CATS].map(c => `<button class="cat" type="button" data-cat="${c.id}" aria-pressed="${c.id === filter}">${c.emo} ${esc(c.name)}</button>`).join('')}</div>
+    <div class="tiles" id="tiles"></div>${AD}${FOOT}`;
+  tiles();
+}
+function tiles() {
+  const list = KEYS.filter(k => filter === 'tous' || QUIZ[k].cat === filter);
+  $('#tiles').innerHTML = list.map((k, i) => { const q = QUIZ[k], b = store.get('best_' + k), t = typeOf(q);
+    const tag = t === 'vf' ? 'Vrai/Faux' : t === 'emoji' ? 'Emojis' : t === 'perso' ? 'Test' : '';
+    return `<button class="tile" type="button" data-go="${k}" style="animation-delay:${i * 40}ms">${tag ? `<span class="tag">${tag}</span>` : ''}<span class="ic" style="${tint(q.color)}">${q.emo}</span><b>${esc(q.name)}</b><small>${esc(q.sub)}</small>${b !== null && t !== 'perso' ? `<span class="best">🏆 Record : ${b} pts</span>` : ''}</button>`; }).join('');
+}
+
+/* ---------- partie ---------- */
+let cur = null, timerId = null;
+function start(k, rival) {
+  const q = QUIZ[k]; if (!q) return home();
+  setHash(k); cur = { k, i: 0, pts: 0, good: 0, picks: [], rival: rival || null };
+  question();
+}
+function question() {
+  clearTimeout(timerId);
+  const q = QUIZ[cur.k], t = typeOf(q), [txt, raw] = q.qs[cur.i], opts = t === 'vf' ? ['Vrai', 'Faux'] : raw, n = q.qs.length;
+  app.innerHTML = `${head(`<span class="pill">${q.emo} ${esc(q.name)}</span>`)}
+    <div class="qtop"><div class="bar"><i style="width:${cur.i / n * 100}%"></i></div>${t === 'perso' ? '' : `<span class="pts">${cur.pts} pts</span>`}</div>
+    ${t === 'perso' ? '' : `<div class="timer" id="timer" style="--t:${TIME}s"><i></i></div>`}
+    <div class="qcard"><span class="qnum">Question ${cur.i + 1} sur ${n}${t === 'emoji' ? ' · quel film ?' : ''}</span><p class="qtext ${t === 'emoji' ? 'emoji' : ''}">${esc(txt)}</p></div>
+    <div class="opts ${t === 'vf' ? 'vf' : ''}">${opts.map((o, j) => `<button class="opt" type="button" data-pick="${j}" style="animation-delay:${80 + j * 60}ms">${t === 'vf' ? '' : `<span class="k">${'ABCD'[j]}</span>`}${esc(o)}</button>`).join('')}</div>
+    <div id="after"></div>${cur.i === 4 ? AD : ''}`;
+  requestAnimationFrame(() => setTimeout(() => $('.bar i').style.width = (cur.i + 1) / n * 100 + '%', 30));
+  if (t !== 'perso') { const tm = $('#timer'); requestAnimationFrame(() => tm.classList.add('run')); cur.t0 = performance.now(); timerId = setTimeout(() => pick(-1), TIME * 1000); }
+}
+function pick(j) {
+  clearTimeout(timerId);
+  const q = QUIZ[cur.k], t = typeOf(q), item = q.qs[cur.i];
+  if (t === 'perso') { cur.picks.push(j); return next(); }
+  const tm = $('#timer'); if (tm) { const el = tm.querySelector('i'); const st = getComputedStyle(el).transform; tm.classList.remove('run'); el.style.transform = st === 'none' ? '' : st; }
+  const ok = j === item[2], left = Math.max(0, TIME - (performance.now() - cur.t0) / 1000), gain = ok ? 100 + Math.round(50 * left / TIME) : 0;
+  if (ok) { cur.good++; cur.pts += gain; }
+  document.querySelectorAll('.opt').forEach((b, n) => { b.disabled = true; if (n === item[2]) b.classList.add('good'); else if (n === j) b.classList.add('bad'); else b.classList.add('dim'); });
+  $('.pts').textContent = cur.pts + ' pts';
+  $('#after').innerHTML = `<div class="why"><div><b>${j < 0 ? '⏱️ Temps écoulé !' : ok ? '✅ Bonne réponse !' : '❌ Raté.'}</b> ${esc(item[3])}</div>${ok ? `<span class="plus">+${gain} points${gain > 130 ? ' · rapide ⚡' : ''}</span>` : ''}
+    <button class="btn" type="button" id="nx">${cur.i + 1 < q.qs.length ? 'Question suivante →' : 'Voir mon score 🎉'}</button></div>`;
+  if (ok) burst(12);
+  $('#nx').focus({ preventScroll: true });
+  $('#after').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function next() { cur.i++; window.scrollTo(0, 0); if (cur.i < QUIZ[cur.k].qs.length) question(); else result(); }
+
+/* ---------- résultat et défi ---------- */
+function result() {
+  clearTimeout(timerId); setHash(cur.k);
+  const q = QUIZ[cur.k], t = typeOf(q), n = q.qs.length; store.set('played', (store.get('played') || 0) + 1);
+  let body, shareText;
+  if (t === 'perso') {
+    const count = [0, 0, 0, 0]; cur.picks.forEach(p => count[p]++); const top = count.indexOf(Math.max(...count)), [name, desc] = q.profiles[top];
+    body = `<div class="verdict">Résultat</div><div class="big" style="font-size:40px">${esc(name)}</div><p class="lead">${esc(desc)}</p>`;
+    shareText = `« ${q.name} » : je suis ${name} ! Et toi ?`;
+    burst(80);
+  } else {
+    const best = store.get('best_' + cur.k), rec = best === null || cur.pts > best; if (rec) store.set('best_' + cur.k, cur.pts);
+    const stars = cur.good >= n ? 3 : cur.good >= n * .7 ? 2 : cur.good >= n * .4 ? 1 : 0;
+    const v = ['Aïe… revanche ? 😅', 'Pas mal ! 🙂', 'Très fort ! 💪', 'Parfait, imbattable ! 🏆'][stars];
+    let duel = '';
+    if (cur.rival) { const win = cur.pts > cur.rival.pts, tie = cur.pts === cur.rival.pts;
+      duel = `<div class="duel"><div class="${win ? 'win' : ''}"><b>${cur.pts}</b><span>Toi</span></div><span style="font-size:26px">${tie ? '🤝' : win ? '🏆' : '😤'}</span><div class="${!win && !tie ? 'win' : ''}"><b>${cur.rival.pts}</b><span>${esc(cur.rival.name)}</span></div></div>
+        <div class="verdict">${tie ? 'Égalité parfaite !' : win ? `Tu as battu ${esc(cur.rival.name)} ! 🔥` : `${esc(cur.rival.name)} gagne… cette fois.`}</div>`; }
+    body = `<div class="stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div><div class="big" id="count">0<small> pts</small></div>
+      <div class="verdict">${cur.good}/${n} bonnes réponses · ${v}</div>${rec && best !== null ? '<p class="lead">🎉 Nouveau record personnel !</p>' : ''}${duel}`;
+    shareText = cur.rival ? `J'ai fait ${cur.pts} points contre ${cur.rival.pts} au quiz « ${q.name} ». À ton tour !` : `J'ai fait ${cur.pts} points (${cur.good}/${n}) au quiz « ${q.name} » sur QuiSait. Tu peux faire mieux ? 😏`;
+    if (stars >= 2 || (cur.rival && cur.pts > cur.rival.pts)) setTimeout(() => burst(140), 300);
+  }
+  const name = store.get('name') || '';
+  app.innerHTML = `${head(`<span class="pill">${q.emo} ${esc(q.name)}</span>`)}
+    <div class="result">${body}</div>
+    <div class="share"><h2>⚔️ Défie tes potes</h2><p class="lead" style="margin:0">Ils jouent le même quiz et voient ton score à battre.</p>
+      <label for="pname">Ton prénom</label><input id="pname" maxlength="16" autocomplete="given-name" placeholder="Ex. Karim" value="${esc(name)}">
+      <div class="row"><button class="btn gold" type="button" id="share">Envoyer le défi</button><button class="btn ghost" type="button" data-go="${cur.k}">Rejouer</button></div>
+      <div class="copied" id="copied" aria-live="polite"></div></div>
+    ${AD}<h2>Continue avec…</h2>
+    <div class="tiles">${KEYS.filter(k => k !== cur.k).sort(() => Math.random() - .5).slice(0, 4).map((k, i) => { const x = QUIZ[k]; return `<button class="tile" type="button" data-go="${k}" style="animation-delay:${i * 50}ms"><span class="ic" style="${tint(x.color)}">${x.emo}</span><b>${esc(x.name)}</b><small>${esc(x.sub)}</small></button>`; }).join('')}</div>${FOOT}`;
+  if (t !== 'perso') countUp($('#count'), cur.pts);
+  $('#share').onclick = async () => {
+    const nm = ($('#pname').value.trim() || 'Un ami').slice(0, 16); store.set('name', nm);
+    const token = 'defi.' + cur.k + '.' + (t === 'perso' ? 0 : cur.pts) + '.' + (nm.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'Ami');
+    const url = (SITE_URL || location.origin + location.pathname) + '#' + token, msg = shareText + ' 👉 ' + url;
+    try { if (navigator.share) { await navigator.share({ title: 'QuiSait', text: shareText, url }); $('#copied').textContent = 'Défi envoyé ✅'; return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(msg); $('#copied').textContent = 'Lien copié ! Colle-le dans WhatsApp, Snap ou Insta.'; } catch (_) { $('#copied').textContent = msg; }
+  };
+}
+function challenge(k, pts, name) {
+  const q = QUIZ[k]; name = name.replace(/-/g, ' ').slice(0, 16) || 'Un ami';
+  app.innerHTML = `${head()}
+    <div class="challenge"><div class="vs">⚔️</div><h1 style="font-size:28px">${esc(name)} te défie !</h1>
+      <p class="lead" style="margin:0">Quiz « ${q.emo} ${esc(q.name)} »</p>
+      ${typeOf(q) === 'perso' ? '' : `<div class="big" style="font-size:52px">${pts}<small> pts</small></div><p class="lead" style="margin:0">C'est le score à battre. Réponds juste et vite !</p>`}
+      <button class="btn gold" type="button" id="accept">Relever le défi 💪</button></div>${AD}${FOOT}`;
+  $('#accept').onclick = () => start(k, typeOfQ(k) === 'perso' ? null : { pts, name });
+}
+const typeOfQ = k => typeOf(QUIZ[k]);
+function privacy() {
+  setHash('confidentialite');
+  app.innerHTML = `${head()}<div class="privacy"><h2>Confidentialité</h2>
+    <p>QuiSait ne demande aucun compte. Tes scores, ton record et ton prénom sont gardés uniquement dans ton navigateur.</p>
+    <p>Si tu acceptes les cookies, des partenaires publicitaires (comme Google) peuvent utiliser des cookies pour afficher des publicités et mesurer leur efficacité. Si tu refuses, des publicités non personnalisées peuvent quand même s'afficher.</p>
+    <p>Tu peux changer ton choix à tout moment avec le lien « Cookies » en bas de page.</p></div>
+    <div class="row"><button class="btn" type="button" data-go="">Retour aux quiz</button></div>`;
+}
+
+/* ---------- effets ---------- */
+function countUp(el, to) { if (!el) return; const t0 = performance.now(), d = 900; const step = now => { const k = Math.min(1, (now - t0) / d); el.firstChild.nodeValue = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
+const fx = $('#fx'), fg = fx.getContext('2d'); let parts = [], fxOn = false;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function burst(n) {
+  if (reduce) return; fx.width = innerWidth; fx.height = innerHeight;
+  const cols = ['#5b3df5', '#e0a100', '#13a3c2', '#d23b3b', '#16804a', '#ff7ac6'];
+  for (let i = 0; i < n; i++) parts.push({ x: innerWidth / 2 + (Math.random() - .5) * 120, y: innerHeight * .35, vx: (Math.random() - .5) * 12, vy: -Math.random() * 11 - 4, r: Math.random() * 6.28, vr: (Math.random() - .5) * .3, c: cols[i % cols.length], life: 1 });
+  if (!fxOn) { fxOn = true; requestAnimationFrame(tick); }
+}
+function tick() {
+  fg.clearRect(0, 0, fx.width, fx.height);
+  parts = parts.filter(p => p.life > 0 && p.y < fx.height + 20);
+  for (const p of parts) { p.vy += .35; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life -= .008; fg.save(); fg.translate(p.x, p.y); fg.rotate(p.r); fg.globalAlpha = Math.max(0, p.life); fg.fillStyle = p.c; fg.fillRect(-4, -7, 8, 14); fg.restore(); }
+  if (parts.length) requestAnimationFrame(tick); else { fxOn = false; fg.clearRect(0, 0, fx.width, fx.height); }
+}
+
+/* ---------- navigation ---------- */
+function setHash(h) { try { history.replaceState(null, '', h ? '#' + h : location.pathname + location.search); } catch (_) {} }
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g) { const k = g.dataset.go; clearTimeout(timerId); k === 'confidentialite' ? privacy() : k ? start(k) : home(); window.scrollTo(0, 0); return; }
+  const c = e.target.closest('[data-cat]'); if (c) { filter = c.dataset.cat; document.querySelectorAll('.cat').forEach(b => b.setAttribute('aria-pressed', b.dataset.cat === filter)); tiles(); return; }
+  const p = e.target.closest('[data-pick]'); if (p && !p.disabled) { pick(+p.dataset.pick); return; }
+  if (e.target.closest('#nx')) { next(); return; }
+  if (e.target.closest('[data-ck]')) $('#cookie').hidden = false;
+});
+// bandeau de consentement aux cookies (obligatoire en Europe avant la publicité personnalisée)
+$('#cookie').hidden = store.get('consent') !== null;
+$('#ckYes').onclick = () => { store.set('consent', true); $('#cookie').hidden = true; };
+$('#ckNo').onclick = () => { store.set('consent', false); $('#cookie').hidden = true; };
+// au chargement : défi reçu (#defi.quiz.points.prenom), quiz direct (#foot) ou accueil
+function route() { clearTimeout(timerId); const h = location.hash.slice(1), m = h.match(/^defi\.([a-z]+)\.(\d{1,5})\.([A-Za-z0-9-]{0,24})$/);
+  if (m && QUIZ[m[1]]) challenge(m[1], +m[2], m[3]); else if (h === 'confidentialite') privacy(); else if (QUIZ[h]) start(h); else home(); window.scrollTo(0, 0); }
+addEventListener('hashchange', route);   // un lien de défi ouvert alors que le site est déjà affiché
+route();
+</script>
+
+</body>
+</html>
