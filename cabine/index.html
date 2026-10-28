@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cabine — essaie les looks sur ta photo</title>
-<meta name="description" content="Mets ta photo : l'IA analyse ta silhouette et t'habille avec les looks qui te vont.">
+<meta name="description" content="Mets ta photo : Cabine lit ta silhouette et t'habille avec les looks qui te vont.">
 <meta name="theme-color" content="#f3f5f8">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://images.unsplash.com"><link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -71,6 +71,18 @@ button:focus-visible, a:focus-visible, label:focus-visible { outline: 3px solid 
 .marquee b { color: var(--peach); }
 @keyframes slide { to { transform: translateX(-50%); } }
 .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tabbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); z-index: 20; display: flex; gap: 4px; padding: 5px; border-radius: 20px;
+  background: rgba(18,20,30,.92); backdrop-filter: blur(14px); box-shadow: 0 14px 34px rgba(18,20,30,.3); }
+.tabbar button { border: 0; background: none; color: rgba(255,255,255,.65); font-weight: 800; font-size: 14px; padding: 11px 18px; border-radius: 15px; cursor: pointer; white-space: nowrap; }
+.tabbar button[aria-pressed="true"] { background: #fff; color: var(--ink); }
+.app { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px) !important; }
+.steps3 { display: grid; gap: 10px; }
+.steps3 div { display: grid; grid-template-columns: 46px 1fr; gap: 12px; align-items: center; background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 18px; padding: 12px 14px; font-size: 14.5px; }
+.steps3 span { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; background: #fff; }
+.steps3 b { display: block; font: 800 16px var(--display); }
+.shophero { position: relative; border-radius: 28px; overflow: hidden; background: var(--ink); color: #fff; padding: 22px 20px; display: grid; gap: 8px; }
+.shophero::after { content: "🛍️"; position: absolute; right: -6px; bottom: -14px; font-size: 96px; opacity: .25; transform: rotate(-12deg); }
+.shophero h2 { color: #fff; }
 .shopcard { background: var(--ink); color: #fff; border-radius: 22px; padding: 16px 18px; font-size: 14px; display: grid; gap: 4px; }
 .shopcard b { font: 800 17px var(--display); }
 .how div { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 18px; padding: 12px 10px; text-align: center; font-size: 12.5px; font-weight: 700; }
@@ -143,6 +155,7 @@ button:focus-visible, a:focus-visible, label:focus-visible { outline: 3px solid 
 <div class="app">
   <div class="top"><button class="back" type="button" id="back" aria-label="Retour" hidden>←</button><div class="logo">ca<span>bine</span></div></div>
   <main id="app"></main>
+  <nav class="tabbar" aria-label="Espaces"><button type="button" data-tab="look" aria-pressed="true">✨ Mes looks</button><button type="button" data-tab="shop" aria-pressed="false">🛍️ En magasin</button></nav>
   <input id="photo" type="file" accept="image/*" hidden>
   <input id="garment" type="file" accept="image/*" capture="environment" hidden>
 </div>
@@ -321,16 +334,15 @@ const frame = (src, extra = '') => `<div class="frame ${extra}"><div class="blur
 const showIds = ['91', '30', '192'];
 const S = [
   () => `<section class="screen">
-      <span class="pill"><i></i>Essayage par IA, en 20 secondes</span>
+      <span class="pill"><i></i>Essayage virtuel, en 20 secondes</span>
       <h1>Essaie tout. <span class="hl">Sur toi.</span></h1>
-      <p class="sub">Une photo suffit. L'IA lit ta silhouette, choisit les pièces qui te vont et te les fait porter.</p>
+      <p class="sub">Une photo suffit. Cabine lit ta silhouette, choisit les pièces qui te vont et te les fait porter.</p>
       <div class="showcase">${showIds.map((id, i) => `<div class="card c${i}"><img src="${pic(DATA.g[id], 500)}" alt="${DATA.g[id].n}"></div>`).join('')}
         <span class="float a">✨ Analyse de silhouette</span><span class="float b">👔 3 looks pour toi</span><span class="float c">🪞 Sur ta propre photo</span></div>
       <button class="cta" type="button" data-mode="look">✨ Trouver mon look</button>
-      <button class="ghost" type="button" data-mode="shop">📷 Essayer un habit en magasin</button>
+      <button class="ghost" type="button" data-tab="shop">🛍️ En boutique ? Essaie sans cabine</button>
       <div class="marquee" aria-hidden="true"><div>${Array(2).fill('Soirée <b>✦</b> Mariage <b>✦</b> Travail <b>✦</b> Rendez-vous <b>✦</b> Sport <b>✦</b> Week-end <b>✦</b>').join(' ')}</div></div>
-      <div class="how"><div><span>📸</span>Ta photo</div><div><span>🧠</span>L'IA t'analyse</div><div><span>🪄</span>Tu te vois habillé·e</div></div>
-      <div class="shopcard"><b>🛍️ En boutique ?</b>Prends l'habit en photo, Cabine te le fait porter sur ta photo. Plus besoin de cabine d'essayage.</div>
+      <div class="how"><div><span>📸</span>Ta photo</div><div><span>🧠</span>Ta silhouette lue</div><div><span>🪄</span>Tu te vois habillé·e</div></div>
     </section>`,
   () => `<section class="screen">
       <h2>D'abord, <span class="hl">ta photo</span></h2>
@@ -344,7 +356,7 @@ const S = [
   () => `<section class="screen"><h2>Pour quelle <span class="hl">occasion</span> ?</h2>
       <div class="options">${Object.entries(OCCS).map(([k, [e, t, d, col]], i) => `<button class="opt" type="button" data-occ="${k}" style="--c:${col};animation-delay:${i * 60}ms"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div></section>`,
   () => `<section class="screen">
-      <h2>L'IA <span class="hl">t'analyse</span></h2>
+      <h2>Analyse de <span class="hl">ta silhouette</span></h2>
       <div class="frame scan" id="sframe"><div class="blur" style="background-image:url('${state.photo}')"></div><img src="${state.photo}" alt="Ta photo" id="simg"><canvas id="cv"></canvas></div>
       <div class="log" id="log"><p class="wait">Lecture de ta photo…</p></div>
     </section>`,
@@ -356,7 +368,7 @@ const S = [
       <div class="chips">${state.info.map(x => `<span>${x}</span>`).join('')}</div>
       <div class="tabs">${L.map((x, i) => { const s = tries[tkey(x)] || {}; return `<button type="button" data-pick="${i}" aria-pressed="${i === state.pick}">Look ${i + 1}${s.st === 'run' ? '<span class="ld"></span>' : ''}</button>`; }).join('')}</div>
       <div class="frame ${t.st === 'run' ? 'scan' : ''}"><div class="blur" style="background-image:url('${src}')"></div><img src="${src}" alt="${t.st === 'ok' ? 'Toi avec ' + l.n : 'Ta photo'}" class="${t.st === 'ok' ? 'reveal' : ''}">
-        <span class="badge">${t.st === 'run' ? '🪄 L\'IA t\'habille…' : t.st === 'ok' ? `✨ Toi · Look ${state.pick + 1}` : t.st === 'err' ? 'Essayage impossible' : ''}</span></div>
+        <span class="badge">${t.st === 'run' ? '🪄 Essayage en cours…' : t.st === 'ok' ? `✨ Toi · Look ${state.pick + 1}` : t.st === 'err' ? 'Essayage impossible' : ''}</span></div>
       ${t.st === 'err' ? `<p class="note">Ça n'a pas marché (${t.why}). <button class="link" type="button" data-retry>Réessayer</button></p>` : ''}
       <p class="why"><b>${l.fit ? 'Idéal pour ta silhouette.' : 'Va bien avec ta silhouette.'}</b> ${MORPHS[state.m].t}</p>
       <div class="piece"><div class="ph"><img src="${pic(l, 300)}" alt="${l.n}"></div><div><b>${l.n}</b><span class="price">≈ ${l.p} €</span><small>À porter avec : ${l.a}</small></div></div>
@@ -368,7 +380,7 @@ const S = [
   },
   () => `<section class="screen">
       <h2>Photographie <span class="hl">l'habit</span></h2>
-      <p class="sub">En boutique, sur le cintre ou le mannequin. L'IA te le met sur ta photo.</p>
+      <p class="sub">En boutique, sur le cintre ou le mannequin. Tu le vois sur ta photo.</p>
       <label for="garment" tabindex="0" style="cursor:pointer;display:block">${state.garment ? frame(state.garment) : `<div class="frame"><div class="empty"><span class="plus">📷</span><b>Prendre l'habit en photo</b>Bien à plat ou sur un cintre, en entier</div></div>`}</label>
       <div class="tips"><span>👕 L'habit en entier</span><span>💡 Bonne lumière</span><span>🧺 Fond simple</span></div>
       <button class="cta" type="button" data-shoptry ${state.garment ? '' : 'disabled'}>🪄 Me l'essayer</button>
@@ -377,22 +389,34 @@ const S = [
   () => {
     const t = tries['shop' + state.gid] || {}, src = t.st === 'ok' ? t.url : state.photo;
     return `<section class="screen">
-      <h2>${t.st === 'ok' ? 'Et voilà, <span class="hl">sur toi</span>' : 'L\'IA <span class="hl">t\'habille</span>'}</h2>
+      <h2>${t.st === 'ok' ? 'Et voilà, <span class="hl">sur toi</span>' : 'Essayage <span class="hl">en cours</span>'}</h2>
       <div class="frame ${t.st === 'run' ? 'scan' : ''}"><div class="blur" style="background-image:url('${src}')"></div><img src="${src}" alt="${t.st === 'ok' ? 'Toi avec l\'habit' : 'Ta photo'}" class="${t.st === 'ok' ? 'reveal' : ''}">
         <span class="badge">${t.st === 'run' ? '🪄 Essayage en cours… environ 15 s' : t.st === 'ok' ? '✨ Toi avec cet habit' : 'Essayage impossible'}</span></div>
       ${t.st === 'err' ? `<p class="note">Ça n'a pas marché (${t.why}). Reprends l'habit en entier, bien éclairé. <button class="link" type="button" data-shoptry>Réessayer</button></p>` : ''}
       <div class="piece"><div class="ph"><img src="${state.garment}" alt="L'habit photographié"></div><div><b>L'habit de la boutique</b><small>Tu peux l'essayer avec une autre photo de toi, ou essayer un autre habit.</small></div></div>
       <div class="row"><button class="ghost" type="button" data-go="5" data-newg="1">Autre habit</button><label class="cta" for="photo" tabindex="0">Autre photo de moi</label></div>
-      <button class="link" type="button" data-go="0">Accueil</button>
+      <button class="link" type="button" data-tab="shop">Retour au magasin</button>
     </section>`;
-  }
+  },
+  () => `<section class="screen">
+      <div class="shophero"><span class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff"><i></i>En boutique</span>
+        <h2>Essaie sans <span class="hl">cabine</span></h2><p class="sub" style="color:#c9cdd8">Tu vois un habit en magasin ? Prends-le en photo et vois-le sur toi, sans faire la queue.</p></div>
+      <div class="steps3">
+        <div><span>🧍</span><p style="margin:0"><b>Ta photo</b>Une seule fois, elle reste sur ton téléphone.</p></div>
+        <div><span>📷</span><p style="margin:0"><b>L'habit</b>Photographie-le en entier, sur le cintre ou le mannequin.</p></div>
+        <div><span>🪞</span><p style="margin:0"><b>Sur toi</b>En 15 secondes, tu te vois avec.</p></div>
+      </div>
+      <button class="cta" type="button" data-go="${state.photo ? 5 : 1}">📷 ${state.photo ? 'Photographier un habit' : 'Commencer'}</button>
+      ${state.photo ? `<label class="link" for="photo" tabindex="0">Changer ma photo</label>` : ''}
+    </section>`
 ];
 
 function render(soft) {
   const y = scrollY;
   $('#app').innerHTML = S[state.step]();
   if (soft) { const sc = $('#app .screen'); if (sc) sc.style.animation = 'none'; scrollTo(0, y); } else scrollTo(0, 0);
-  $('#back').hidden = state.step === 0 || state.step === 3;
+  $('#back').hidden = state.step === 0 || state.step === 3 || state.step === 7;
+  document.querySelectorAll('[data-tab]').forEach(b => b.closest('.tabbar') && b.setAttribute('aria-pressed', b.dataset.tab === state.mode));
 
 }
 
@@ -445,7 +469,8 @@ function onTryDone() {
 
 document.addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return;
-  if (t.id === 'back') { state.step = state.step === 4 ? 2 : state.step === 5 ? 1 : state.step === 6 ? 5 : Math.max(0, state.step - 1); }
+  if (t.id === 'back') { state.step = state.step === 4 ? 2 : state.step === 5 ? 7 : state.step === 6 ? 5 : state.step === 1 && state.mode === 'shop' ? 7 : Math.max(0, state.step - 1); }
+  else if (t.dataset.tab) { state.mode = t.dataset.tab; state.step = state.mode === 'shop' ? 7 : 0; }
   else if ('forget' in t.dataset) { try { localStorage.removeItem('cabine-photo'); } catch (_) {} state.photo = null; state.saved = false; }
   else if (t.dataset.mode) { state.mode = t.dataset.mode; state.step = 1; }
   else if ('shoptry' in t.dataset) { const k = 'shop' + state.gid; delete tries[k]; runTry(k, state.garment); state.step = 6; }
