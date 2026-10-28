@@ -9,14 +9,12 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Noms de domaine libres
+      - name: Vérifier quizzmatch.com
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          for d in quisait.com google.com quizdefi.com defiquiz.com quizpotes.com quizpote.com quizflash.com quizclash.com quizrush.com quizboom.com quizzap.com quizoo.com monquiz.com quizchrono.com quizyo.com quizpop.com quizvs.com quizduo.com quizbattle.com quizzou.com quizly.com quizfou.com quizcool.com quizzy.com quizmix.com quizking.com quizgo.com quizup.com quizzz.com quizfast.com quizfriends.com quizdual.com quiztime.com quizblitz.com quizzle.com quizlab.com quizbuzz.com quizsprint.com quizrace.com quizhero.com quizstar.com quizdefis.com quizentrepotes.com quizcash.com quizbox.com quizwave.com quizpulse.com quizkong.com quiztonpote.com; do
-            ns=$(dig +short NS $d | head -1); c=$(sleep 2; curl -sS -m 20 -o /dev/null -w "%{http_code}" "https://rdap.verisign.com/com/v1/domain/$d")
-            echo "$d rdap=$c ns=$ns"
-          done > journal.txt 2>&1
+          { for u in http://quizzmatch.com/ https://quizzmatch.com/ http://www.quizzmatch.com/ http://quizzmatch.com/en/geo/ http://quizzmatch.com/sitemap.xml; do
+              echo "== $u"; curl -sS -m 30 -o page.html -w "HTTP %{http_code} -> %{url_effective}\n" -L "$u"; grep -o "<title>[^<]*" page.html | head -1; done; } > journal.txt 2>&1
           cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
