@@ -165,14 +165,19 @@ const tries = {};
 const looks = () => DATA.L[state.g + '_' + state.o].map(id => ({ id, ...DATA.g[id] })).map(x => ({ ...x, fit: x.m.includes(state.m) ? 1 : 0 })).sort((a, b) => b.fit - a.fit);
 
 /* ---------- Vision dans le navigateur : la photo ne quitte pas le téléphone pour l'analyse ---------- */
-let poseP, faceP;
+let poseP, segP, faceP, visionP;
+const vision = () => visionP ||= (async () => {
+  const V = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+  return { V, fs: await V.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm') };
+})();
 function loadPose() {
-  return poseP ||= (async () => {
-    const { PoseLandmarker, FilesetResolver } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
-    const fs = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
-    return PoseLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task' },
-      runningMode: 'IMAGE', numPoses: 1, outputSegmentationMasks: true });
-  })();
+  return poseP ||= vision().then(({ V, fs }) => V.PoseLandmarker.createFromOptions(fs, {
+    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task' }, runningMode: 'IMAGE', numPoses: 1 }));
+}
+function loadSeg() {
+  return segP ||= vision().then(({ V, fs }) => V.ImageSegmenter.createFromOptions(fs, {
+    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite' },
+    runningMode: 'IMAGE', outputCategoryMask: true, outputConfidenceMasks: false }));
 }
 function loadFace() {
   return faceP ||= (async () => {
@@ -202,13 +207,15 @@ async function analyse(img) {
       const sL = P(11), sR = P(12), hL = P(23), hR = P(24), aL = P(27), aR = P(28);
       const shY = (sL.y + sR.y) / 2, hpY = (hL.y + hR.y) / 2, cx = (hL.x + hR.x + sL.x + sR.x) / 4, torso = Math.max(1, hpY - shY);
       let S = Math.hypot(sL.x - sR.x, sL.y - sR.y) * 1.18, Wa = 0, Hi = 0;
-      const mk = res.segmentationMasks && res.segmentationMasks[0];
-      if (mk) {
-        const m = mk.getAsFloat32Array(), mw = mk.width, mh = mk.height, sx = mw / W, sy = mh / H;
+      try {
+        const seg = await loadSeg(), sr = seg.segment(img), mk = sr.categoryMask;
+        const raw = mk.getAsUint8Array(), mw = mk.width, mh = mk.height, sx = mw / W, sy = mh / H;
+        const body = raw[Math.round((shY + torso * .5) * sy) * mw + Math.round(cx * sx)];   // valeur du masque au centre du corps
+        const m = Array.from(raw, v => v === body ? 1 : 0);
         Wa = rowWidth(m, mw, mh, (shY + torso * .62) * sy, cx * sx) / sx;
         Hi = rowWidth(m, mw, mh, (hpY + torso * .08) * sy, cx * sx) / sx;
-        mk.close();
-      }
+        if (sr.close) sr.close();
+      } catch (_) {}
       if (!Hi) Hi = Math.hypot(hL.x - hR.x, hL.y - hR.y) * 1.9;
       if (!Wa) Wa = (S + Hi) / 2 * .85;
       const big = Math.max(S, Hi);
@@ -400,7 +407,7 @@ function onTryDone() {
 document.addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return;
   if (t.id === 'back') { state.step = state.step === 4 ? 2 : Math.max(0, state.step - 1); }
-  else if (t.dataset.go) { state.step = +t.dataset.go; if (state.step === 2) { loadPose().catch(() => {}); loadFace().catch(() => {}); } }
+  else if (t.dataset.go) { state.step = +t.dataset.go; if (state.step === 2) { loadPose().catch(() => {}); loadSeg().catch(() => {}); loadFace().catch(() => {}); } }
   else if (t.dataset.occ) { state.o = t.dataset.occ; state.step = 3; render(); runAnalysis(); return; }
   else if (t.dataset.gender) { state.g = t.dataset.gender; t.closest('p').remove(); say(`Profil : <b>${state.g === 'f' ? 'Femme' : 'Homme'}</b>`); if (!state.m) state.m = 'H'; startTries(); return; }
   else if (t.dataset.morph) { state.m = t.dataset.morph; state.info = [MORPHS[state.m].n]; t.closest('p').remove(); say(`Silhouette : <b>${MORPHS[state.m].n}</b>`); if (state.g) { say(`Profil : <b>${state.g === 'f' ? 'Femme' : 'Homme'}</b>`); startTries(); } else askGender(); return; }
@@ -416,7 +423,7 @@ $('#photo').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
   shrink(f).then(d => { e.target.value = ''; if (!d) return;
     state.photo = d; state.g = state.m = null; for (const k in tries) delete tries[k];
-    loadPose().catch(() => {}); loadFace().catch(() => {});
+    loadPose().catch(() => {}); loadSeg().catch(() => {}); loadFace().catch(() => {});
     if (state.step === 4) { state.step = 3; render(); runAnalysis(); } else render(); });
 });
 render();

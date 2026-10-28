@@ -20,7 +20,7 @@ jobs:
           const { chromium, devices } = require('playwright');
           (async () => {
             const b = await chromium.launch(); const p = await (await b.newContext({ ...devices['iPhone 13'] })).newPage();
-            const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text().slice(0, 150)); });
+            const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text().slice(0, 150)); }); p.on('response', r => { if (r.status() >= 400) errs.push(r.status() + ' ' + r.url().slice(0, 120)); });
             await p.goto('https://bapkenbegjanian-cmd.github.io/permis-en-ville/cabine/?v=' + Date.now()); await p.waitForTimeout(3500);
             await p.screenshot({ path: '/tmp/e/w0.png', fullPage: true });
             await p.click('[data-go="1"]'); await p.setInputFiles('#photo', 'moi.jpg'); await p.waitForTimeout(1500); await p.screenshot({ path: '/tmp/e/w1.png' });
