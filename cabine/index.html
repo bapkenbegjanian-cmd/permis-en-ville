@@ -264,7 +264,7 @@ const SCREENS = {
 const FN = 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co/functions/v1/bright-endpoint';
 const tries = {};
 const tkey = () => `${state.g}_${state.o}_${state.pick}`;
-const api = d => fetch(FN, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h' }, body: JSON.stringify(d) }).then(r => r.json());
+const api = (d, signal) => fetch(FN, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h' }, body: JSON.stringify(d) }).then(r => r.json());
 function tryBlock(p) {
   const t = tries[tkey()];
   const right = !t ? `<button class="trybtn" type="button" data-try>✨ Me voir avec ce look</button>`
@@ -272,22 +272,26 @@ function tryBlock(p) {
     : t.st === 'ok' ? `<img src="${t.url}" alt="Toi avec le look" class="reveal"><span class="lbl">Toi, look ${state.pick + 1}</span>`
     : `<button class="trybtn" type="button" data-try>Réessayer</button>`;
   return `<div class="me"><div><img src="${state.photo}" alt="Ta photo"><span class="lbl">Toi</span></div><div>${right}</div></div>
-    <p class="note">${t && t.st === 'run' ? 'Environ 15 secondes…' : t && t.st === 'err' ? 'L\'essayage n\'a pas marché. Essaie une photo de face, en entier, bien éclairée.' : 'Photo de face, en entier, bien éclairée. Elle sert seulement à l\'essayage.'}</p>`;
+    <p class="note">${t && t.st === 'run' ? t.msg : t && t.st === 'err' ? `L'essayage n'a pas marché (${t.why}). Essaie une photo de face, en entier, bien éclairée.` : 'Photo de face, en entier, bien éclairée. Elle sert seulement à l\'essayage.'}</p>`;
 }
 async function tryOn() {
-  const k = tkey(), P = PH[state.g + '_' + state.o], p = P[state.pick % P.length];
-  tries[k] = { st: 'run' }; render();
+  const k = tkey(), P = PH[state.g + '_' + state.o], p = P[state.pick % P.length], t0 = Date.now();
+  const say = m => { tries[k].msg = m; const n = document.querySelector('.note'); if (n && tkey() === k) n.textContent = m; };
+  // Chaque appel a un délai maximum, pour ne jamais tourner sans fin
+  const call = (d, ms) => { const c = new AbortController(), to = setTimeout(() => c.abort(), ms); return api(d, c.signal).finally(() => clearTimeout(to)); };
+  tries[k] = { st: 'run', msg: 'Envoi de ta photo…' }; render();
   try {
-    const r = await api({ action: 'run', body: { model_name: 'tryon-v1.6', inputs: { model_image: state.photo, garment_image: `${p.u}&w=768&q=85&fm=jpg` } } });
-    if (!r.id) throw 0;
-    for (let i = 0; i < 40; i++) {
-      await new Promise(f => setTimeout(f, 3000));
-      const s = await api({ action: 'status', id: r.id });
+    const r = await call({ action: 'run', body: { model_name: 'tryon-v1.6', inputs: { model_image: state.photo, garment_image: `${p.u}&w=768&q=85&fm=jpg` } } }, 45000);
+    if (!r.id) throw new Error(r.message || r.error || 'refusé');
+    while (Date.now() - t0 < 120000) {
+      await new Promise(f => setTimeout(f, 2500));
+      const s = await call({ action: 'status', id: r.id }, 20000).catch(() => ({}));
+      say(`L'IA t'habille… ${Math.round((Date.now() - t0) / 1000)} s`);
       if (s.status === 'completed' && s.output) { tries[k] = { st: 'ok', url: s.output[0] }; break; }
-      if (s.status === 'failed') throw 0;
+      if (s.status === 'failed') throw new Error((s.error && (s.error.message || s.error.name)) || 'échec');
     }
-    if (tries[k].st !== 'ok') throw 0;
-  } catch (_) { tries[k] = { st: 'err' }; }
+    if (tries[k].st !== 'ok') throw new Error('trop long');
+  } catch (e) { tries[k] = { st: 'err', why: e.name === 'AbortError' ? 'pas de réponse du serveur' : String(e.message || e) }; }
   if (tkey() === k && state.step === 5) render();
 }
 // Réduit la photo avant l'envoi (plus rapide, moins lourd)
