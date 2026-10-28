@@ -14,23 +14,25 @@ jobs:
           set +e
           mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
           npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
+          curl -sL -o habit.jpg 'https://images.unsplash.com/photo-1784749615306-10675f31bae2?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTJ8fGJsYXplciUyMG9uJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4Nnww&ixlib=rb-4.1.0&w=900&q=85&fm=jpg'
           curl -sL -o moi.jpg 'https://images.unsplash.com/photo-1715541448446-3369e1cc0ee9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8ZmFzaGlvbiUyMG1vZGVsJTIwZnVsbCUyMGJvZHl8ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0&w=900&q=85&fm=jpg'
           sleep 80
           cat > t.js <<'JS'
           const { chromium, devices } = require('playwright');
           (async () => {
             const b = await chromium.launch(); const p = await (await b.newContext({ ...devices['iPhone 13'] })).newPage();
-            const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errs.push('console: ' + m.text().slice(0, 150)); }); p.on('response', r => { if (r.status() >= 400) errs.push(r.status() + ' ' + r.url().slice(0, 120)); });
+            const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('response', r => { if (r.status() >= 400 && !r.url().includes('wasm')) errs.push(r.status() + ' ' + r.url().slice(0, 120)); });
             await p.goto('https://bapkenbegjanian-cmd.github.io/permis-en-ville/cabine/?v=' + Date.now()); await p.waitForTimeout(3500);
-            await p.screenshot({ path: '/tmp/e/w0.png', fullPage: true });
-            await p.click('[data-go="1"]'); await p.setInputFiles('#photo', 'moi.jpg'); await p.waitForTimeout(1500); await p.screenshot({ path: '/tmp/e/w1.png' });
-            await p.click('[data-go="2"]'); await p.waitForTimeout(1000); await p.screenshot({ path: '/tmp/e/w2.png' });
-            await p.click('[data-occ="soiree"]');
-            await p.waitForTimeout(7000); await p.screenshot({ path: '/tmp/e/w3.png', fullPage: true });
-            await p.waitForTimeout(6000); await p.screenshot({ path: '/tmp/e/w4.png', fullPage: true });
-            console.log('log :', await p.textContent('#log').catch(() => '-'));
-            await p.waitForSelector('.tabs', { timeout: 130000 }).catch(() => {}); await p.waitForTimeout(3000);
-            await p.screenshot({ path: '/tmp/e/w5.png', fullPage: true });
+            await p.screenshot({ path: '/tmp/e/m0.png', fullPage: true });
+            await p.click('[data-mode="look"]'); await p.setInputFiles('#photo', 'moi.jpg'); await p.waitForTimeout(1500);
+            await p.click('[data-go="2"]'); await p.waitForTimeout(800); await p.click('[data-occ="travail"]');
+            await p.waitForSelector('.tabs', { timeout: 150000 }).catch(() => {}); await p.waitForTimeout(40000);
+            for (let i = 0; i < 3; i++) { await p.click(`[data-pick="${i}"]`); await p.waitForTimeout(2500); await p.locator('.frame').screenshot({ path: `/tmp/e/m${i + 1}.png` }); console.log('look', i + 1, await p.textContent('.badge')); }
+            await p.goto('https://bapkenbegjanian-cmd.github.io/permis-en-ville/cabine/?v=' + Date.now()); await p.waitForTimeout(2000);
+            await p.click('[data-mode="shop"]'); await p.waitForTimeout(800); await p.click('[data-go="5"]'); await p.setInputFiles('#garment', 'habit.jpg'); await p.waitForTimeout(1200);
+            await p.screenshot({ path: '/tmp/e/m4.png' }); await p.click('[data-shoptry]');
+            await p.waitForFunction(() => !document.querySelector('.frame.scan'), null, { timeout: 150000 }).catch(() => {}); await p.waitForTimeout(2500);
+            await p.screenshot({ path: '/tmp/e/m5.png', fullPage: true }); console.log('magasin', await p.textContent('.badge'));
             console.log('erreurs', errs); await b.close();
           })().catch(e => console.log('ECHEC', e.message));
           JS
