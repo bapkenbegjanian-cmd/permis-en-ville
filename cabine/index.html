@@ -3,179 +3,283 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Cabine — essaie tes looks sur ta photo</title>
-<meta name="description" content="Mets ta photo, choisis l'occasion : Cabine t'habille avec les looks qui te vont.">
-<meta name="theme-color" content="#fbf7f4">
+<title>Cabine — essaie les looks sur ta photo</title>
+<meta name="description" content="Mets ta photo : l'IA analyse ta silhouette et t'habille avec les looks qui te vont.">
+<meta name="theme-color" content="#fde8ef">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://images.unsplash.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;1,6..96,400&family=Manrope:wght@400;500;700;800&display=swap">
+<link rel="preconnect" href="https://images.unsplash.com"><link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
 :root {
-  --bg: #fbf7f4; --panel: #ffffff; --ink: #2a2120; --muted: #8a7d78; --line: #eadfd8;
-  --rose: #c58b8f; --gold: #b8935a; --blush: #f6e6e3; --sage: #e7ece6;
-  --display: "Bodoni Moda", Didot, Georgia, serif; --body: "Manrope", system-ui, sans-serif;
+  --ink: #1d1530; --muted: #6f6688; --line: rgba(29,21,48,.1); --glass: rgba(255,255,255,.62);
+  --pink: #ff5d8f; --violet: #7b5cff; --peach: #ffb37a; --mint: #3dd6b5;
+  --grad: linear-gradient(120deg, var(--pink), var(--violet));
+  --display: "Syne", "Arial Black", sans-serif; --body: "Plus Jakarta Sans", system-ui, sans-serif;
   color-scheme: light;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); }
+html, body { margin: 0; color: var(--ink); font: 16px/1.5 var(--body); background: #fdf1f5; }
 button { font: inherit; color: inherit; }
 img { display: block; max-width: 100%; }
 
-/* Décor : halos doux et étincelles dorées */
-.deco { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-.deco i { position: absolute; border-radius: 50%; filter: blur(50px); opacity: .55; animation: float 14s ease-in-out infinite alternate; }
-.deco i:nth-child(1) { width: 320px; height: 320px; background: #f3d9d6; top: -80px; right: -90px; }
-.deco i:nth-child(2) { width: 280px; height: 280px; background: #efe3cf; bottom: 10%; left: -110px; animation-delay: -5s; }
-.deco i:nth-child(3) { width: 220px; height: 220px; background: #e3eadf; bottom: -60px; right: -40px; animation-delay: -9s; }
-@keyframes float { to { transform: translate(30px, 40px) scale(1.1); } }
-.spark { position: absolute; color: var(--gold); font-size: 14px; animation: twinkle 3s ease-in-out infinite; }
-@keyframes twinkle { 50% { opacity: .2; transform: scale(.6) rotate(20deg); } }
+/* Fond animé : dégradé vivant */
+.bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: linear-gradient(160deg, #fff4f7, #f4efff 55%, #fff6ee); }
+.bg i { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .7; animation: blob 16s ease-in-out infinite alternate; }
+.bg i:nth-child(1) { width: 380px; height: 380px; background: #ffc2d6; top: -120px; left: -100px; }
+.bg i:nth-child(2) { width: 340px; height: 340px; background: #d9ccff; top: 30%; right: -140px; animation-delay: -6s; }
+.bg i:nth-child(3) { width: 300px; height: 300px; background: #ffe0c2; bottom: -100px; left: 10%; animation-delay: -11s; }
+@keyframes blob { 50% { transform: translate(60px, 50px) scale(1.15); } 100% { transform: translate(-30px, 80px) scale(.95); } }
 
 .app { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
   padding: calc(env(safe-area-inset-top, 0px) + 12px) max(18px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 32px) max(18px, env(safe-area-inset-left, 0px)); }
-.top { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; margin-bottom: 8px; }
-.logo { grid-column: 2; text-align: center; font: italic 400 30px/1 var(--display); }
-.logo b { font-style: normal; font-weight: 600; color: var(--rose); }
-.back { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); cursor: pointer; font-size: 18px; box-shadow: 0 4px 14px rgba(120,80,70,.08); }
-.dots { display: flex; justify-content: center; gap: 6px; margin: 4px 0 18px; }
-.dots i { width: 6px; height: 6px; border-radius: 99px; background: var(--line); transition: all .4s; }
-.dots i.on { width: 22px; background: var(--rose); }
+.top { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; margin-bottom: 14px; }
+.logo { grid-column: 2; text-align: center; font: 800 26px/1 var(--display); letter-spacing: -.02em; }
+.logo span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.back { width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(12px); cursor: pointer; font-size: 18px; }
 
 .screen { display: grid; gap: 18px; animation: screenin .6s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes screenin { from { opacity: 0; transform: translateY(14px); } }
-.eyebrow { font-size: 12px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); text-align: center; }
-h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; text-align: center; text-wrap: balance; }
-h1 { font-size: clamp(38px, 10.5vw, 54px); line-height: 1.02; }
-h2 { font-size: clamp(30px, 8vw, 38px); line-height: 1.08; }
-h1 i, h2 i { color: var(--rose); }
-.sub { color: var(--muted); text-align: center; margin: -6px auto 0; max-width: 34ch; }
+@keyframes screenin { from { opacity: 0; transform: translateY(16px) scale(.99); } }
+h1, h2 { font-family: var(--display); font-weight: 800; margin: 0; letter-spacing: -.03em; text-wrap: balance; }
+h1 { font-size: clamp(40px, 11.5vw, 60px); line-height: .95; }
+h2 { font-size: clamp(30px, 8.5vw, 40px); line-height: 1; }
+.hl { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { color: var(--muted); margin: 0; max-width: 36ch; }
+.pill { display: inline-flex; align-items: center; gap: 8px; width: max-content; font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 99px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(12px); }
+.pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 4px rgba(61,214,181,.2); animation: pulse 1.6s infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(61,214,181,0); } }
 
-.cta { display: block; width: 100%; border: 0; border-radius: 99px; padding: 18px 24px; cursor: pointer; font-weight: 800; font-size: 16px; letter-spacing: .02em; text-align: center; text-decoration: none;
-  color: #fff; background: linear-gradient(135deg, #d39ea1, var(--rose) 50%, #a96f74); box-shadow: 0 12px 28px rgba(197,139,143,.35); position: relative; overflow: hidden; transition: transform .2s; }
-.cta::after { content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: shine 3.2s ease-in-out infinite; }
-@keyframes shine { 60%, 100% { left: 130%; } }
-.cta:active { transform: scale(.98); }
-.cta[disabled] { opacity: .45; pointer-events: none; }
-.ghost { display: block; width: 100%; border: 1px solid var(--line); border-radius: 99px; padding: 15px 20px; background: var(--panel); cursor: pointer; font-weight: 700; text-align: center; text-decoration: none; color: var(--ink); }
-button:focus-visible, a:focus-visible, label:focus-visible { outline: 2px solid var(--rose); outline-offset: 3px; }
+.cta { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; border: 0; border-radius: 18px; padding: 18px 24px; cursor: pointer; font-weight: 800; font-size: 17px; text-decoration: none;
+  color: #fff; background: var(--grad); background-size: 200% 100%; box-shadow: 0 14px 30px rgba(123,92,255,.3); animation: gradmove 5s ease infinite; transition: transform .15s; }
+@keyframes gradmove { 50% { background-position: 100% 0; } }
+.cta:active { transform: scale(.97); }
+.cta[disabled] { opacity: .4; pointer-events: none; }
+.ghost { display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--line); border-radius: 18px; padding: 16px 20px; background: var(--glass); backdrop-filter: blur(12px); cursor: pointer; font-weight: 700; text-align: center; text-decoration: none; color: var(--ink); }
+button:focus-visible, a:focus-visible, label:focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; }
 
-/* Le miroir : arche dorée */
-.mirror { position: relative; width: min(100%, 330px); margin: 6px auto 0; padding: 10px; border-radius: 200px 200px 26px 26px;
-  background: linear-gradient(160deg, #e8cf9f, var(--gold) 40%, #e9d6ae 70%, #a8814a); box-shadow: 0 24px 50px rgba(120,80,60,.18); }
-.mirror.small { width: min(100%, 250px); }
-.glass { position: relative; aspect-ratio: 3 / 4.3; border-radius: 190px 190px 18px 18px; overflow: hidden; background: linear-gradient(180deg, #fff, var(--blush)); }
-.glass > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.glass .empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; color: var(--muted); text-align: center; padding: 20px; font-size: 14px; }
-.glass .empty b { font: 400 22px var(--display); color: var(--ink); }
-.glass .plus { width: 64px; height: 64px; border-radius: 50%; border: 1.5px dashed var(--rose); display: grid; place-items: center; font-size: 28px; color: var(--rose); }
-.glass.scan::after { content: ""; position: absolute; left: 0; right: 0; height: 30%; top: -30%; background: linear-gradient(180deg, transparent, rgba(197,139,143,.45), transparent); animation: sweep 1.6s ease-in-out infinite; }
-@keyframes sweep { to { top: 100%; } }
+/* Accueil */
+.showcase { position: relative; height: 380px; margin: 6px 0; }
+.showcase .card { position: absolute; width: 58%; aspect-ratio: 3 / 4; border-radius: 26px; overflow: hidden; box-shadow: 0 24px 50px rgba(29,21,48,.18); border: 4px solid #fff; background: #fff; transition: all .9s cubic-bezier(.2,.8,.2,1); }
+.showcase .card img { width: 100%; height: 100%; object-fit: cover; }
+.showcase .c0 { left: 21%; top: 0; z-index: 3; transform: rotate(0); }
+.showcase .c1 { left: 0; top: 40px; z-index: 2; transform: rotate(-9deg) scale(.86); opacity: .9; }
+.showcase .c2 { left: 42%; top: 40px; z-index: 1; transform: rotate(9deg) scale(.86); opacity: .9; }
+.float { position: absolute; z-index: 5; font-size: 13px; font-weight: 800; padding: 9px 13px; border-radius: 14px; background: #fff; box-shadow: 0 10px 24px rgba(29,21,48,.14); animation: bob 4s ease-in-out infinite; white-space: nowrap; }
+.float.a { left: -4px; top: 18px; } .float.b { right: -4px; top: 170px; animation-delay: -1.3s; } .float.c { left: 8px; bottom: 6px; animation-delay: -2.6s; }
+@keyframes bob { 50% { transform: translateY(-10px); } }
+.marquee { overflow: hidden; margin: 0 -18px; padding: 12px 0; background: var(--ink); color: #fff; transform: rotate(-2deg); }
+.marquee div { display: flex; gap: 28px; width: max-content; animation: slide 22s linear infinite; font: 800 15px var(--display); letter-spacing: .04em; text-transform: uppercase; }
+.marquee b { color: var(--peach); }
+@keyframes slide { to { transform: translateX(-50%); } }
+.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.how div { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 18px; padding: 12px 10px; text-align: center; font-size: 12.5px; font-weight: 700; }
+.how span { display: block; font-size: 24px; margin-bottom: 4px; }
+
+/* Cadre photo : la photo entière, jamais coupée */
+.frame { position: relative; width: 100%; aspect-ratio: 3 / 4; border-radius: 28px; overflow: hidden; background: #fff; box-shadow: 0 24px 50px rgba(29,21,48,.16); border: 4px solid #fff; }
+.frame .blur { position: absolute; inset: -20px; background-size: cover; background-position: center; filter: blur(24px) saturate(1.2); opacity: .55; }
+.frame > img, .frame canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.frame .empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; text-align: center; padding: 24px; color: var(--muted); font-size: 14px;
+  background: repeating-linear-gradient(135deg, rgba(123,92,255,.04) 0 12px, transparent 12px 24px); border: 2px dashed rgba(123,92,255,.35); border-radius: 24px; }
+.frame .empty b { font: 800 22px var(--display); color: var(--ink); }
+.frame .plus { width: 72px; height: 72px; border-radius: 22px; background: var(--grad); color: #fff; display: grid; place-items: center; font-size: 34px; box-shadow: 0 12px 26px rgba(255,93,143,.35); }
+.frame .badge { position: absolute; left: 12px; top: 12px; z-index: 3; font-size: 12.5px; font-weight: 800; padding: 7px 11px; border-radius: 12px; background: rgba(255,255,255,.9); }
+.frame.scan::after { content: ""; position: absolute; left: 0; right: 0; height: 3px; top: 0; background: var(--grad); box-shadow: 0 0 22px 6px rgba(123,92,255,.45); animation: scanline 2.2s ease-in-out infinite alternate; z-index: 2; }
+@keyframes scanline { to { top: 100%; } }
 .reveal { animation: reveal 1.3s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes reveal { from { clip-path: inset(0 0 100% 0); filter: blur(10px); } to { clip-path: inset(0); filter: none; } }
-.mirror .spark:nth-of-type(1) { top: 8%; left: -14px; } .mirror .spark:nth-of-type(2) { top: 40%; right: -16px; animation-delay: -1s; font-size: 18px; } .mirror .spark:nth-of-type(3) { bottom: 10%; left: -10px; animation-delay: -2s; }
-.tag { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(255,255,255,.88); backdrop-filter: blur(8px); border-radius: 99px; padding: 6px 14px; font-size: 13px; font-weight: 800; white-space: nowrap; }
-
+@keyframes reveal { from { clip-path: inset(0 0 100% 0); filter: blur(12px); } to { clip-path: inset(0); filter: none; } }
 .tips { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
-.tips span { font-size: 12.5px; background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; color: var(--muted); }
+.tips span { font-size: 13px; font-weight: 600; background: var(--glass); border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; }
 
-/* Choix */
+/* Choix de l'occasion */
 .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.opt { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 20px 12px; display: grid; justify-items: center; gap: 6px; cursor: pointer; text-align: center; box-shadow: 0 6px 18px rgba(120,80,70,.06);
-  opacity: 0; transform: translateY(14px); animation: up .55s cubic-bezier(.2,.8,.2,1) forwards; transition: border-color .2s, box-shadow .2s, transform .2s; }
-.opt:hover { border-color: var(--rose); box-shadow: 0 10px 24px rgba(197,139,143,.2); }
+.opt { position: relative; overflow: hidden; background: var(--glass); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.8); border-radius: 22px; padding: 18px 14px; display: grid; gap: 4px; cursor: pointer; text-align: left;
+  box-shadow: 0 8px 22px rgba(29,21,48,.07); opacity: 0; transform: translateY(14px); animation: up .55s cubic-bezier(.2,.8,.2,1) forwards; transition: transform .2s, box-shadow .2s; }
+.opt::before { content: ""; position: absolute; width: 90px; height: 90px; border-radius: 50%; right: -30px; top: -30px; background: var(--c); opacity: .35; filter: blur(4px); }
+.opt:hover { box-shadow: 0 14px 30px rgba(123,92,255,.2); }
 .opt:active { transform: scale(.97); }
-.opt .e { font-size: 34px; line-height: 1.1; }
-.opt b { font: 400 21px var(--display); }
-.opt small { color: var(--muted); font-size: 12.5px; line-height: 1.3; }
-.opt svg { width: 44px; height: 62px; }
-.opt.wide { grid-column: 1 / -1; grid-template-columns: 50px 1fr; justify-items: start; text-align: left; padding: 14px 18px; }
+.opt .e { font-size: 32px; line-height: 1.1; }
+.opt b { font: 800 19px var(--display); }
+.opt small { color: var(--muted); font-size: 12.5px; }
 @keyframes up { to { opacity: 1; transform: none; } }
 
-/* Préparation */
-.steps { display: grid; gap: 10px; max-width: 300px; margin: 0 auto; width: 100%; }
-.steps span { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14.5px; opacity: .45; transition: all .4s; }
-.steps span::before { content: ""; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--line); flex: none; transition: all .4s; }
-.steps span.on { opacity: 1; color: var(--ink); }
-.steps span.on::before { background: var(--rose); border-color: var(--rose); box-shadow: inset 0 0 0 3px #fff; }
+/* Analyse IA */
+.log { display: grid; gap: 8px; background: rgba(29,21,48,.92); color: #fff; border-radius: 22px; padding: 16px 18px; font-size: 14px; min-height: 120px; box-shadow: 0 18px 40px rgba(29,21,48,.25); }
+.log p { margin: 0; display: flex; gap: 10px; align-items: baseline; animation: logline .4s ease both; }
+.log p::before { content: "✓"; color: var(--mint); font-weight: 800; }
+.log p.wait::before { content: "•"; color: var(--peach); animation: blink 1s infinite; }
+.log p b { color: var(--peach); font-weight: 700; }
+@keyframes logline { from { opacity: 0; transform: translateX(-8px); } }
+@keyframes blink { 50% { opacity: .2; } }
+.log .choice { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.log .choice button { border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; border-radius: 12px; padding: 8px 12px; cursor: pointer; font-weight: 700; font-size: 13px; }
 
 /* Résultat */
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 5px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); }
-.tabs button { border: 0; background: none; padding: 10px 4px; border-radius: 99px; cursor: pointer; color: var(--muted); font-weight: 700; font-size: 14px; transition: all .3s; position: relative; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px; border-radius: 18px; background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--line); }
+.tabs button { border: 0; background: none; padding: 11px 4px; border-radius: 13px; cursor: pointer; color: var(--muted); font-weight: 800; font-size: 14px; transition: all .3s; }
 .tabs button[aria-pressed="true"] { background: var(--ink); color: #fff; }
-.tabs button .ld { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--rose); margin-left: 6px; vertical-align: middle; animation: twinkle 1s infinite; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 16px; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 14px; align-items: center; box-shadow: 0 8px 22px rgba(120,80,70,.06); }
-.card .piece { width: 92px; aspect-ratio: 3 / 4; border-radius: 16px; overflow: hidden; background: var(--blush); }
-.card .piece img { width: 100%; height: 100%; object-fit: cover; }
-.card b { font: 400 21px/1.15 var(--display); display: block; }
-.card .price { font-weight: 800; color: var(--rose); font-variant-numeric: tabular-nums; }
-.card small { color: var(--muted); display: block; font-size: 13px; margin-top: 4px; }
-.why { margin: 0; text-align: center; color: var(--muted); font-size: 14.5px; }
+.tabs .ld { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--pink); margin-left: 6px; vertical-align: middle; animation: blink 1s infinite; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { font-size: 12.5px; font-weight: 700; padding: 6px 10px; border-radius: 10px; background: #fff; border: 1px solid var(--line); }
+.piece { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 14px; align-items: center; background: var(--glass); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.8); border-radius: 22px; padding: 12px; box-shadow: 0 10px 26px rgba(29,21,48,.08); }
+.piece .ph { width: 86px; aspect-ratio: 3 / 4; border-radius: 14px; overflow: hidden; background: #fff; }
+.piece .ph img { width: 100%; height: 100%; object-fit: cover; }
+.piece b { font: 800 18px/1.15 var(--display); display: block; }
+.piece .price { font-weight: 800; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; font-variant-numeric: tabular-nums; }
+.piece small { color: var(--muted); display: block; font-size: 13px; margin-top: 3px; }
+.why { margin: 0; font-size: 14.5px; color: var(--muted); }
 .why b { color: var(--ink); }
-.match { display: inline-block; font-size: 12.5px; font-weight: 800; color: var(--gold); background: #f7efe1; padding: 4px 10px; border-radius: 99px; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .note { font-size: 13px; color: var(--muted); text-align: center; margin: 0; }
 .credit { font-size: 11px; color: var(--muted); text-align: center; }
 .credit a { color: inherit; }
-.link { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; justify-self: center; font-size: 14px; }
+.link { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; justify-self: center; font-size: 14px; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition: none !important; } .opt { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
-<div class="deco"><i></i><i></i><i></i></div>
+<div class="bg"><i></i><i></i><i></i></div>
 <div class="app">
-  <div class="top"><button class="back" type="button" id="back" aria-label="Retour" hidden>←</button><div class="logo">Ca<b>bine</b></div></div>
-  <div class="dots" id="dots"></div>
+  <div class="top"><button class="back" type="button" id="back" aria-label="Retour" hidden>←</button><div class="logo">ca<span>bine</span></div></div>
   <main id="app"></main>
   <input id="photo" type="file" accept="image/*" hidden>
 </div>
-<script>
+<script type="module">
 const $ = s => document.querySelector(s);
-const DATA = {"g": {"30": {"u": "https://images.unsplash.com/photo-1772571157276-a76fa80f2a1a?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8N3x8cmVkJTIwZHJlc3MlMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg1fDA&ixlib=rb-4.1.0", "by": "atelierbyvineeth ...", "user": "https://unsplash.com/@atelierbyvineeth", "n": "Robe rouge cintrée", "p": 89, "m": "XAH", "a": "Escarpins nude et pochette dorée"}, "2": {"u": "https://images.unsplash.com/photo-1519554318711-aaf73ece6ff9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8ZHJlc3MlMjBvbiUyMGhhbmdlcnxlbnwxfHx8fDE3OTMyMTgwODV8MA&ixlib=rb-4.1.0", "by": "H&CO", "user": "https://unsplash.com/@hngstrm", "n": "Top noir sans manches", "p": 35, "m": "AHX", "a": "Pantalon large noir et sandales à talon"}, "40": {"u": "https://images.unsplash.com/photo-1687380330652-7badcb8f44c3?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NXx8YmxhY2slMjBkcmVzcyUyMGhhbmdlcnxlbnwxfHx8fDE3OTMyMTgwODZ8MA&ixlib=rb-4.1.0", "by": "Jason Leung", "user": "https://unsplash.com/@ninjason", "n": "Robe portefeuille noire", "p": 79, "m": "XOAH", "a": "Talons fins et bijoux dorés"}, "14": {"u": "https://images.unsplash.com/photo-1604531825858-a8e24ed6b43d?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8ZXZlbmluZyUyMGdvd24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg1fDA&ixlib=rb-4.1.0", "by": "Nathan Walker", "user": "https://unsplash.com/@nwphoto", "n": "Robe en dentelle blanche", "p": 95, "m": "AVHX", "a": "Ballerines et petit sac"}, "69": {"u": "https://images.unsplash.com/photo-1721824299322-6b77921d8c14?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fGZsb3JhbCUyMGRyZXNzJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4Nnww&ixlib=rb-4.1.0", "by": "Lisa Anna", "user": "https://unsplash.com/@lisaanna195", "n": "Robe fleurie manches longues", "p": 69, "m": "AVHO", "a": "Bottines et veste en jean"}, "11": {"u": "https://images.unsplash.com/photo-1578747522731-9e5a179b02f7?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTJ8fGRyZXNzJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg1fDA&ixlib=rb-4.1.0", "by": "Content Pixie", "user": "https://unsplash.com/@contentpixie", "n": "Top blanc sans manches", "p": 29, "m": "AHVX", "a": "Pantalon taille haute et mocassins"}, "175": {"u": "https://images.unsplash.com/photo-1761499101317-e32c4ed50b2f?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8OHx8bWVuJTIwYmxhemVyJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Rodrigo Rodrigues | WOLF Λ R T", "user": "https://unsplash.com/@wolfart32", "n": "Blazer clair", "p": 99, "m": "AHOX", "a": "Chemise blanche et pantalon droit"}, "117": {"u": "https://images.unsplash.com/photo-1548606704-5eadbed74bd9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fHNwb3J0c3dlYXIlMjBmbGF0JTIwbGF5fGVufDF8fHx8MTc5MzIxODA4N3ww&ixlib=rb-4.1.0", "by": "Sincerely Media", "user": "https://unsplash.com/@sincerelymedia", "n": "Brassière et legging", "p": 59, "m": "AVHXO", "a": "Baskets de running et casquette"}, "110": {"u": "https://images.unsplash.com/photo-1548606703-580672e56c26?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8c3BvcnRzd2VhciUyMGZsYXQlMjBsYXl8ZW58MXx8fHwxNzkzMjE4MDg3fDA&ixlib=rb-4.1.0", "by": "Sincerely Media", "user": "https://unsplash.com/@sincerelymedia", "n": "Ensemble sport noir", "p": 55, "m": "AVHXO", "a": "Baskets et gourde"}, "192": {"u": "https://images.unsplash.com/photo-1620799140188-3b2a02fd9a77?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8aG9vZGllJTIwZmxhdCUyMGxheXxlbnwxfHx8fDE3OTMyMTgwODh8MA&ixlib=rb-4.1.0", "by": "Mediamodifier", "user": "https://unsplash.com/@mediamodifier", "n": "Sweat à capuche blanc", "p": 45, "m": "AVHXO", "a": "Jean clair et baskets blanches"}, "129": {"u": "https://images.unsplash.com/photo-1586084611164-a9accaeab607?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fGplYW5zJTIwYW5kJTIwc2hpcnQlMjBmbGF0JTIwbGF5fGVufDF8fHx8MTc5MzIxODA4N3ww&ixlib=rb-4.1.0", "by": "Sincerely Media", "user": "https://unsplash.com/@sincerelymedia", "n": "Marinière et jean", "p": 65, "m": "VHXA", "a": "Baskets blanches ou espadrilles"}, "165": {"u": "https://images.unsplash.com/photo-1564584217132-2271feaeb3c5?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fG1lbiUyMHNoaXJ0JTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg3fDA&ixlib=rb-4.1.0", "by": "Cristofer Maximilian", "user": "https://unsplash.com/@cristofer", "n": "T-shirt gris chiné", "p": 19, "m": "VHXAO", "a": "Jean droit et baskets"}, "91": {"u": "https://images.unsplash.com/photo-1667283831517-5b747b3c17c8?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8OHx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "Vetrivel Viswanathar", "user": "https://unsplash.com/@vetrivikashviswanathar", "n": "Costume bleu marine", "p": 189, "m": "VHXAO", "a": "Chemise blanche et derbies"}, "89": {"u": "https://images.unsplash.com/photo-1667284152861-36e03571486a?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Nnx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "Vetrivel Viswanathar", "user": "https://unsplash.com/@vetrivikashviswanathar", "n": "Veste bordeaux", "p": 149, "m": "VHX", "a": "Col roulé noir et mocassins"}, "85": {"u": "https://images.unsplash.com/photo-1598808503746-f34c53b9323e?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "LOGAN WEAVER | @LGNWVR", "user": "https://unsplash.com/@lgnwvr", "n": "Costume noir", "p": 199, "m": "VHXA", "a": "Cravate fine et souliers noirs"}, "95": {"u": "https://images.unsplash.com/photo-1784749615306-10675f31bae2?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTJ8fGJsYXplciUyMG9uJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4Nnww&ixlib=rb-4.1.0", "by": "Alexander Mass", "user": "https://unsplash.com/@alexandermassph", "n": "Veste camel", "p": 129, "m": "HOAVX", "a": "Chemise ouverte et chino"}, "159": {"u": "https://images.unsplash.com/photo-1611312449412-6cefac5dc3e4?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8bWVuJTIwc2hpcnQlMjBvbiUyMGhhbmdlcnxlbnwxfHx8fDE3OTMyMTgwODd8MA&ixlib=rb-4.1.0", "by": "Caio Coelho", "user": "https://unsplash.com/@smokthebikini", "n": "Chemise à carreaux", "p": 39, "m": "VHXAO", "a": "Jean brut et bottines"}, "182": {"u": "https://images.unsplash.com/photo-1625910513413-c23b8bb81cba?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8cG9sbyUyMHNoaXJ0fGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Clément Vatte", "user": "https://unsplash.com/@clement_vatte", "n": "Polo noir", "p": 35, "m": "VHXA", "a": "Chino beige et baskets"}, "84": {"u": "https://images.unsplash.com/photo-1592343516109-362f7bd871aa?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "Victoria Priessnitz", "user": "https://unsplash.com/@victoriapriessnitz", "n": "Veste de costume noire", "p": 119, "m": "VHXAO", "a": "Chemise blanche et pantalon gris"}, "83": {"u": "https://images.unsplash.com/photo-1621773881532-fe65715b5137?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTJ8fGJsb3VzZSUyMG9uJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4Nnww&ixlib=rb-4.1.0", "by": "Lisanto 李奕良", "user": "https://unsplash.com/@lisanto_", "n": "Chemise blanche", "p": 39, "m": "VHXAO", "a": "Pantalon fuselé et ceinture cuir"}, "180": {"u": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8cG9sbyUyMHNoaXJ0fGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Haryo Setyadi", "user": "https://unsplash.com/@uyk", "n": "T-shirt blanc", "p": 19, "m": "VHXAO", "a": "Jogging et baskets"}, "196": {"u": "https://images.unsplash.com/photo-1739384994765-d44f7af12029?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NXx8aG9vZGllJTIwZmxhdCUyMGxheXxlbnwxfHx8fDE3OTMyMTgwODh8MA&ixlib=rb-4.1.0", "by": "philippe wehrli", "user": "https://unsplash.com/@philippewehrli", "n": "Sweat bleu et jean", "p": 69, "m": "VHXAO", "a": "Baskets de course"}, "125": {"u": "https://images.unsplash.com/photo-1739384879592-79903b12b2a6?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Nnx8amVhbnMlMjBhbmQlMjBzaGlydCUyMGZsYXQlMjBsYXl8ZW58MXx8fHwxNzkzMjE4MDg3fDA&ixlib=rb-4.1.0", "by": "philippe wehrli", "user": "https://unsplash.com/@philippewehrli", "n": "Veste beige et jean", "p": 99, "m": "VHXAO", "a": "Baskets blanches"}, "183": {"u": "https://images.unsplash.com/photo-1671438118097-479e63198629?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8cG9sbyUyMHNoaXJ0fGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Mediamodifier", "user": "https://unsplash.com/@mediamodifier", "n": "Polo blanc", "p": 35, "m": "VHXAO", "a": "Short chino et sneakers"}}, "L": {"f_soiree": [30, 40, 2], "f_rdv": [14, 30, 69], "f_travail": [175, 11, 2], "f_mariage": [69, 14, 30], "f_sport": [117, 110, 192], "f_casual": [129, 165, 192], "h_soiree": [91, 89, 85], "h_rdv": [95, 159, 182], "h_travail": [84, 83, 175], "h_mariage": [91, 175, 85], "h_sport": [180, 192, 196], "h_casual": [125, 196, 183]}};
+const DATA = {"g": {"30": {"u": "https://images.unsplash.com/photo-1772571157276-a76fa80f2a1a?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8N3x8cmVkJTIwZHJlc3MlMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg1fDA&ixlib=rb-4.1.0", "by": "atelierbyvineeth ...", "user": "https://unsplash.com/@atelierbyvineeth", "n": "Robe rouge cintrée", "p": 89, "m": "XAH", "a": "Escarpins nude et pochette dorée"}, "40": {"u": "https://images.unsplash.com/photo-1687380330652-7badcb8f44c3?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NXx8YmxhY2slMjBkcmVzcyUyMGhhbmdlcnxlbnwxfHx8fDE3OTMyMTgwODZ8MA&ixlib=rb-4.1.0", "by": "Jason Leung", "user": "https://unsplash.com/@ninjason", "n": "Robe portefeuille noire", "p": 79, "m": "XOAH", "a": "Talons fins et bijoux dorés"}, "14": {"u": "https://images.unsplash.com/photo-1604531825858-a8e24ed6b43d?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8ZXZlbmluZyUyMGdvd24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg1fDA&ixlib=rb-4.1.0", "by": "Nathan Walker", "user": "https://unsplash.com/@nwphoto", "n": "Robe en dentelle blanche", "p": 95, "m": "AVHX", "a": "Ballerines et petit sac"}, "69": {"u": "https://images.unsplash.com/photo-1721824299322-6b77921d8c14?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fGZsb3JhbCUyMGRyZXNzJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4Nnww&ixlib=rb-4.1.0", "by": "Lisa Anna", "user": "https://unsplash.com/@lisaanna195", "n": "Robe fleurie manches longues", "p": 69, "m": "AVHO", "a": "Bottines et veste en jean"}, "11": {"u": "https://images.unsplash.com/photo-1578747522731-9e5a179b02f7?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTJ8fGRyZXNzJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg1fDA&ixlib=rb-4.1.0", "by": "Content Pixie", "user": "https://unsplash.com/@contentpixie", "n": "Top blanc sans manches", "p": 29, "m": "AHVX", "a": "Pantalon taille haute et mocassins"}, "175": {"u": "https://images.unsplash.com/photo-1761499101317-e32c4ed50b2f?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8OHx8bWVuJTIwYmxhemVyJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Rodrigo Rodrigues | WOLF Λ R T", "user": "https://unsplash.com/@wolfart32", "n": "Blazer clair", "p": 99, "m": "AHOX", "a": "Chemise blanche et pantalon droit"}, "117": {"u": "https://images.unsplash.com/photo-1548606704-5eadbed74bd9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fHNwb3J0c3dlYXIlMjBmbGF0JTIwbGF5fGVufDF8fHx8MTc5MzIxODA4N3ww&ixlib=rb-4.1.0", "by": "Sincerely Media", "user": "https://unsplash.com/@sincerelymedia", "n": "Brassière et legging", "p": 59, "m": "AVHXO", "a": "Baskets de running et casquette"}, "110": {"u": "https://images.unsplash.com/photo-1548606703-580672e56c26?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8c3BvcnRzd2VhciUyMGZsYXQlMjBsYXl8ZW58MXx8fHwxNzkzMjE4MDg3fDA&ixlib=rb-4.1.0", "by": "Sincerely Media", "user": "https://unsplash.com/@sincerelymedia", "n": "Ensemble sport noir", "p": 55, "m": "AVHXO", "a": "Baskets et gourde"}, "192": {"u": "https://images.unsplash.com/photo-1620799140188-3b2a02fd9a77?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8aG9vZGllJTIwZmxhdCUyMGxheXxlbnwxfHx8fDE3OTMyMTgwODh8MA&ixlib=rb-4.1.0", "by": "Mediamodifier", "user": "https://unsplash.com/@mediamodifier", "n": "Sweat à capuche blanc", "p": 45, "m": "AVHXO", "a": "Jean clair et baskets blanches"}, "129": {"u": "https://images.unsplash.com/photo-1586084611164-a9accaeab607?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fGplYW5zJTIwYW5kJTIwc2hpcnQlMjBmbGF0JTIwbGF5fGVufDF8fHx8MTc5MzIxODA4N3ww&ixlib=rb-4.1.0", "by": "Sincerely Media", "user": "https://unsplash.com/@sincerelymedia", "n": "Marinière et jean", "p": 65, "m": "VHXA", "a": "Baskets blanches ou espadrilles"}, "165": {"u": "https://images.unsplash.com/photo-1564584217132-2271feaeb3c5?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fG1lbiUyMHNoaXJ0JTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg3fDA&ixlib=rb-4.1.0", "by": "Cristofer Maximilian", "user": "https://unsplash.com/@cristofer", "n": "T-shirt gris chiné", "p": 19, "m": "VHXAO", "a": "Jean droit et baskets"}, "91": {"u": "https://images.unsplash.com/photo-1667283831517-5b747b3c17c8?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8OHx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "Vetrivel Viswanathar", "user": "https://unsplash.com/@vetrivikashviswanathar", "n": "Costume bleu marine", "p": 189, "m": "VHXAO", "a": "Chemise blanche et derbies"}, "89": {"u": "https://images.unsplash.com/photo-1667284152861-36e03571486a?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Nnx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "Vetrivel Viswanathar", "user": "https://unsplash.com/@vetrivikashviswanathar", "n": "Veste bordeaux", "p": 149, "m": "VHX", "a": "Col roulé noir et mocassins"}, "85": {"u": "https://images.unsplash.com/photo-1598808503746-f34c53b9323e?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "LOGAN WEAVER | @LGNWVR", "user": "https://unsplash.com/@lgnwvr", "n": "Costume noir", "p": 199, "m": "VHXA", "a": "Cravate fine et souliers noirs"}, "95": {"u": "https://images.unsplash.com/photo-1784749615306-10675f31bae2?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTJ8fGJsYXplciUyMG9uJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4Nnww&ixlib=rb-4.1.0", "by": "Alexander Mass", "user": "https://unsplash.com/@alexandermassph", "n": "Veste camel", "p": 129, "m": "HOAVX", "a": "Chemise ouverte et chino"}, "159": {"u": "https://images.unsplash.com/photo-1611312449412-6cefac5dc3e4?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8bWVuJTIwc2hpcnQlMjBvbiUyMGhhbmdlcnxlbnwxfHx8fDE3OTMyMTgwODd8MA&ixlib=rb-4.1.0", "by": "Caio Coelho", "user": "https://unsplash.com/@smokthebikini", "n": "Chemise à carreaux", "p": 39, "m": "VHXAO", "a": "Jean brut et bottines"}, "182": {"u": "https://images.unsplash.com/photo-1625910513413-c23b8bb81cba?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8cG9sbyUyMHNoaXJ0fGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Clément Vatte", "user": "https://unsplash.com/@clement_vatte", "n": "Polo noir", "p": 35, "m": "VHXA", "a": "Chino beige et baskets"}, "84": {"u": "https://images.unsplash.com/photo-1592343516109-362f7bd871aa?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "Victoria Priessnitz", "user": "https://unsplash.com/@victoriapriessnitz", "n": "Veste de costume noire", "p": 119, "m": "VHXAO", "a": "Chemise blanche et pantalon gris"}, "83": {"u": "https://images.unsplash.com/photo-1621773881532-fe65715b5137?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTJ8fGJsb3VzZSUyMG9uJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4Nnww&ixlib=rb-4.1.0", "by": "Lisanto 李奕良", "user": "https://unsplash.com/@lisanto_", "n": "Chemise blanche", "p": 39, "m": "VHXAO", "a": "Pantalon fuselé et ceinture cuir"}, "180": {"u": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8cG9sbyUyMHNoaXJ0fGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Haryo Setyadi", "user": "https://unsplash.com/@uyk", "n": "T-shirt blanc", "p": 19, "m": "VHXAO", "a": "Jogging et baskets"}, "196": {"u": "https://images.unsplash.com/photo-1739384994765-d44f7af12029?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NXx8aG9vZGllJTIwZmxhdCUyMGxheXxlbnwxfHx8fDE3OTMyMTgwODh8MA&ixlib=rb-4.1.0", "by": "philippe wehrli", "user": "https://unsplash.com/@philippewehrli", "n": "Sweat bleu et jean", "p": 69, "m": "VHXAO", "a": "Baskets de course"}, "125": {"u": "https://images.unsplash.com/photo-1739384879592-79903b12b2a6?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Nnx8amVhbnMlMjBhbmQlMjBzaGlydCUyMGZsYXQlMjBsYXl8ZW58MXx8fHwxNzkzMjE4MDg3fDA&ixlib=rb-4.1.0", "by": "philippe wehrli", "user": "https://unsplash.com/@philippewehrli", "n": "Veste beige et jean", "p": 99, "m": "VHXAO", "a": "Baskets blanches"}, "183": {"u": "https://images.unsplash.com/photo-1671438118097-479e63198629?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8cG9sbyUyMHNoaXJ0fGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Mediamodifier", "user": "https://unsplash.com/@mediamodifier", "n": "Polo blanc", "p": 35, "m": "VHXAO", "a": "Short chino et sneakers"}}, "L": {"f_soiree": [30, 40, 14], "f_rdv": [14, 30, 69], "f_travail": [175, 11, 69], "f_mariage": [69, 14, 30], "f_sport": [117, 110, 192], "f_casual": [129, 165, 192], "h_soiree": [91, 89, 85], "h_rdv": [95, 159, 182], "h_travail": [84, 83, 175], "h_mariage": [91, 175, 85], "h_sport": [180, 192, 196], "h_casual": [125, 196, 183]}};
 const UTM = '?utm_source=cabine&utm_medium=referral';
 const pic = (g, w = 700) => `${g.u}&w=${w}&q=75&fm=jpg&fit=crop&crop=entropy`;
-const credit = g => `Pièce : photo <a href="${g.user}${UTM}" target="_blank" rel="noopener">${g.by}</a> / <a href="https://unsplash.com/${UTM}" target="_blank" rel="noopener">Unsplash</a>`;
+const credit = g => `Photo de la pièce : <a href="${g.user}${UTM}" target="_blank" rel="noopener">${g.by}</a> / <a href="https://unsplash.com/${UTM}" target="_blank" rel="noopener">Unsplash</a>`;
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
 const MORPHS = {
-  X: { n: 'Sablier', d: 'Taille marquée', s: [15, 9, 15], t: 'On suit ta taille sans cacher tes courbes.' },
-  A: { n: 'Triangle', d: 'Hanches plus larges', s: [10, 12, 16], t: 'On attire le regard vers le haut.' },
-  V: { n: 'Triangle inversé', d: 'Épaules plus larges', s: [16, 12, 10], t: 'On adoucit les épaules et on équilibre le bas.' },
-  H: { n: 'Rectangle', d: 'Tout est aligné', s: [13, 13, 13], t: 'On crée une taille avec des coupes structurées.' },
-  O: { n: 'Ronde', d: 'Volume au ventre', s: [14, 16, 14], t: 'On allonge avec des lignes verticales.' }
+  X: { n: 'Sablier', d: 'taille marquée, épaules et hanches équilibrées', t: 'On suit ta taille sans cacher tes courbes.' },
+  A: { n: 'Triangle', d: 'hanches un peu plus larges que les épaules', t: 'On attire le regard vers le haut.' },
+  V: { n: 'Triangle inversé', d: 'épaules plus larges que les hanches', t: 'On équilibre avec du volume en bas.' },
+  H: { n: 'Rectangle', d: 'épaules, taille et hanches alignées', t: 'On crée une taille avec des coupes structurées.' },
+  O: { n: 'Ronde', d: 'volume au centre', t: 'On allonge avec des lignes verticales.' }
 };
-const OCCS = { soiree: ['🥂', 'Soirée', 'Chic et lumineux'], rdv: ['🌹', 'Rendez-vous', 'Séduisant, pas trop'], travail: ['💼', 'Travail', 'Net et assuré'],
-  mariage: ['💍', 'Mariage', 'Élégant et de saison'], sport: ['🏃', 'Sport', 'Beau et confortable'], casual: ['☀️', 'Week-end', 'Facile et stylé'] };
-const state = { step: 0, photo: null, g: null, m: null, o: null, pick: 0 };
+const OCCS = { soiree: ['🥂', 'Soirée', 'Chic et lumineux', '#ff5d8f'], rdv: ['🌹', 'Rendez-vous', 'Séduisant, pas trop', '#ff8a5c'], travail: ['💼', 'Travail', 'Net et assuré', '#7b5cff'],
+  mariage: ['💍', 'Mariage', 'Élégant', '#ffb37a'], sport: ['⚡', 'Sport', 'Beau et confortable', '#3dd6b5'], casual: ['☀️', 'Week-end', 'Facile et stylé', '#ffd23f'] };
+const state = { step: 0, photo: null, o: null, g: null, m: null, info: [], pick: 0 };
 const tries = {};
+const looks = () => DATA.L[state.g + '_' + state.o].map(id => ({ id, ...DATA.g[id] })).map(x => ({ ...x, fit: x.m.includes(state.m) ? 1 : 0 })).sort((a, b) => b.fit - a.fit);
 
-// Les 3 looks : les pièces qui mettent le plus en valeur la silhouette passent en premier
-function looks() {
-  return DATA.L[state.g + '_' + state.o].map(id => ({ id, ...DATA.g[id] }))
-    .map(x => ({ ...x, fit: x.m.includes(state.m) ? 1 : 0 })).sort((a, b) => b.fit - a.fit);
+/* ---------- Vision dans le navigateur : la photo ne quitte pas le téléphone pour l'analyse ---------- */
+let poseP, faceP;
+function loadPose() {
+  return poseP ||= (async () => {
+    const { PoseLandmarker, FilesetResolver } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+    const fs = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+    return PoseLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task' },
+      runningMode: 'IMAGE', numPoses: 1, outputSegmentationMasks: true });
+  })();
+}
+function loadFace() {
+  return faceP ||= (async () => {
+    const fa = await import('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.esm.js');
+    const M = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
+    await fa.nets.tinyFaceDetector.loadFromUri(M); await fa.nets.ageGenderNet.loadFromUri(M);
+    return fa;
+  })();
+}
+const imgOf = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+
+// Largeur de la silhouette sur une ligne de l'image (masque de segmentation), autour du centre du corps
+function rowWidth(mask, W, H, y, cx) {
+  y = Math.max(0, Math.min(H - 1, Math.round(y))); cx = Math.round(cx);
+  let l = cx, r = cx; const on = x => mask[y * W + x] > .5;
+  if (!on(cx)) return 0;
+  while (l > 0 && on(l - 1)) l--; while (r < W - 1 && on(r + 1)) r++;
+  return r - l + 1;
+}
+async function analyse(img) {
+  const out = { ok: false };
+  try {
+    const pl = await loadPose(), res = pl.detect(img), lm = res.landmarks && res.landmarks[0];
+    if (lm) {
+      out.ok = true; out.lm = lm;
+      const W = img.naturalWidth, H = img.naturalHeight, P = i => ({ x: lm[i].x * W, y: lm[i].y * H, v: lm[i].visibility ?? 1 });
+      const sL = P(11), sR = P(12), hL = P(23), hR = P(24), aL = P(27), aR = P(28);
+      const shY = (sL.y + sR.y) / 2, hpY = (hL.y + hR.y) / 2, cx = (hL.x + hR.x + sL.x + sR.x) / 4, torso = Math.max(1, hpY - shY);
+      let S = Math.hypot(sL.x - sR.x, sL.y - sR.y) * 1.18, Wa = 0, Hi = 0;
+      const mk = res.segmentationMasks && res.segmentationMasks[0];
+      if (mk) {
+        const m = mk.getAsFloat32Array(), mw = mk.width, mh = mk.height, sx = mw / W, sy = mh / H;
+        Wa = rowWidth(m, mw, mh, (shY + torso * .62) * sy, cx * sx) / sx;
+        Hi = rowWidth(m, mw, mh, (hpY + torso * .08) * sy, cx * sx) / sx;
+        mk.close();
+      }
+      if (!Hi) Hi = Math.hypot(hL.x - hR.x, hL.y - hR.y) * 1.9;
+      if (!Wa) Wa = (S + Hi) / 2 * .85;
+      const big = Math.max(S, Hi);
+      out.ratio = S / Hi;
+      out.m = Wa / big < .78 && Math.abs(S - Hi) / big < .12 ? 'X' : S > Hi * 1.1 ? 'V' : Hi > S * 1.07 ? 'A' : Wa / big > .97 ? 'O' : 'H';
+      const bw = Wa / torso; out.build = bw < .62 ? 'élancée' : bw < .85 ? 'équilibrée' : 'pleine';
+      out.legs = (aL.v > .5 || aR.v > .5) ? ((Math.max(aL.y, aR.y) - hpY) / torso > 1.55 ? 'jambes longues' : (Math.max(aL.y, aR.y) - hpY) / torso < 1.3 ? 'buste long' : 'proportions équilibrées') : null;
+      out.geo = { shY, hpY, waY: shY + torso * .62, hiY: hpY + torso * .08, cx, S, Wa, Hi, W, H };
+    }
+  } catch (e) { out.err = String(e); }
+  try {
+    const fa = await loadFace(), f = await fa.detectSingleFace(img, new fa.TinyFaceDetectorOptions({ inputSize: 416 })).withAgeAndGender();
+    if (f && f.genderProbability > .7) out.g = f.gender === 'female' ? 'f' : 'h';
+  } catch (_) {}
+  return out;
 }
 
-/* ---------- Essayage IA (FASHN via la fonction Supabase, la clé reste côté serveur) ---------- */
+// Dessin animé des points du corps et des mesures, par-dessus la photo (même cadrage que l'image)
+const BONES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28]];
+async function drawScan(cv, img, a) {
+  const r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  cv.width = r.width * dpr; cv.height = r.height * dpr;
+  const c = cv.getContext('2d'); c.scale(dpr, dpr);
+  const sc = Math.min(r.width / img.naturalWidth, r.height / img.naturalHeight), ox = (r.width - img.naturalWidth * sc) / 2, oy = (r.height - img.naturalHeight * sc) / 2;
+  const X = x => ox + x * sc, Y = y => oy + y * sc, L = i => ({ x: X(a.lm[i].x * img.naturalWidth), y: Y(a.lm[i].y * img.naturalHeight) });
+  const pts = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+  const grad = c.createLinearGradient(0, 0, r.width, r.height); grad.addColorStop(0, '#ff5d8f'); grad.addColorStop(1, '#7b5cff');
+  for (let k = 1; k <= 30; k++) {          // les os se dessinent progressivement
+    c.clearRect(0, 0, r.width, r.height);
+    c.strokeStyle = grad; c.lineWidth = 3; c.lineCap = 'round'; c.shadowColor = 'rgba(123,92,255,.6)'; c.shadowBlur = 10;
+    BONES.forEach(([p, q]) => { const A = L(p), B = L(q), t = Math.min(1, k / 30); c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(A.x + (B.x - A.x) * t, A.y + (B.y - A.y) * t); c.stroke(); });
+    pts.forEach((i, n) => { if (n / pts.length > k / 30) return; const P = L(i); c.beginPath(); c.fillStyle = '#fff'; c.arc(P.x, P.y, 5, 0, 7); c.fill(); c.lineWidth = 2; c.stroke(); });
+    await wait(28);
+  }
+  return { c, X, Y, r, grad };
+}
+async function drawMeasure(ctx, a, label, y, w, color) {
+  const { c, X, Y } = ctx, g = a.geo, yy = Y(y), x1 = X(g.cx - w / 2), x2 = X(g.cx + w / 2);
+  for (let k = 1; k <= 14; k++) {
+    const t = k / 14, m = (x1 + x2) / 2;
+    c.save(); c.shadowBlur = 0; c.strokeStyle = color; c.lineWidth = 2; c.setLineDash([5, 4]);
+    c.beginPath(); c.moveTo(m - (m - x1) * t, yy); c.lineTo(m + (x2 - m) * t, yy); c.stroke(); c.restore();
+    await wait(20);
+  }
+  c.save(); c.font = '800 12px "Plus Jakarta Sans", sans-serif'; const tw = c.measureText(label).width + 14;
+  c.fillStyle = color; c.beginPath(); c.roundRect(x2 + 6, yy - 11, tw, 22, 8); c.fill(); c.fillStyle = '#fff'; c.fillText(label, x2 + 13, yy + 4); c.restore();
+}
+
+/* ---------- Essayage (FASHN via la fonction Supabase : la clé reste côté serveur) ---------- */
 const FN = 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co/functions/v1/bright-endpoint';
 const api = (d, ms) => { const c = new AbortController(), to = setTimeout(() => c.abort(), ms);
   return fetch(FN, { method: 'POST', signal: c.signal, headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h' }, body: JSON.stringify(d) })
     .then(r => r.json()).finally(() => clearTimeout(to)); };
-async function tryOn(look) {
-  const k = state.g + state.o + look.id;
-  if (tries[k] && tries[k].st !== 'err') return;
+const tkey = l => state.g + state.o + l.id;
+async function tryOn(l) {
+  const k = tkey(l); if (tries[k] && tries[k].st !== 'err') return;
   tries[k] = { st: 'run' }; const t0 = Date.now();
   try {
-    const r = await api({ action: 'run', body: { model_name: 'tryon-v1.6', inputs: { model_image: state.photo, garment_image: pic(look, 768) } } }, 45000);
+    const r = await api({ action: 'run', body: { model_name: 'tryon-v1.6', inputs: { model_image: state.photo, garment_image: pic(l, 768) } } }, 45000);
     if (!r.id) throw new Error(r.message || r.error || 'refusé');
     while (Date.now() - t0 < 120000) {
-      await new Promise(f => setTimeout(f, 2500));
+      await wait(2500);
       const s = await api({ action: 'status', id: r.id }, 20000).catch(() => ({}));
       if (s.status === 'completed' && s.output) { tries[k] = { st: 'ok', url: s.output[0] }; break; }
       if (s.status === 'failed') throw new Error('échec');
     }
     if (tries[k].st !== 'ok') throw new Error('trop long');
   } catch (e) { tries[k] = { st: 'err', why: e.name === 'AbortError' ? 'pas de réponse' : e.message }; }
-  if (state.step >= 5) render(true);
+  if (state.step === 4) render(true);
+  if (state.step === 3) onTryDone();
 }
-const tryOf = look => tries[state.g + state.o + look.id];
 
 function shrink(file) {
   const raw = () => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(null); r.readAsDataURL(file); });
@@ -191,79 +295,119 @@ function shrink(file) {
 }
 
 /* ---------- Écrans ---------- */
-const sparks = '<span class="spark">✦</span><span class="spark">✧</span><span class="spark">✦</span>';
-const shapeSvg = k => { const [a, b, c] = MORPHS[k].s.map(v => v * 1.15);
-  return `<svg viewBox="0 0 40 60" aria-hidden="true"><circle cx="20" cy="7" r="4.5" fill="none" stroke="#c58b8f" stroke-width="1.3"/><path d="M${20 - a} 15 Q20 12 ${20 + a} 15 Q${20 + b + 1} 24 ${20 + b} 31 Q${20 + c + 1} 38 ${20 + c} 44 L${20 - c} 44 Q${20 - c - 1} 38 ${20 - b} 31 Q${20 - b - 1} 24 ${20 - a} 15 Z" fill="#f6e6e3" stroke="#c58b8f" stroke-width="1.3"/><path d="M${20 - c * .6} 44 L16 58 M${20 + c * .6} 44 L24 58" stroke="#c58b8f" stroke-width="1.3"/></svg>`; };
-const heroPiece = DATA.g['30'];
-
+const frame = (src, extra = '') => `<div class="frame ${extra}"><div class="blur" style="background-image:url('${src}')"></div><img src="${src}" alt="Ta photo"></div>`;
+const showIds = ['30', '91', '14'];
 const S = [
   () => `<section class="screen">
-      <span class="eyebrow">Ta cabine d'essayage</span>
-      <h1>Essaie les looks <i>sur toi</i>, sans bouger.</h1>
-      <div class="mirror small">${sparks}<div class="glass"><img src="${pic(heroPiece, 600)}" alt="Robe rouge sur un mannequin de vitrine"></div></div>
-      <p class="sub">Une photo de toi, trois questions, et tu te vois porter les tenues qui te vont.</p>
-      <button class="cta" type="button" data-go="1">Commencer</button>
-      <span class="credit">${credit(heroPiece).replace('Pièce : photo', 'Photo')}</span>
+      <span class="pill"><i></i>Essayage par IA, en 20 secondes</span>
+      <h1>Essaie tout. <span class="hl">Sur toi.</span></h1>
+      <p class="sub">Une photo suffit. L'IA lit ta silhouette, choisit les pièces qui te vont et te les fait porter.</p>
+      <div class="showcase">${showIds.map((id, i) => `<div class="card c${i}"><img src="${pic(DATA.g[id], 500)}" alt="${DATA.g[id].n}"></div>`).join('')}
+        <span class="float a">✨ Analyse de silhouette</span><span class="float b">👗 3 looks pour toi</span><span class="float c">🪞 Sur ta propre photo</span></div>
+      <button class="cta" type="button" data-go="1">Commencer <span>→</span></button>
+      <div class="marquee" aria-hidden="true"><div>${Array(2).fill('Soirée <b>✦</b> Mariage <b>✦</b> Travail <b>✦</b> Rendez-vous <b>✦</b> Sport <b>✦</b> Week-end <b>✦</b>').join(' ')}</div></div>
+      <div class="how"><div><span>📸</span>Ta photo</div><div><span>🧠</span>L'IA t'analyse</div><div><span>🪄</span>Tu te vois habillé·e</div></div>
     </section>`,
   () => `<section class="screen">
-      <span class="eyebrow">Étape 1 sur 4</span><h2>Ta <i>photo</i></h2>
-      <label class="mirror" for="photo" tabindex="0" style="cursor:pointer;display:block">${sparks}<div class="glass">${state.photo ? `<img src="${state.photo}" alt="Ta photo" class="reveal">` : `<div class="empty"><span class="plus">+</span><b>Ajoute ta photo</b>Elle sert seulement à t'habiller.</div>`}</div></label>
-      <div class="tips"><span>De face</span><span>En entier</span><span>Bien éclairée</span></div>
-      <button class="cta" type="button" data-go="2" ${state.photo ? '' : 'disabled'}>Continuer</button>
+      <h2>D'abord, <span class="hl">ta photo</span></h2>
+      <p class="sub">Elle sert seulement à t'analyser et t'habiller.</p>
+      <label for="photo" tabindex="0" style="cursor:pointer;display:block">${state.photo ? frame(state.photo) : `<div class="frame"><div class="empty"><span class="plus">+</span><b>Ajoute ta photo</b>Touche ici pour choisir une photo</div></div>`}</label>
+      <div class="tips"><span>🧍 En entier</span><span>👀 De face</span><span>💡 Bien éclairée</span></div>
+      <button class="cta" type="button" data-go="2" ${state.photo ? '' : 'disabled'}>Continuer <span>→</span></button>
       ${state.photo ? `<label class="link" for="photo" tabindex="0">Changer de photo</label>` : ''}
     </section>`,
-  () => `<section class="screen"><span class="eyebrow">Étape 2 sur 4</span><h2>C'est pour <i>qui</i> ?</h2>
-      <div class="options">${[['f', '👗', 'Femme'], ['h', '👔', 'Homme']].map(([v, e, t], i) => `<button class="opt" type="button" data-set="g:${v}" style="animation-delay:${i * 80}ms"><span class="e">${e}</span><b>${t}</b></button>`).join('')}</div></section>`,
-  () => `<section class="screen"><span class="eyebrow">Étape 3 sur 4</span><h2>Ta <i>silhouette</i></h2><p class="sub">Celle qui te ressemble le plus.</p>
-      <div class="options">${Object.entries(MORPHS).map(([k, v], i) => `<button class="opt wide" type="button" data-set="m:${k}" style="animation-delay:${i * 60}ms">${shapeSvg(k)}<span><b>${v.n}</b><small>${v.d}</small></span></button>`).join('')}</div></section>`,
-  () => `<section class="screen"><span class="eyebrow">Étape 4 sur 4</span><h2>Pour quelle <i>occasion</i> ?</h2>
-      <div class="options">${Object.entries(OCCS).map(([k, [e, t, d]], i) => `<button class="opt" type="button" data-set="o:${k}" style="animation-delay:${i * 60}ms"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div></section>`,
+  () => `<section class="screen"><h2>Pour quelle <span class="hl">occasion</span> ?</h2>
+      <div class="options">${Object.entries(OCCS).map(([k, [e, t, d, col]], i) => `<button class="opt" type="button" data-occ="${k}" style="--c:${col};animation-delay:${i * 60}ms"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div></section>`,
   () => `<section class="screen">
-      <span class="eyebrow">${OCCS[state.o][1]} · ${MORPHS[state.m].n}</span><h2>On t'habille<i>…</i></h2>
-      <div class="mirror">${sparks}<div class="glass scan"><img src="${state.photo}" alt="Ta photo"></div></div>
-      <div class="steps"><span>Lecture de ta silhouette</span><span>Choix des 3 pièces qui te vont</span><span>Essayage sur ta photo</span></div>
-      <p class="note">Environ 15 secondes</p>
+      <h2>L'IA <span class="hl">t'analyse</span></h2>
+      <div class="frame scan" id="sframe"><div class="blur" style="background-image:url('${state.photo}')"></div><img src="${state.photo}" alt="Ta photo" id="simg"><canvas id="cv"></canvas></div>
+      <div class="log" id="log"><p class="wait">Lecture de ta photo…</p></div>
     </section>`,
   () => {
-    const L = looks(), l = L[state.pick], t = tryOf(l) || {};
-    const view = t.st === 'ok' ? `<img src="${t.url}" alt="Toi avec ${l.n}" class="reveal">` : `<img src="${state.photo}" alt="Ta photo">`;
+    const L = looks(), l = L[state.pick], t = tries[tkey(l)] || {};
+    const src = t.st === 'ok' ? t.url : state.photo;
     return `<section class="screen">
-      <span class="eyebrow">${OCCS[state.o][1]} · ${MORPHS[state.m].n}</span><h2>Tes 3 <i>looks</i></h2>
-      <div class="tabs">${L.map((x, i) => { const s = tryOf(x) || {}; return `<button type="button" data-pick="${i}" aria-pressed="${i === state.pick}">Look ${i + 1}${s.st === 'run' ? '<span class="ld"></span>' : ''}</button>`; }).join('')}</div>
-      <div class="mirror">${sparks}<div class="glass ${t.st === 'run' ? 'scan' : ''}">${view}<span class="tag">${t.st === 'run' ? 'L\'IA t\'habille…' : t.st === 'ok' ? `Toi · Look ${state.pick + 1}` : t.st === 'err' ? 'Essayage impossible' : ''}</span></div></div>
-      ${t.st === 'err' ? `<p class="note">Ça n'a pas marché (${t.why}). Essaie une photo de face, en entier. <button class="link" type="button" data-retry>Réessayer</button></p>` : ''}
-      <p class="why"><span class="match">${l.fit ? 'Idéal pour ta silhouette' : 'Va bien avec ta silhouette'}</span><br>${MORPHS[state.m].t}</p>
-      <div class="card"><div class="piece"><img src="${pic(l, 300)}" alt="${l.n}"></div><div><b>${l.n}</b><span class="price">≈ ${l.p} €</span><small>À porter avec : ${l.a}</small></div></div>
-      <div class="row"><label class="ghost" for="photo" tabindex="0">Changer de photo</label>
-        <a class="cta" href="https://www.vinted.fr/catalog?search_text=${encodeURIComponent(l.n)}" target="_blank" rel="noopener">Trouver sur Vinted</a></div>
+      <h2>Tes 3 <span class="hl">looks</span></h2>
+      <div class="chips">${state.info.map(x => `<span>${x}</span>`).join('')}</div>
+      <div class="tabs">${L.map((x, i) => { const s = tries[tkey(x)] || {}; return `<button type="button" data-pick="${i}" aria-pressed="${i === state.pick}">Look ${i + 1}${s.st === 'run' ? '<span class="ld"></span>' : ''}</button>`; }).join('')}</div>
+      <div class="frame ${t.st === 'run' ? 'scan' : ''}"><div class="blur" style="background-image:url('${src}')"></div><img src="${src}" alt="${t.st === 'ok' ? 'Toi avec ' + l.n : 'Ta photo'}" class="${t.st === 'ok' ? 'reveal' : ''}">
+        <span class="badge">${t.st === 'run' ? '🪄 L\'IA t\'habille…' : t.st === 'ok' ? `✨ Toi · Look ${state.pick + 1}` : t.st === 'err' ? 'Essayage impossible' : ''}</span></div>
+      ${t.st === 'err' ? `<p class="note">Ça n'a pas marché (${t.why}). <button class="link" type="button" data-retry>Réessayer</button></p>` : ''}
+      <p class="why"><b>${l.fit ? 'Idéal pour ta silhouette.' : 'Va bien avec ta silhouette.'}</b> ${MORPHS[state.m].t}</p>
+      <div class="piece"><div class="ph"><img src="${pic(l, 300)}" alt="${l.n}"></div><div><b>${l.n}</b><span class="price">≈ ${l.p} €</span><small>À porter avec : ${l.a}</small></div></div>
+      <div class="row"><label class="ghost" for="photo" tabindex="0">Autre photo</label>
+        <a class="cta" href="https://www.vinted.fr/catalog?search_text=${encodeURIComponent(l.n)}" target="_blank" rel="noopener">Sur Vinted</a></div>
       <span class="credit">${credit(l)}</span>
-      <button class="link" type="button" data-restart>Recommencer</button>
+      <button class="link" type="button" data-restart>Changer d'occasion</button>
     </section>`;
   }
 ];
 
 function render(soft) {
-  if (soft && state.step === 5) { const st = looks().map(x => (tryOf(x) || {}).st); if (st.includes('ok') || !st.includes('run')) state.step = 6; }
   const y = scrollY;
   $('#app').innerHTML = S[state.step]();
-  if (state.step === 6 && soft) { $('#app .screen').style.animation = 'none'; scrollTo(0, y); } else scrollTo(0, 0);
-  $('#back').hidden = state.step === 0 || state.step === 5;
-  $('#dots').innerHTML = [1, 2, 3, 4, 6].map(s => `<i class="${state.step >= s ? 'on' : ''}"></i>`).join('');
-  if (state.step === 5 && !soft) document.querySelectorAll('.steps span').forEach((x, i) => setTimeout(() => x.classList.add('on'), 400 + i * 900));
-  if (state.step === 5 && soft) document.querySelectorAll('.steps span').forEach(x => x.classList.add('on'));
+  if (soft) { const sc = $('#app .screen'); if (sc) sc.style.animation = 'none'; scrollTo(0, y); } else scrollTo(0, 0);
+  $('#back').hidden = state.step === 0 || state.step === 3;
 }
-function launch() {
-  state.step = 5; state.pick = 0; render();
-  const L = looks(); tryOn(L[0]); setTimeout(() => { tryOn(L[1]); tryOn(L[2]); }, 1500);
+
+/* Analyse animée, puis lancement des essayages */
+let waitingTry = false;
+function say(html, cls = '') { const p = document.createElement('p'); p.className = cls; p.innerHTML = html; $('#log').appendChild(p); return p; }
+async function runAnalysis() {
+  const log = $('#log'), img = await imgOf(state.photo);
+  await new Promise(r => $('#simg').complete ? r() : $('#simg').onload = r);
+  const a = await analyse(img);
+  if (state.step !== 3) return;
+  log.innerHTML = '';
+  if (!a.ok) {
+    say('Je ne vois pas bien ta silhouette. Pas grave, dis-moi :');
+    return askManual(a.g);
+  }
+  $('#sframe').classList.remove('scan');
+  const ctx = await drawScan($('#cv'), img, a);
+  say('Silhouette détectée'); await wait(450);
+  await drawMeasure(ctx, a, 'Épaules', a.geo.shY + (a.geo.hpY - a.geo.shY) * .06, a.geo.S, '#7b5cff');
+  await drawMeasure(ctx, a, 'Taille', a.geo.waY, a.geo.Wa, '#ff5d8f');
+  await drawMeasure(ctx, a, 'Hanches', a.geo.hiY, a.geo.Hi, '#ff8a5c');
+  say(`Épaules / hanches : <b>${a.ratio.toFixed(2).replace('.', ',')}</b>`); await wait(500);
+  say(`Silhouette : <b>${MORPHS[a.m].n}</b>, ${MORPHS[a.m].d}`); await wait(600);
+  say(`Allure : <b>${a.build}</b>${a.legs ? ` · ${a.legs}` : ''}`); await wait(600);
+  state.m = a.m; state.info = [MORPHS[a.m].n, 'Allure ' + a.build, ...(a.legs ? [a.legs] : [])];
+  if (!a.g) return askGender();
+  say(`Profil : <b>${a.g === 'f' ? 'Femme' : 'Homme'}</b> <button class="link" type="button" data-fix style="color:#bbb;font-size:12px">corriger</button>`);
+  state.g = a.g; await wait(500); startTries();
 }
+function askGender() {
+  const p = say('Ce look est pour… <span class="choice"><button type="button" data-gender="f">Femme</button><button type="button" data-gender="h">Homme</button></span>', 'wait');
+  p.dataset.ask = 1;
+}
+function askManual(g) {
+  say(`<span class="choice">${Object.entries(MORPHS).map(([k, v]) => `<button type="button" data-morph="${k}">${v.n}</button>`).join('')}</span>`, 'wait');
+  state.g = g || null;
+}
+function startTries() {
+  const L = looks();
+  say(`3 pièces choisies : <b>${L.map(x => x.n).join(', ')}</b>`);
+  say('Essayage sur ta photo… (environ 15 s)', 'wait');
+  waitingTry = true; tryOn(L[0]); setTimeout(() => { tryOn(L[1]); tryOn(L[2]); }, 1500);
+}
+function onTryDone() {
+  if (!waitingTry) return;
+  const st = looks().map(x => (tries[tkey(x)] || {}).st);
+  if (st.includes('ok') || !st.includes('run')) { waitingTry = false; state.step = 4; state.pick = Math.max(0, st.indexOf('ok')); render(); }
+}
+
 document.addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return;
-  if (t.id === 'back') { state.step = state.step === 6 ? 4 : Math.max(0, state.step - 1); }
-  else if (t.dataset.go) state.step = +t.dataset.go;
-  else if (t.dataset.set) { const [k, v] = t.dataset.set.split(':'); state[k] = v; if (k === 'o') return launch(); state.step++; }
+  if (t.id === 'back') { state.step = state.step === 4 ? 2 : Math.max(0, state.step - 1); }
+  else if (t.dataset.go) { state.step = +t.dataset.go; if (state.step === 2) { loadPose().catch(() => {}); loadFace().catch(() => {}); } }
+  else if (t.dataset.occ) { state.o = t.dataset.occ; state.step = 3; render(); runAnalysis(); return; }
+  else if (t.dataset.gender) { state.g = t.dataset.gender; t.closest('p').remove(); say(`Profil : <b>${state.g === 'f' ? 'Femme' : 'Homme'}</b>`); if (!state.m) state.m = 'H'; startTries(); return; }
+  else if (t.dataset.morph) { state.m = t.dataset.morph; state.info = [MORPHS[state.m].n]; t.closest('p').remove(); say(`Silhouette : <b>${MORPHS[state.m].n}</b>`); if (state.g) { say(`Profil : <b>${state.g === 'f' ? 'Femme' : 'Homme'}</b>`); startTries(); } else askGender(); return; }
+  else if ('fix' in t.dataset) { state.g = state.g === 'f' ? 'h' : 'f'; for (const k in tries) delete tries[k]; waitingTry = false; t.closest('p').innerHTML = `Profil : <b>${state.g === 'f' ? 'Femme' : 'Homme'}</b>`; startTries(); return; }
   else if (t.dataset.pick) { state.pick = +t.dataset.pick; render(true); return; }
   else if ('retry' in t.dataset) { tryOn(looks()[state.pick]); render(true); return; }
-  else if ('restart' in t.dataset) Object.assign(state, { step: 2, g: null, m: null, o: null, pick: 0 });
+  else if ('restart' in t.dataset) { state.step = 2; }
   else return;
   render();
 });
@@ -271,8 +415,9 @@ document.addEventListener('keydown', e => { if (e.target.matches('label[for=phot
 $('#photo').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
   shrink(f).then(d => { e.target.value = ''; if (!d) return;
-    state.photo = d; for (const k in tries) delete tries[k];
-    if (state.step === 6) launch(); else render(); });
+    state.photo = d; state.g = state.m = null; for (const k in tries) delete tries[k];
+    loadPose().catch(() => {}); loadFace().catch(() => {});
+    if (state.step === 4) { state.step = 3; render(); runAnalysis(); } else render(); });
 });
 render();
 </script>
