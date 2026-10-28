@@ -9,26 +9,30 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Tester le temps réel Supabase
+      - name: Tester un vrai duel sur quizzmatch.com
         run: |
           set +e
-          mkdir -p /tmp/e /tmp/rt && cd /tmp/rt
-          npm init -y >/dev/null 2>&1; npm i @supabase/supabase-js@2.45.4 >/dev/null 2>&1
+          mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
+          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
+          sleep 60
           cat > t.js <<'JS'
-          const { createClient } = require('@supabase/supabase-js');
-          const U = 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co', K = 'sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h';
-          const a = createClient(U, K), b = createClient(U, K);
-          const ca = a.channel('duel-test-1234'), cb = b.channel('duel-test-1234');
-          let got = false;
-          cb.on('broadcast', { event: 'ping' }, m => { got = true; console.log('B a recu :', JSON.stringify(m.payload)); });
-          const sub = (c, n) => new Promise(r => c.subscribe(st => { console.log(n, st); if (st === 'SUBSCRIBED' || st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') r(st); }));
+          const { chromium, devices } = require('playwright');
           (async () => {
-            const [x, y] = await Promise.all([sub(ca, 'A'), sub(cb, 'B')]);
-            const r = await ca.send({ type: 'broadcast', event: 'ping', payload: { hello: 'duel' } });
-            console.log('envoi :', r);
-            setTimeout(() => { console.log(got ? 'TEMPS REEL OK' : 'RIEN RECU'); process.exit(0); }, 4000);
-          })();
-          setTimeout(() => { console.log('timeout'); process.exit(0); }, 20000);
+            const b = await chromium.launch();
+            const A = await (await b.newContext({ ...devices['iPhone 13'], locale: 'fr-FR' })).newPage();
+            const B = await (await b.newContext({ ...devices['iPhone 13'], locale: 'fr-FR' })).newPage();
+            const errs = []; [A, B].forEach((p, i) => p.on('pageerror', e => errs.push(i + ':' + e.message)));
+            await A.goto('https://quizzmatch.com/?v=' + Date.now() + '#duel'); await A.waitForSelector('#dname');
+            await A.fill('#dname', 'TestA'); await A.selectOption('#dquiz', 'geo'); await A.click('#dcreate');
+            await A.waitForSelector('.dcode', { timeout: 20000 }); const code = (await A.textContent('.dcode')).trim(); console.log('code', code);
+            await B.goto('https://quizzmatch.com/?v=' + Date.now() + '#duel-' + code); await B.waitForSelector('#dname'); await B.fill('#dname', 'TestB'); await B.click('#djoin');
+            await A.waitForSelector('.opt', { timeout: 30000 }); await B.waitForSelector('.opt', { timeout: 30000 });
+            console.log('memes questions :', (await A.textContent('.qtext')) === (await B.textContent('.qtext')));
+            for (let i = 0; i < 10; i++) { for (const [p, n] of [[A, 0], [B, 1]]) { await p.waitForSelector('.opt'); await p.click('.opt >> nth=' + n); await p.waitForSelector('#nx'); } await A.waitForTimeout(400); if (i === 2) console.log('bandeau adversaire chez A :', await A.textContent('#opp')); for (const p of [A, B]) await p.click('#nx'); }
+            await A.waitForTimeout(3000);
+            console.log('A :', await A.textContent('.verdict')); console.log('B :', await B.textContent('.verdict'));
+            console.log('erreurs', errs); await b.close();
+          })().catch(e => { console.log('ECHEC', e.message); process.exit(0); });
           JS
           node t.js > /tmp/e/journal.txt 2>&1
           cat /tmp/e/journal.txt
