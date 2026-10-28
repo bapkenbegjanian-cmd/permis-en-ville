@@ -1,4 +1,5 @@
-/* English version. Same quizzes, same order and same answer positions as the French files.
+/* English version. A line starting with ~ is France-specific and is skipped for English players.
+    Same quizzes, same order and same answer positions as the French files.
    Per quiz: "= name | subtitle", then one line per question:
    multiple choice "question | a | b | c | d | explanation", true/false "statement | explanation",
    personality test "question | a | b | c | d" then "P profile | description". */
@@ -6,7 +7,7 @@ const EN_CATS = { culture: 'Knowledge', sport: 'Sport & games', fun: 'Movies & m
 const EN = {
 culture: `= General knowledge | The great classic
 What is the capital of Australia? | Sydney | Melbourne | Canberra | Perth | Canberra was chosen as a compromise between Sydney and Melbourne.
-What is the longest river in France? | The Seine | The Loire | The Rhône | The Garonne | The Loire is about 1,000 km long.
+~What is the longest river in France? | The Seine | The Loire | The Rhône | The Garonne | The Loire is about 1,000 km long.
 How many bones does an adult skeleton have? | 106 | 206 | 306 | 156 | Babies have more: some fuse together as we grow.
 Which planet is closest to the Sun? | Venus | Mars | Mercury | Earth | Mercury, the smallest planet in the solar system.
 Who painted the Mona Lisa? | Michelangelo | Leonardo da Vinci | Raphael | Picasso | It hangs in the Louvre, in Paris.
@@ -39,7 +40,7 @@ How many zeros are in a million? | 6 | 5 | 7 | 9 | 1,000,000.
 Which detective was created by Arthur Conan Doyle? | Sherlock Holmes | Hercule Poirot | Arsène Lupin | Inspector Maigret | Poirot was created by Agatha Christie.
 What is the capital of Egypt? | Cairo | Alexandria | Luxor | Giza | The largest city in the Arab world.
 How many years are in a millennium? | 1,000 | 100 | 10,000 | 500 | A century is 100 years.
-What is celebrated on May 1 in France? | Labour Day | National Day | Armistice Day | The music festival | The music festival is on June 21.
+~What is celebrated on May 1 in France? | Labour Day | National Day | Armistice Day | The music festival | The music festival is on June 21.
 What is the longest bone in the human body? | The femur | The tibia | The humerus | The radius | The thigh bone.
 In which country are the pyramids of Giza? | Egypt | Mexico | Peru | Jordan | Near Cairo, at the edge of the desert.
 How many colours are traditionally counted in a rainbow? | 7 | 5 | 6 | 9 | Red, orange, yellow, green, blue, indigo, violet.
@@ -55,7 +56,7 @@ Who reached the Americas in 1492? | Magellan | Christopher Columbus | Vasco da G
 Which king was nicknamed the Sun King? | Louis XIII | Louis XIV | Louis XV | Henry IV | He built the Palace of Versailles.
 For what event was the Eiffel Tower built? | The Olympic Games | The 1889 World's Fair | Napoleon's coronation | The end of a war | It was meant to be taken down after 20 years.
 Which pharaoh's tomb was found almost intact in 1922? | Ramesses II | Khufu | Tutankhamun | Cleopatra | Discovered by archaeologist Howard Carter.
-Who was the first president of France's Fifth Republic? | François Mitterrand | Charles de Gaulle | Georges Pompidou | Jacques Chirac | Elected in December 1958, he took office in January 1959.
+~Who was the first president of France's Fifth Republic? | François Mitterrand | Charles de Gaulle | Georges Pompidou | Jacques Chirac | Elected in December 1958, he took office in January 1959.
 In which war did Joan of Arc fight? | The Hundred Years' War | The Crusades | The Thirty Years' War | The 1870 war | Against the English, in the 15th century.
 Which king was guillotined on January 21, 1793? | Louis XVI | Louis XIV | Louis XV | Charles X | During the French Revolution.
 In what year did the First World War begin? | 1914 | 1912 | 1918 | 1939 | It ended on November 11, 1918.
@@ -63,12 +64,12 @@ Where did Napoleon die? | On the island of Saint Helena | On the island of Elba 
 Who was the first person in space? | Yuri Gagarin | Neil Armstrong | Buzz Aldrin | John Glenn | April 12, 1961, for the USSR.
 Which civilisation built Machu Picchu? | The Incas | The Aztecs | The Maya | The Olmecs | In Peru, in the 15th century.
 Who was the main author of the US Declaration of Independence? | Thomas Jefferson | George Washington | Abraham Lincoln | Benjamin Franklin | Adopted on July 4, 1776.
-In what year did French women vote for the first time? | 1945 | 1918 | 1936 | 1968 | Right granted in 1944, first vote in April 1945.
+~In what year did French women vote for the first time? | 1945 | 1918 | 1936 | 1968 | Right granted in 1944, first vote in April 1945.
 Who was the first Roman emperor? | Augustus | Julius Caesar | Nero | Caligula | Julius Caesar was never emperor.
 Which liner sank in 1912 after hitting an iceberg? | The Titanic | The Lusitania | The Queen Mary | The Normandie | On its maiden voyage.
 Who gave the "I have a dream" speech? | Martin Luther King | Malcolm X | Nelson Mandela | Barack Obama | In Washington, in 1963.
 Which country was Nelson Mandela president of? | South Africa | Kenya | Nigeria | Zimbabwe | From 1994 to 1999, after 27 years in prison.
-In what year did euro coins and notes arrive in France? | 2002 | 1999 | 1995 | 2005 | January 1, 2002.
+~In what year did euro coins and notes arrive in France? | 2002 | 1999 | 1995 | 2005 | January 1, 2002.
 Where did the June 6, 1944 landings take place? | In Normandy | In Provence | In Brittany | In Italy | D-Day, on five Normandy beaches.
 Who was crowned emperor in the year 800? | Charlemagne | Clovis | Hugh Capet | Pepin the Short | Crowned in Rome by the Pope.
 Which city was the capital of the Byzantine Empire? | Constantinople | Rome | Athens | Alexandria | Today's Istanbul.
@@ -79,10 +80,10 @@ Who led Free France during the Second World War? | Charles de Gaulle | Philippe 
 In what year did Algeria become independent? | 1962 | 1954 | 1958 | 1968 | After the Évian Accords.
 Who was the first Black president of the United States? | Barack Obama | Joe Biden | Colin Powell | Bill Clinton | Elected in 2008.
 Which navigator led the first expedition around the world? | Ferdinand Magellan | Vasco da Gama | Christopher Columbus | James Cook | Magellan died on the way; his crew finished the voyage in 1522.
-Who led the abolition of slavery in France in 1848? | Victor Schœlcher | Jules Ferry | Robespierre | Napoleon III | The decree of April 27, 1848.
-Jules Ferry is known for making school in France… | Free, secular and compulsory | Paid | Boys only | Optional | Laws of 1881 and 1882.
-Who led the abolition of the death penalty in France in 1981? | Robert Badinter | Simone Veil | Jacques Chirac | François Mitterrand | Robert Badinter, Minister of Justice, carried the law.
-In what year did paid holidays begin in France? | 1936 | 1919 | 1945 | 1968 | Under the Popular Front.
+~Who led the abolition of slavery in France in 1848? | Victor Schœlcher | Jules Ferry | Robespierre | Napoleon III | The decree of April 27, 1848.
+~Jules Ferry is known for making school in France… | Free, secular and compulsory | Paid | Boys only | Optional | Laws of 1881 and 1882.
+~Who led the abolition of the death penalty in France in 1981? | Robert Badinter | Simone Veil | Jacques Chirac | François Mitterrand | Robert Badinter, Minister of Justice, carried the law.
+~In what year did paid holidays begin in France? | 1936 | 1919 | 1945 | 1968 | Under the Popular Front.
 Which Greek city was famous for its warriors? | Sparta | Athens | Corinth | Delphi | Athens was better known for democracy and philosophy.
 Who was the Roman god of war? | Mars | Jupiter | Neptune | Mercury | The red planet is named after him.
 Which Roman emperor built a wall across Britain? | Hadrian | Augustus | Nero | Trajan | Hadrian's Wall, around 122 AD.
@@ -114,13 +115,13 @@ In which country is Marrakech? | Morocco | Tunisia | Algeria | Egypt | Nicknamed
 What is the capital of Belgium? | Brussels | Antwerp | Liège | Bruges | It also hosts many European institutions.
 Which city is the "federal city" of Switzerland? | Bern | Zurich | Geneva | Lausanne | Zurich and Geneva are bigger, but the government sits in Bern.
 Which mountain range separates France from Spain? | The Pyrenees | The Alps | The Jura | The Vosges | The Alps border Italy and Switzerland.
-Which French island is nicknamed the Isle of Beauty? | Corsica | Réunion | Martinique | Belle-Île | In the Mediterranean.
+~Which French island is nicknamed the Isle of Beauty? | Corsica | Réunion | Martinique | Belle-Île | In the Mediterranean.
 In which ocean is Réunion Island? | The Indian Ocean | The Atlantic | The Pacific | The Mediterranean | East of Madagascar.
 Buenos Aires is the capital of which country? | Argentina | Chile | Uruguay | Brazil | On the Río de la Plata.
 What is the capital of Russia? | Moscow | Saint Petersburg | Kyiv | Minsk | Kyiv is the capital of Ukraine, Minsk of Belarus.
 What is the smallest continent? | Oceania | Europe | Antarctica | South America | With Australia and the Pacific islands.
 Which city is nicknamed "the Big Apple"? | New York | Chicago | Los Angeles | Miami | A nickname used since the 1920s.
-How many departments does France have, overseas included? | 101 | 95 | 96 | 110 | 96 in mainland France and 5 overseas.
+~How many departments does France have, overseas included? | 101 | 95 | 96 | 110 | 96 in mainland France and 5 overseas.
 What is the capital of China? | Beijing | Shanghai | Hong Kong | Guangzhou | Shanghai is the largest city.
 In which country is the Suez Canal? | Egypt | Panama | Turkey | Saudi Arabia | It links the Mediterranean to the Red Sea.
 What is the largest island in the world? | Greenland | Madagascar | Borneo | Iceland | Australia is counted as a continent.
@@ -260,17 +261,17 @@ foot: `= Football | World Cup, clubs, legends
 Who won the 2018 World Cup? | Croatia | France | Belgium | Brazil | 4-2 against Croatia in the final.
 Who won the 2022 World Cup? | France | Argentina | Morocco | Croatia | Argentina beat France on penalties.
 Which player has won 8 Ballon d'Or awards? | Cristiano Ronaldo | Lionel Messi | Michel Platini | Zinédine Zidane | An all-time record.
-Which club is nicknamed "les Gones"? | AS Saint-Étienne | OGC Nice | Olympique Lyonnais | FC Nantes | "Gone" means "kid" in Lyon slang.
+~Which club is nicknamed "les Gones"? | AS Saint-Étienne | OGC Nice | Olympique Lyonnais | FC Nantes | "Gone" means "kid" in Lyon slang.
 How many players per team are on the pitch at kick-off? | 9 | 10 | 11 | 12 | 10 outfield players and a goalkeeper.
 How long is a match without extra time? | 80 minutes | 90 minutes | 100 minutes | 120 minutes | Two 45-minute halves, plus added time.
 Which country won Euro 2016? | France | Germany | Portugal | Spain | 1-0 against France, in extra time.
 Who was the first African Ballon d'Or winner? | Samuel Eto'o | Didier Drogba | George Weah | Sadio Mané | George Weah, in 1995.
-"Le Classique" is a match between which clubs? | OL and ASSE | PSG and OM | OM and OL | PSG and OL | The big match between Paris and Marseille.
+~"Le Classique" is a match between which clubs? | OL and ASSE | PSG and OM | OM and OL | PSG and OL | The big match between Paris and Marseille.
 Which countries hosted the 2026 World Cup? | Qatar | Spain, Portugal, Morocco | USA, Canada, Mexico | Brazil | The first World Cup with 48 teams.
 Which country has won the most World Cups? | Brazil | Germany | Italy | Argentina | 5 titles: 1958, 1962, 1970, 1994 and 2002.
 In what year did France win its first World Cup? | 1998 | 1984 | 2006 | 2018 | 3-0 against Brazil, at the Stade de France.
 Who scored two headers in the 1998 World Cup final? | Zinédine Zidane | Thierry Henry | Emmanuel Petit | Lilian Thuram | Emmanuel Petit scored the third.
-The Stade Vélodrome is the home of which club? | Olympique de Marseille | Paris Saint-Germain | OGC Nice | Girondins de Bordeaux | PSG play at the Parc des Princes.
+~The Stade Vélodrome is the home of which club? | Olympique de Marseille | Paris Saint-Germain | OGC Nice | Girondins de Bordeaux | PSG play at the Parc des Princes.
 How many points is a league win worth? | 3 | 2 | 1 | 4 | A draw is worth 1 point.
 Which player is nicknamed "CR7"? | Cristiano Ronaldo | Ronaldinho | Ronaldo Nazário | Cristian Romero | CR for Cristiano Ronaldo, and his shirt number 7.
 Which competition brings together Europe's best clubs? | The Champions League | The French Cup | Ligue 1 | The World Cup | With its famous anthem.
@@ -281,7 +282,7 @@ In which country is the Premier League played? | England | Spain | Italy | Germa
 Which country was Pelé from? | Brazil | Argentina | Portugal | Uruguay | The only player to win 3 World Cups.
 Against which country did Maradona score the "Hand of God" goal in 1986? | England | Germany | France | Brazil | In the World Cup quarter-final.
 At which club did Kylian Mbappé start his professional career? | AS Monaco | PSG | Real Madrid | Stade Rennais | French champion with Monaco in 2017.
-How many teams have been in Ligue 1 since 2023? | 18 | 20 | 16 | 22 | It used to have 20.
+~How many teams have been in Ligue 1 since 2023? | 18 | 20 | 16 | 22 | It used to have 20.
 Which country hosted the 2022 World Cup? | Qatar | Russia | Brazil | Saudi Arabia | The first one played in winter.
 How often is the World Cup held? | Every 4 years | Every 2 years | Every year | Every 5 years | Like the Euros.
 Where is the goalkeeper allowed to handle the ball? | In their own penalty area | Anywhere on the pitch | In their own half | Nowhere | Except from a deliberate back-pass kicked by a teammate.
@@ -295,7 +296,7 @@ With which club did Zidane win three Champions Leagues in a row as coach? | Real
 Which country won Euro 2024? | Spain | England | France | Germany | 2-1 against England in the final.
 Which country won Euro 2020, played in 2021? | Italy | England | Portugal | France | On penalties against England, at Wembley.
 How many substitutions can a team make in an official match today? | 5 | 3 | 4 | 7 | The rule went from 3 to 5 after 2020.
-Which French club is nicknamed "les Verts" (the Greens)? | AS Saint-Étienne | FC Nantes | RC Lens | AJ Auxerre | The French club with 10 league titles.
+~Which French club is nicknamed "les Verts" (the Greens)? | AS Saint-Étienne | FC Nantes | RC Lens | AJ Auxerre | The French club with 10 league titles.
 Who organises the Club World Cup and the big global tournaments? | FIFA | UEFA | LFP | IOC | UEFA runs Europe, the IOC the Olympics.
 `,
 jeux: `= Video games | From consoles to legends
@@ -320,7 +321,7 @@ What is the name of the princess Mario often has to rescue? | Peach | Zelda | Da
 Who is Mario's great enemy? | Bowser | Ganon | Wario | Donkey Kong | The king of the Koopas.
 How many squares are on a chessboard? | 64 | 32 | 81 | 100 | 8 rows × 8 columns.
 In chess, which piece moves in an L shape? | The knight | The bishop | The rook | The queen | It's the only piece that can jump over others.
-In French Monopoly, which is the most expensive street? | Rue de la Paix | Champs-Élysées | Avenue Foch | Boulevard de Belleville | Boulevard de Belleville is the cheapest.
+~In French Monopoly, which is the most expensive street? | Rue de la Paix | Champs-Élysées | Avenue Foch | Boulevard de Belleville | Boulevard de Belleville is the cheapest.
 What is Konami's football game PES called today? | eFootball | EA Sports FC | Football Manager | FIFA Street | The name changed in 2021.
 Which country is the publisher Ubisoft from? | France | Canada | Japan | United States | Founded in Brittany in 1986.
 Which Ubisoft series features assassins throughout history? | Assassin's Creed | Far Cry | Watch Dogs | Splinter Cell | The first game came out in 2007.
@@ -344,22 +345,22 @@ cine: `= Movies & TV | Cult films and series
 Who directed Titanic and Avatar? | Steven Spielberg | James Cameron | Christopher Nolan | Ridley Scott | Two of the highest-grossing films ever.
 In which series do we follow chemistry teacher Walter White? | Narcos | Breaking Bad | Dexter | Ozark | Aired from 2008 to 2013.
 In which city is the series Friends set? | Los Angeles | Chicago | New York | Boston | Their café is called Central Perk.
-Who plays Driss in the French film "The Intouchables"? | Jamel Debbouze | Omar Sy | Kev Adams | Ahmed Sylla | He won the César for best actor.
+~Who plays Driss in the French film "The Intouchables"? | Jamel Debbouze | Omar Sy | Kev Adams | Ahmed Sylla | He won the César for best actor.
 Which Netflix series follows Assane Diop, gentleman thief? | Lupin | Money Heist | Validé | Marseille | Inspired by Arsène Lupin.
 Which actor plays Jack Sparrow? | Orlando Bloom | Johnny Depp | Brad Pitt | Tom Cruise | In Pirates of the Caribbean.
 In which animated film do we meet Woody and Buzz Lightyear? | Cars | Toy Story | Shrek | Finding Nemo | The first fully computer-animated feature film.
 "May the Force be with you" comes from which saga? | Star Trek | Star Wars | The Matrix | Avengers | Created by George Lucas.
 Which 2021 Korean series features deadly games? | Alice in Borderland | Squid Game | Kingdom | Sweet Home | A worldwide record on Netflix.
-What are the French film awards called? | The Oscars | The Césars | The Molières | The Victoires | The Molières are for theatre.
+~What are the French film awards called? | The Oscars | The Césars | The Molières | The Victoires | The Molières are for theatre.
 Who directed "Jurassic Park"? | Steven Spielberg | James Cameron | George Lucas | Peter Jackson | Released in 1993.
 In which saga do we hear "No, I am your father"? | Star Wars | Star Trek | The Lord of the Rings | The Matrix | In "The Empire Strikes Back", 1980.
 What is Shrek? | An ogre | A troll | A giant | A dragon | A green ogre who lives in a swamp.
 In which saga do we find the wizard Gandalf? | The Lord of the Rings | Harry Potter | Narnia | Game of Thrones | Based on J.R.R. Tolkien's books.
 Which actor played Iron Man in the Marvel films? | Robert Downey Jr. | Chris Evans | Chris Hemsworth | Mark Ruffalo | Chris Evans played Captain America.
 In "Ratatouille", what does Remy the rat dream of? | Becoming a chef | Becoming a singer | Travelling to New York | Becoming a painter | In a great Paris restaurant.
-Which Dany Boon film is set in the north of France? | Welcome to the Sticks | The Intouchables | Les Bronzés | The Dinner Game | Over 20 million tickets sold in France in 2008.
+~Which Dany Boon film is set in the north of France? | Welcome to the Sticks | The Intouchables | Les Bronzés | The Dinner Game | Over 20 million tickets sold in France in 2008.
 Who is Asterix's best friend? | Obelix | Dogmatix | Getafix | Vitalstatistix | He fell into the magic potion as a baby.
-In which city is the film "Taxi" set? | Marseille | Paris | Nice | Lyon | Produced by Luc Besson.
+~In which city is the film "Taxi" set? | Marseille | Paris | Nice | Lyon | Produced by Luc Besson.
 Which actor plays Dom Toretto in "Fast & Furious"? | Vin Diesel | Dwayne Johnson | Jason Statham | Paul Walker | Paul Walker played Brian O'Conner.
 Who plays the Joker in the 2019 film "Joker"? | Joaquin Phoenix | Heath Ledger | Jared Leto | Jack Nicholson | Oscar for best actor.
 Which series is set on the continent of Westeros? | Game of Thrones | The Witcher | Vikings | The Crown | Based on George R. R. Martin's books.
@@ -380,7 +381,7 @@ In which Paris neighbourhood is "Amélie" set? | Montmartre | Le Marais | Saint-
 In which town do the Simpsons live? | Springfield | Shelbyville | South Park | Quahog | Quahog is the Griffins' town.
 Which Japanese studio made "Spirited Away"? | Studio Ghibli | Toei Animation | Pixar | DreamWorks | Directed by Hayao Miyazaki.
 What is the name of the lion who is Simba's father? | Mufasa | Scar | Nala | Rafiki | Scar is his brother.
-Which 2011 film stars Omar Sy and François Cluzet? | The Intouchables | Sink or Swim | The Visitors | Serial (Bad) Weddings | The story of an unlikely friendship.
+~Which 2011 film stars Omar Sy and François Cluzet? | The Intouchables | Sink or Swim | The Visitors | Serial (Bad) Weddings | The story of an unlikely friendship.
 `,
 emoji: `= Guess the movie | The film hidden in the emojis
 🦁👑🌅 | The Jungle Book | The Lion King | Madagascar | Tarzan | Simba, Mufasa and Scar.
@@ -425,24 +426,24 @@ emoji: `= Guess the movie | The film hidden in the emojis
 🎃💀🎄 | The Nightmare Before Christmas | Coco | Corpse Bride | Halloween | Jack Skellington discovers Christmas.
 `,
 musique: `= Music | Rap, pop and legends
-Which city is the French rapper Jul from? | Paris | Lyon | Marseille | Toulouse | One of France's best-selling artists.
-The French rap duo PNL is made up of… | Two cousins | Two brothers | Two childhood friends | A father and son | Ademo and N.O.S.
+~Which city is the French rapper Jul from? | Paris | Lyon | Marseille | Toulouse | One of France's best-selling artists.
+~The French rap duo PNL is made up of… | Two cousins | Two brothers | Two childhood friends | A father and son | Ademo and N.O.S.
 What nationality is Stromae? | French | Swiss | Belgian | Canadian | He's from Brussels.
 Which instrument did Chopin play? | The violin | The piano | The guitar | The flute | A Polish composer who settled in Paris.
 Daft Punk was a… duo | English | American | French | German | Known for their robot helmets.
 What is Michael Jackson's nickname? | The King of Rock | The King of Pop | The Prince of Funk | The Emperor of Disco | His album Thriller is one of the best-selling ever.
 With which song did Aya Nakamura break through in 2018? | Pookie | Djadja | Copines | Jolie nana | A hit heard all over the world.
 How many strings does a classical guitar have? | 4 | 5 | 6 | 12 | A bass usually has 4.
-With which group did French rapper Nekfeu first break through? | 1995 | Sexion d'Assaut | IAM | NTM | With Alpha Wann and Areno Jaz.
+~With which group did French rapper Nekfeu first break through? | 1995 | Sexion d'Assaut | IAM | NTM | With Alpha Wann and Areno Jaz.
 Which music style is linked to Bob Marley? | Jazz | Reggae | Blues | Soul | From Jamaica.
 Who sings "Formidable"? | Stromae | Gims | Angèle | Christophe Maé | Released in 2013.
 Which band sings "Bohemian Rhapsody"? | Queen | The Beatles | Pink Floyd | Led Zeppelin | With Freddie Mercury.
 Which city were the Beatles from? | Liverpool | London | Manchester | Dublin | In England.
 How many notes are in the scale, from C to B? | 7 | 8 | 5 | 12 | C, D, E, F, G, A, B.
 Which Édith Piaf song is known all over the world? | La Vie en rose | Ne me quitte pas | La Bohème | Les Champs-Élysées | "Ne me quitte pas" is by Jacques Brel.
-Which French singer was nicknamed "the idol of the young"? | Johnny Hallyday | Eddy Mitchell | Claude François | Michel Sardou | He sang for more than 50 years.
+~Which French singer was nicknamed "the idol of the young"? | Johnny Hallyday | Eddy Mitchell | Claude François | Michel Sardou | He sang for more than 50 years.
 Which instrument usually has 88 keys? | The piano | The organ | The accordion | The synthesizer | 52 white and 36 black.
-Which group was Gims part of? | Sexion d'Assaut | 1995 | IAM | Psy 4 de la rime | With Lefa, Black M and others.
+~Which group was Gims part of? | Sexion d'Assaut | 1995 | IAM | Psy 4 de la rime | With Lefa, Black M and others.
 Which country is Angèle from? | Belgium | France | Switzerland | Canada | Like Stromae, she's from Belgium.
 Which singer is called "the King"? | Elvis Presley | Michael Jackson | Frank Sinatra | Chuck Berry | The King of rock 'n' roll.
 Which group was Beyoncé in before going solo? | Destiny's Child | Spice Girls | TLC | The Pussycat Dolls | An American group of the 2000s.
@@ -450,7 +451,7 @@ Which island is Rihanna from? | Barbados | Jamaica | Cuba | Haiti | In the Carib
 Which singer did the huge "Eras Tour"? | Taylor Swift | Beyoncé | Adele | Dua Lipa | One of the highest-grossing tours in history.
 Which great composer went deaf? | Ludwig van Beethoven | Mozart | Chopin | Bach | He kept composing anyway.
 Who composed "The Four Seasons"? | Antonio Vivaldi | Mozart | Beethoven | Bach | An Italian composer.
-Which festival takes place on June 21 in France? | The Fête de la musique | National Day | Rock Midsummer | Cinema Day | Created in 1982.
+~Which festival takes place on June 21 in France? | The Fête de la musique | National Day | Rock Midsummer | Cinema Day | Created in 1982.
 With which singer did Daft Punk make "Get Lucky"? | Pharrell Williams | Bruno Mars | The Weeknd | Justin Timberlake | With Nile Rodgers on guitar.
 David Guetta is… | A French DJ | A Belgian rapper | A Canadian singer | A Swiss pianist | Famous all over the world.
 Which instrument did Louis Armstrong play? | The trumpet | The saxophone | The piano | The drums | A jazz legend.
@@ -460,11 +461,11 @@ Who sings "Hello" and "Rolling in the Deep"? | Adele | Rihanna | Lady Gaga | Amy
 Which American city is Eminem from? | Detroit | New York | Los Angeles | Chicago | As told in the film "8 Mile".
 Which country is the band BTS from? | South Korea | Japan | China | Philippines | The best-known K-pop group.
 Which country is Ed Sheeran from? | The United Kingdom | Ireland | Australia | The United States | Known for "Shape of You".
-Who sings "Dernière danse"? | Indila | Aya Nakamura | Zaz | Louane | A 2013 hit.
+~Who sings "Dernière danse"? | Indila | Aya Nakamura | Zaz | Louane | A 2013 hit.
 Which country is Shakira from? | Colombia | Mexico | Spain | Argentina | Born in Barranquilla.
-Which city is the French rapper Orelsan from? | Caen | Rouen | Lille | Rennes | He talks about it in several songs.
+~Which city is the French rapper Orelsan from? | Caen | Rouen | Lille | Rennes | He talks about it in several songs.
 What does a drummer play? | The drums | The bass | The keyboard | The violin | With bass drum, snare and cymbals.
-Which French rapper is known for "92i"? | Booba | Kaaris | Rohff | Niska | Named after his département, Hauts-de-Seine.
+~Which French rapper is known for "92i"? | Booba | Kaaris | Rohff | Niska | Named after his département, Hauts-de-Seine.
 `,
 lyon: `= Lyon & France | Traboules, bouchons and regions
 Which two rivers meet in Lyon? | The Seine and the Marne | The Rhône and the Saône | The Loire and the Allier | The Rhône and the Isère | They meet in the Confluence district.
@@ -614,7 +615,7 @@ What makes a good password? | Long and varied | Your date of birth | "123456" | 
 Which group owns WhatsApp and Instagram? | Meta | Google | Apple | Microsoft | Facebook's group.
 Which company owns YouTube? | Google | Meta | Amazon | Microsoft | Bought in 2006.
 What is a "bug" in computing? | An error in a program | A virus | A cable | A keyboard | The word means "insect" in English.
-What is the @ symbol called in French? | Arobase | Esperluette | Dièse | Tilde | The "esperluette" is the &.
+~What is the @ symbol called in French? | Arobase | Esperluette | Dièse | Tilde | The "esperluette" is the &.
 What is Bluetooth for? | Connecting devices wirelessly at short range | Charging the battery | Internet everywhere | Protecting against viruses | Earbuds, speakers, watches…
 What is a pixel? | A dot in an image | A virus | A cable | A program | A Full HD screen has about 2 million of them.
 What does the Ctrl + C shortcut do? | Copy | Paste | Cut | Close | Ctrl + V to paste.
@@ -710,10 +711,10 @@ function applyEnglish() {
     const prof = lines.filter(l => l.startsWith('P ')), qs = lines.filter(l => !l.startsWith('P '));
     if (qs.length !== q.qs.length || (q.profiles && prof.length !== q.profiles.length)) { console.warn('EN incomplet :', k); continue; }
     q.name = name; q.sub = sub;
-    q.qs = q.qs.map((old, i) => { const p = qs[i].split(' | ');
-      if (q.type === 'vf') return [p[0], null, old[2], p[1]];
-      if (q.type === 'perso') return [p[0], p.slice(1, 5)];
-      return [p[0], p.slice(1, 5), old[2], p[5]]; });
+    q.qs = q.qs.map((old, i) => { const fr = qs[i].startsWith('~'), p = qs[i].replace(/^~/, '').split(' | ');
+      const x = q.type === 'vf' ? [p[0], null, old[2], p[1]] : q.type === 'perso' ? [p[0], p.slice(1, 5)] : [p[0], p.slice(1, 5), old[2], p[5]];
+      if (fr) x.frOnly = true;   // question trop centrée sur la France : pas posée aux joueurs anglophones
+      return x; });
     if (q.profiles) q.profiles = prof.map(l => l.slice(2).split(' | '));
   }
 }
