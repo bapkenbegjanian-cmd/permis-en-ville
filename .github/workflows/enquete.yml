@@ -13,8 +13,8 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          { for u in http://quizzmatch.com/ https://quizzmatch.com/ http://www.quizzmatch.com/ http://quizzmatch.com/en/geo/ http://quizzmatch.com/sitemap.xml; do
-              echo "== $u"; curl -sS -m 30 -o page.html -w "HTTP %{http_code} -> %{url_effective}\n" -L "$u"; grep -o "<title>[^<]*" page.html | head -1; done; } > journal.txt 2>&1
+          { for u in https://www.quizzmatch.com/ http://www.quizzmatch.com/ https://quizzmatch.com/; do
+              echo "== $u"; curl -sS -m 30 -o page.html -v -w "HTTP %{http_code} -> %{url_effective}\n" -L "$u"; grep -o "<title>[^<]*" page.html | head -1; done; echo "== DNS www"; dig +short www.quizzmatch.com; } 2>&1 | grep -E "^==|HTTP |title|subject:|issuer:|SSL|error|Location|^[0-9a-z]"  > journal.txt 2>&1
           cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
