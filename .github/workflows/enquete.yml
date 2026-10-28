@@ -9,33 +9,37 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Tester un vrai duel sur quizzmatch.com
+      - name: Recuperer des photos mode libres de droits (Unsplash)
         run: |
           set +e
-          mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
-          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
-          sleep 60
-          cat > t.js <<'JS'
-          const { chromium, devices } = require('playwright');
-          (async () => {
-            const b = await chromium.launch();
-            const A = await (await b.newContext({ ...devices['iPhone 13'], locale: 'fr-FR' })).newPage();
-            const B = await (await b.newContext({ ...devices['iPhone 13'], locale: 'fr-FR' })).newPage();
-            const errs = []; [A, B].forEach((p, i) => p.on('pageerror', e => errs.push(i + ':' + e.message)));
-            await A.goto('https://quizzmatch.com/?v=' + Date.now() + '#duel'); await A.waitForSelector('#dname');
-            await A.fill('#dname', 'TestA'); await A.selectOption('#dquiz', 'geo'); await A.click('#dcreate');
-            await A.waitForSelector('.dcode', { timeout: 20000 }); const code = (await A.textContent('.dcode')).trim(); console.log('code', code);
-            await B.goto('https://quizzmatch.com/?v=' + Date.now() + '#duel-' + code); await B.waitForSelector('#dname'); await B.fill('#dname', 'TestB'); await B.click('#djoin');
-            await A.waitForSelector('.opt', { timeout: 30000 }); await B.waitForSelector('.opt', { timeout: 30000 });
-            console.log('memes questions :', (await A.textContent('.qtext')) === (await B.textContent('.qtext')));
-            for (let i = 0; i < 10; i++) { for (const [p, n] of [[A, 0], [B, 1]]) { await p.waitForSelector('.opt'); await p.click('.opt >> nth=' + n); await p.waitForSelector('#nx'); } await A.waitForTimeout(400); if (i === 2) console.log('bandeau adversaire chez A :', await A.textContent('#opp')); for (const p of [A, B]) await p.click('#nx'); }
-            await A.waitForTimeout(3000);
-            console.log('A :', await A.textContent('.verdict')); console.log('B :', await B.textContent('.verdict'));
-            console.log('erreurs', errs); await b.close();
-          })().catch(e => { console.log('ECHEC', e.message); process.exit(0); });
-          JS
-          node t.js > /tmp/e/journal.txt 2>&1
-          cat /tmp/e/journal.txt
+          mkdir -p /tmp/e/photos && cd /tmp/e/photos
+          cat > get.py <<'PY'
+          import json, urllib.request, urllib.parse
+          Q = {'hero': 'fashion editorial woman', 'soiree': 'evening dress fashion', 'rdv': 'date night outfit', 'travail': 'office outfit fashion',
+               'mariage': 'wedding guest outfit', 'sport': 'sportswear fashion', 'casual': 'streetwear fashion', 'homme': 'men fashion suit',
+               'hommecasual': 'men streetwear fashion', 'studio': 'full body fashion model studio'}
+          meta = {}
+          H = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'}
+          for k, q in Q.items():
+              try:
+                  u = 'https://unsplash.com/napi/search/photos?per_page=20&orientation=portrait&query=' + urllib.parse.quote(q)
+                  r = json.load(urllib.request.urlopen(urllib.request.Request(u, headers=H), timeout=30))
+                  n = 0
+                  for ph in r.get('results', []):
+                      if ph.get('premium') or ph.get('plus'): continue
+                      raw = ph['urls']['raw'] + '&w=640&h=900&fit=crop&q=62&fm=webp'
+                      f = f'{k}{n}.webp'
+                      open(f, 'wb').write(urllib.request.urlopen(urllib.request.Request(raw, headers={'User-Agent': 'Mozilla/5.0'}), timeout=30).read())
+                      meta[f] = {'by': ph['user']['name'], 'link': ph['links']['html'], 'alt': ph.get('alt_description')}
+                      n += 1
+                      if n == 6: break
+                  print(k, n)
+              except Exception as e:
+                  print('ERR', k, e)
+          json.dump(meta, open('meta.json', 'w'), indent=1, ensure_ascii=False)
+          PY
+          python3 get.py | tee /tmp/e/journal.txt
+          rm get.py; du -sh .
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
