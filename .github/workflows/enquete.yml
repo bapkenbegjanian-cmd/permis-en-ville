@@ -9,29 +9,29 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Chercher des photos mode via l'API officielle Unsplash
-        env:
-          KEY: ${{ secrets.UNSPLASH_KEY }}
+      - name: Photographier le site Cabine en ligne
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e
-          if [ -z "$KEY" ]; then echo "PAS DE CLE" > journal.txt; exit 0; fi
-          cat > get.py <<'PY'
-          import json, os, urllib.request, urllib.parse
-          Q = {'hero': 'fashion editorial woman', 'soiree': 'evening dress', 'rdv': 'date night outfit', 'travail': 'office outfit',
-               'mariage': 'wedding guest dress', 'sport': 'sportswear fashion', 'casual': 'streetwear fashion',
-               'homme': 'men suit fashion', 'hommecasual': 'men streetwear', 'studio': 'fashion model full body'}
-          out = {}
-          for k, q in Q.items():
-              u = 'https://api.unsplash.com/search/photos?per_page=10&orientation=portrait&content_filter=high&query=' + urllib.parse.quote(q)
-              r = json.load(urllib.request.urlopen(urllib.request.Request(u, headers={'Authorization': 'Client-ID ' + os.environ['KEY'], 'Accept-Version': 'v1'}), timeout=30))
-              out[k] = [{'id': p['id'], 'url': p['urls']['regular'], 'raw': p['urls']['raw'], 'alt': p.get('alt_description'), 'color': p.get('color'),
-                         'by': p['user']['name'], 'user': p['user']['links']['html'], 'link': p['links']['html']} for p in r['results']]
-              print(k, len(out[k]))
-          json.dump(out, open('photos.json', 'w'), indent=1, ensure_ascii=False)
-          PY
-          python3 get.py > journal.txt 2>&1; rm get.py
-          cat journal.txt
+          mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
+          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
+          sleep 100
+          cat > t.js <<'JS'
+          const { chromium, devices } = require('playwright');
+          (async () => {
+            const b = await chromium.launch(); const p = await (await b.newContext({ ...devices['iPhone 13'] })).newPage();
+            const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('requestfailed', r => errs.push('KO ' + r.url().slice(0, 90)));
+            const r = await p.goto('https://bapkenbegjanian-cmd.github.io/permis-en-ville/cabine/?v=' + Date.now()); console.log('statut', r.status());
+            await p.waitForTimeout(3500); await p.screenshot({ path: '/tmp/e/c0.png' });
+            await p.click('[data-go="1"]'); await p.waitForTimeout(2500); await p.screenshot({ path: '/tmp/e/c1.png' });
+            await p.click('[data-set="g:f"]'); await p.waitForTimeout(1200); await p.screenshot({ path: '/tmp/e/c2.png' });
+            await p.click('[data-set="m:X"]'); await p.waitForTimeout(2500); await p.screenshot({ path: '/tmp/e/c3.png', fullPage: true });
+            await p.click('[data-set="o:soiree"]'); await p.waitForTimeout(1200); await p.screenshot({ path: '/tmp/e/c4.png' });
+            await p.waitForTimeout(3500); await p.screenshot({ path: '/tmp/e/c5.png', fullPage: true });
+            await p.click('[data-pick="1"]'); await p.waitForTimeout(2500); await p.screenshot({ path: '/tmp/e/c6.png' });
+            console.log('erreurs', errs); await b.close();
+          })().catch(e => console.log('ECHEC', e.message));
+          JS
+          node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |

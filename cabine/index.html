@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cabine — la tenue qui te va</title>
+<meta name="description" content="Choisis ta silhouette et l'occasion : Cabine te propose les looks qui te mettent en valeur.">
+<meta name="theme-color" content="#0f0e0d">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://images.unsplash.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;1,6..96,400&family=Manrope:wght@400;500;700;800&display=swap">
+<style>
+:root {
+  --bg: #0f0e0d; --panel: #1a1816; --ink: #f4efe8; --muted: #a39c92; --line: rgba(244,239,232,.12);
+  --gold: #d8b98a; --gold2: #b8925c; --display: "Bodoni Moda", Didot, Georgia, serif; --body: "Manrope", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); }
+button { font: inherit; color: inherit; }
+img { display: block; max-width: 100%; }
+.app { max-width: 560px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; position: relative; }
+
+/* Barre du haut */
+.top { position: fixed; top: 0; left: 0; right: 0; z-index: 20; padding: calc(env(safe-area-inset-top, 0px) + 14px) max(18px, env(safe-area-inset-right, 0px)) 14px max(18px, env(safe-area-inset-left, 0px));
+  display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; max-width: 560px; margin: 0 auto;
+  background: linear-gradient(180deg, rgba(15,14,13,.85), rgba(15,14,13,0)); }
+.logo { font: italic 400 26px/1 var(--display); text-align: center; letter-spacing: .02em; grid-column: 2; }
+.logo b { font-style: normal; font-weight: 600; color: var(--gold); }
+.back { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: rgba(26,24,22,.6); backdrop-filter: blur(10px); cursor: pointer; font-size: 18px; }
+.prog { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(90deg, var(--gold2), var(--gold)); z-index: 30; transition: width .5s cubic-bezier(.2,.8,.2,1); }
+
+.screen { padding: calc(env(safe-area-inset-top, 0px) + 84px) max(18px, env(safe-area-inset-right, 0px)) 40px max(18px, env(safe-area-inset-left, 0px)); display: grid; gap: 20px; }
+.eyebrow { font-size: 12px; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); }
+h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(42px, 12vw, 64px); line-height: .98; letter-spacing: -.01em; }
+h2 { font-size: clamp(32px, 8.5vw, 42px); line-height: 1.05; }
+h1 i, h2 i { color: var(--gold); }
+.sub { color: var(--muted); margin: -6px 0 0; max-width: 38ch; }
+
+.cta { display: block; width: 100%; border: 0; border-radius: 99px; padding: 18px 24px; cursor: pointer; font-weight: 800; font-size: 16px; letter-spacing: .02em;
+  color: #1a1206; background: linear-gradient(135deg, #f0dcb8, var(--gold) 45%, var(--gold2)); box-shadow: 0 10px 30px rgba(216,185,138,.25); text-align: center; text-decoration: none; transition: transform .2s; }
+.cta:active { transform: scale(.98); }
+.ghost { display: block; width: 100%; border: 1px solid var(--line); border-radius: 99px; padding: 16px 20px; background: transparent; cursor: pointer; font-weight: 700; text-align: center; text-decoration: none; color: var(--ink); }
+button:focus-visible, a:focus-visible, label:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+/* Accueil */
+.home { position: relative; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; }
+.slides { position: absolute; inset: 0; }
+.slides img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.6s ease; transform: scale(1.12); }
+.slides img.on { opacity: 1; animation: kb 7s ease-out forwards; }
+@keyframes kb { from { transform: scale(1.12); } to { transform: scale(1); } }
+.home::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,14,13,.15) 0%, rgba(15,14,13,.1) 35%, rgba(15,14,13,.85) 68%, var(--bg) 100%); }
+.home .in { position: relative; z-index: 2; padding: 0 max(22px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 34px) max(22px, env(safe-area-inset-left, 0px)); display: grid; gap: 18px; }
+.home .sub { color: #d9d1c6; }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 18px; height: 2px; background: rgba(244,239,232,.3); border-radius: 2px; transition: background .4s, width .4s; }
+.dots i.on { background: var(--gold); width: 30px; }
+.credit { font-size: 11px; color: rgba(244,239,232,.55); }
+.credit a { color: inherit; }
+
+/* Cartes photo */
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pc { position: relative; aspect-ratio: 3 / 4; border-radius: 22px; overflow: hidden; border: 0; padding: 0; cursor: pointer; background: var(--panel); text-align: left;
+  opacity: 0; transform: translateY(18px); animation: up .6s cubic-bezier(.2,.8,.2,1) forwards; }
+.pc.tall { aspect-ratio: 3 / 4.6; }
+.pc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+.pc:hover img, .pc:focus-visible img { transform: scale(1.06); }
+.pc::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(10,9,8,.85)); }
+.pc span { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 2; display: grid; gap: 2px; }
+.pc b { font: 400 24px/1.1 var(--display); }
+.pc small { color: #d4ccc0; font-size: 12.5px; }
+@keyframes up { to { opacity: 1; transform: none; } }
+
+/* Silhouettes */
+.shapes { display: grid; gap: 10px; }
+.shape { display: grid; grid-template-columns: 54px 1fr auto; gap: 14px; align-items: center; padding: 14px 18px; border-radius: 18px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; text-align: left;
+  opacity: 0; transform: translateY(14px); animation: up .5s cubic-bezier(.2,.8,.2,1) forwards; transition: border-color .2s; }
+.shape:hover { border-color: var(--gold); }
+.shape svg { width: 54px; height: 64px; }
+.shape b { font: 400 22px var(--display); display: block; }
+.shape small { color: var(--muted); }
+.shape em { font-style: normal; color: var(--gold); font-size: 20px; }
+
+/* Analyse */
+.scan-wrap { min-height: 70vh; display: grid; place-items: center; text-align: center; gap: 18px; }
+.ring { width: 150px; height: 220px; position: relative; display: grid; place-items: center; }
+.ring svg { width: 100%; height: 100%; }
+.ring::after { content: ""; position: absolute; left: -10%; right: -10%; height: 3px; background: linear-gradient(90deg, transparent, var(--gold), transparent); box-shadow: 0 0 18px var(--gold); animation: sweep 1.2s ease-in-out infinite alternate; }
+@keyframes sweep { from { top: 0; } to { top: 100%; } }
+.steps { color: var(--muted); font-size: 14px; display: grid; gap: 6px; }
+.steps span { opacity: .3; transition: opacity .4s, color .4s; }
+.steps span.on { opacity: 1; color: var(--ink); }
+
+/* Résultat */
+.hero-look { position: relative; border-radius: 26px; overflow: hidden; aspect-ratio: 3 / 4.2; background: var(--panel); }
+.hero-look img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: fadein .9s ease both; }
+@keyframes fadein { from { opacity: 0; transform: scale(1.04); } }
+.hero-look::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,9,8,.0) 50%, rgba(10,9,8,.8)); pointer-events: none; }
+.badge { position: absolute; top: 14px; left: 14px; z-index: 2; background: rgba(15,14,13,.6); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 99px; padding: 7px 12px; font-size: 13px; font-weight: 800; color: var(--gold); }
+.hero-look .cap { position: absolute; left: 18px; right: 18px; bottom: 16px; z-index: 2; display: flex; justify-content: space-between; align-items: end; gap: 10px; }
+.hero-look .cap b { font: 400 30px/1 var(--display); }
+.hero-look .cap span { font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 5px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); }
+.tabs button { border: 0; background: none; padding: 11px 4px; border-radius: 99px; cursor: pointer; color: var(--muted); font-weight: 700; font-size: 14px; transition: background .3s, color .3s; }
+.tabs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.why { margin: 0; color: var(--muted); font-size: 14.5px; }
+.why b { color: var(--ink); font-weight: 700; }
+.items { display: grid; gap: 2px; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); }
+.item { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 16px; background: var(--panel); opacity: 0; animation: up .5s ease forwards; }
+.sw { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); box-shadow: inset 0 -6px 12px rgba(0,0,0,.25); }
+.item b { font-weight: 700; font-size: 15px; display: block; }
+.item small { color: var(--muted); font-size: 12.5px; }
+.item .p { font-weight: 800; font-variant-numeric: tabular-nums; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.me { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.me > div { position: relative; border-radius: 18px; overflow: hidden; aspect-ratio: 3 / 4; background: var(--panel); }
+.me img { width: 100%; height: 100%; object-fit: cover; }
+.me .lbl { position: absolute; left: 10px; bottom: 10px; font-size: 12px; font-weight: 800; background: rgba(15,14,13,.7); padding: 4px 9px; border-radius: 99px; }
+.me .sc::after { content: ""; position: absolute; left: 0; right: 0; height: 3px; background: var(--gold); box-shadow: 0 0 16px var(--gold); animation: sweep 1.4s ease-in-out infinite alternate; }
+.note { font-size: 13px; color: var(--muted); text-align: center; margin: 0; }
+.restart { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; justify-self: center; font-size: 14px; }
+.fade { animation: screenin .55s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes screenin { from { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) { *, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition: none !important; } .pc, .shape, .item { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<div class="prog" id="prog"></div>
+<div class="app">
+  <div class="top"><button class="back" type="button" id="back" aria-label="Retour" hidden>←</button><div class="logo">Ca<b>bine</b></div></div>
+  <main id="app"></main>
+  <input id="photo" type="file" accept="image/*" hidden>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const PH = {"hero": [{"u": "https://images.unsplash.com/photo-1580478491436-fd6a937acc9e?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8ZmFzaGlvbiUyMGVkaXRvcmlhbCUyMHdvbWFufGVufDF8MXx8fDE3OTMyMTQ3MjF8MA&ixlib=rb-4.1.0", "by": "Nicolas Ladino Silva", "user": "https://unsplash.com/@nicolasladinosilva", "c": "#26260c"}, {"u": "https://images.unsplash.com/photo-1617137968427-85924c800a22?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Mohamad Khosravi", "user": "https://unsplash.com/@mohamadkhosravi", "c": "#d9d9d9"}, {"u": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8ZXZlbmluZyUyMGRyZXNzfGVufDF8MXx8fDE3OTMyMTQ3MjJ8MA&ixlib=rb-4.1.0", "by": "R N", "user": "https://unsplash.com/@1rfn", "c": "#c0c0c0"}, {"u": "https://images.unsplash.com/photo-1557022971-b3b7462cd090?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fGZhc2hpb24lMjBlZGl0b3JpYWwlMjB3b21hbnxlbnwxfDF8fHwxNzkzMjE0NzIxfDA&ixlib=rb-4.1.0", "by": "Julian Myles", "user": "https://unsplash.com/@julianmylesphoto", "c": "#0c260c"}], "g_f": [{"u": "https://images.unsplash.com/photo-1590399830217-8db7489f911e?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8ZmFzaGlvbiUyMG1vZGVsJTIwZnVsbCUyMGJvZHl8ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Andrea Bertozzini", "user": "https://unsplash.com/@dreside", "c": "#d9d9d9"}], "g_h": [{"u": "https://images.unsplash.com/photo-1618886614638-80e3c103d31a?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Mohamad Khosravi", "user": "https://unsplash.com/@mohamadkhosravi", "c": "#c0c0c0"}], "f_soiree": [{"u": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8ZXZlbmluZyUyMGRyZXNzfGVufDF8MXx8fDE3OTMyMTQ3MjJ8MA&ixlib=rb-4.1.0", "by": "R N", "user": "https://unsplash.com/@1rfn", "c": "#c0c0c0"}, {"u": "https://images.unsplash.com/photo-1623580674393-edf6eb7090f8?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8ZXZlbmluZyUyMGRyZXNzfGVufDF8MXx8fDE3OTMyMTQ3MjJ8MA&ixlib=rb-4.1.0", "by": "Knight Duong", "user": "https://unsplash.com/@knightduong", "c": "#d9d9d9"}, {"u": "https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8ZXZlbmluZyUyMGRyZXNzfGVufDF8MXx8fDE3OTMyMTQ3MjJ8MA&ixlib=rb-4.1.0", "by": "Khaled Ghareeb", "user": "https://unsplash.com/@khaledkagii", "c": "#d9d9d9"}], "f_rdv": [{"u": "https://images.unsplash.com/photo-1765870972829-4b107ff05de2?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8ZGF0ZSUyMG5pZ2h0JTIwb3V0Zml0fGVufDF8MXx8fDE3OTMyMTQ3MjJ8MA&ixlib=rb-4.1.0", "by": "FOTOGRAFÍA EDITORIAL", "user": "https://unsplash.com/@fotografiaeditorial", "c": "#262626"}, {"u": "https://images.unsplash.com/photo-1617258856138-402b60da4e2a?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fGV2ZW5pbmclMjBkcmVzc3xlbnwxfDF8fHwxNzkzMjE0NzIyfDA&ixlib=rb-4.1.0", "by": "SKG Photography", "user": "https://unsplash.com/@skgphotography", "c": "#c0d9f3"}, {"u": "https://images.unsplash.com/photo-1759741558429-0e88f1f45a8f?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8N3x8ZGF0ZSUyMG5pZ2h0JTIwb3V0Zml0fGVufDF8MXx8fDE3OTMyMTQ3MjJ8MA&ixlib=rb-4.1.0", "by": "Ap films Here", "user": "https://unsplash.com/@apfilms____", "c": "#400c0c"}], "f_travail": [{"u": "https://images.unsplash.com/photo-1774850236254-f0aa024ca20c?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8b2ZmaWNlJTIwb3V0Zml0fGVufDF8MXx8fDE3OTMyMTQ3MjJ8MA&ixlib=rb-4.1.0", "by": "Skytech Aviation", "user": "https://unsplash.com/@skytechaviation0", "c": "#d9d9d9"}, {"u": "https://images.unsplash.com/photo-1751399566412-ad1194241c5c?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8b2ZmaWNlJTIwb3V0Zml0fGVufDF8MXx8fDE3OTMyMTQ3MjJ8MA&ixlib=rb-4.1.0", "by": "Alekon pictures", "user": "https://unsplash.com/@alekonpictures", "c": "#260c0c"}, {"u": "https://images.unsplash.com/photo-1590399830217-8db7489f911e?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8ZmFzaGlvbiUyMG1vZGVsJTIwZnVsbCUyMGJvZHl8ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Andrea Bertozzini", "user": "https://unsplash.com/@dreside", "c": "#d9d9d9"}], "f_mariage": [{"u": "https://images.unsplash.com/photo-1534534665817-8493579d3fde?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8d2VkZGluZyUyMGd1ZXN0JTIwZHJlc3N8ZW58MXwxfHx8MTc5MzIxNDcyM3ww&ixlib=rb-4.1.0", "by": "Valerie Elash", "user": "https://unsplash.com/@elashv", "c": "#262626"}, {"u": "https://images.unsplash.com/photo-1790502041154-76a6a8856b33?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8N3x8d2VkZGluZyUyMGd1ZXN0JTIwZHJlc3N8ZW58MXwxfHx8MTc5MzIxNDcyM3ww&ixlib=rb-4.1.0", "by": "McFollis", "user": "https://unsplash.com/@thisismcfollis", "c": "#597373"}, {"u": "https://images.unsplash.com/photo-1589083133356-aa13ceaef7fd?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8N3x8ZXZlbmluZyUyMGRyZXNzfGVufDF8MXx8fDE3OTMyMTQ3MjJ8MA&ixlib=rb-4.1.0", "by": "DIEGO SÁNCHEZ", "user": "https://unsplash.com/@ediegosanchez", "c": "#404040"}], "f_sport": [{"u": "https://images.unsplash.com/photo-1774414489812-f863c5bd32f4?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NXx8c3BvcnRzd2VhciUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyM3ww&ixlib=rb-4.1.0", "by": "Jadon Johnson", "user": "https://unsplash.com/@jadonjohnson", "c": "#d9d9c0"}, {"u": "https://images.unsplash.com/photo-1793194133695-9dfefbc64201?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Nnx8c3BvcnRzd2VhciUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyM3ww&ixlib=rb-4.1.0", "by": "Rodrigo Rodrigues | WOLF Λ R T", "user": "https://unsplash.com/@wolfart32", "c": "#595959"}, {"u": "https://images.unsplash.com/photo-1774414489677-dd0cccee02b7?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8OXx8c3BvcnRzd2VhciUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyM3ww&ixlib=rb-4.1.0", "by": "Jadon Johnson", "user": "https://unsplash.com/@jadonjohnson", "c": "#262626"}], "f_casual": [{"u": "https://images.unsplash.com/photo-1588117260148-b47818741c74?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8c3RyZWV0d2VhciUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyM3ww&ixlib=rb-4.1.0", "by": "Mike Von", "user": "https://unsplash.com/@thevoncomplex", "c": "#a6a6a6"}, {"u": "https://images.unsplash.com/photo-1508216310976-c518daae0cdc?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Nnx8c3RyZWV0d2VhciUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyM3ww&ixlib=rb-4.1.0", "by": "Oladimeji Odunsi", "user": "https://unsplash.com/@oladimeg", "c": "#404040"}, {"u": "https://images.unsplash.com/photo-1715541448446-3369e1cc0ee9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8ZmFzaGlvbiUyMG1vZGVsJTIwZnVsbCUyMGJvZHl8ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Freddy Rezvanian", "user": "https://unsplash.com/@farshadrezvanian", "c": "#c0c0c0"}], "h_soiree": [{"u": "https://images.unsplash.com/photo-1617113930975-f9c7243ae527?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Nnx8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Mohamad Khosravi", "user": "https://unsplash.com/@mohamadkhosravi", "c": "#262626"}, {"u": "https://images.unsplash.com/photo-1600091166971-7f9faad6c1e2?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8OXx8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Bundo Kim", "user": "https://unsplash.com/@bundo", "c": "#262626"}, {"u": "https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Mohamad Khosravi", "user": "https://unsplash.com/@mohamadkhosravi", "c": "#c0c0c0"}], "h_rdv": [{"u": "https://images.unsplash.com/photo-1617137968427-85924c800a22?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Mohamad Khosravi", "user": "https://unsplash.com/@mohamadkhosravi", "c": "#d9d9d9"}, {"u": "https://images.unsplash.com/photo-1603394151492-5e9b974b090b?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fG1lbiUyMHN1aXQlMjBmYXNoaW9ufGVufDF8MXx8fDE3OTMyMTQ3MjR8MA&ixlib=rb-4.1.0", "by": "Ruthson Zimmerman", "user": "https://unsplash.com/@ruthson_zimmerman", "c": "#0c2640"}, {"u": "https://images.unsplash.com/photo-1599423843366-d5bbbe44b4cd?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8OHx8bWVuJTIwc3RyZWV0d2VhcnxlbnwxfDF8fHwxNzkzMjE0NzI0fDA&ixlib=rb-4.1.0", "by": "Sebastian Martinez", "user": "https://unsplash.com/@ssebasphh", "c": "#f3f3f3"}], "h_travail": [{"u": "https://images.unsplash.com/photo-1618886614638-80e3c103d31a?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Mohamad Khosravi", "user": "https://unsplash.com/@mohamadkhosravi", "c": "#c0c0c0"}, {"u": "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Mohamad Khosravi", "user": "https://unsplash.com/@mohamadkhosravi", "c": "#c0d9d9"}, {"u": "https://images.unsplash.com/photo-1623880840102-7df0a9f3545b?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8OHx8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Mohamad Khosravi", "user": "https://unsplash.com/@mohamadkhosravi", "c": "#d9d9d9"}], "h_mariage": [{"u": "https://images.unsplash.com/photo-1534030347209-467a5b0ad3e6?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NXx8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Gregory Hayes", "user": "https://unsplash.com/@gregoryallen", "c": "#f3f3f3"}, {"u": "https://images.unsplash.com/photo-1622497170185-5d668f816a56?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8N3x8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Mohamad Khosravi", "user": "https://unsplash.com/@mohamadkhosravi", "c": "#c0c0c0"}, {"u": "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8bWVuJTIwc3VpdCUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0", "by": "Mohamad Khosravi", "user": "https://unsplash.com/@mohamadkhosravi", "c": "#c0d9d9"}], "h_sport": [{"u": "https://images.unsplash.com/photo-1783314940783-c8b562fff574?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fHNwb3J0c3dlYXIlMjBmYXNoaW9ufGVufDF8MXx8fDE3OTMyMTQ3MjN8MA&ixlib=rb-4.1.0", "by": "arman grigoryan", "user": "https://unsplash.com/@tonnidead", "c": "#8c8c8c"}, {"u": "https://images.unsplash.com/photo-1779177416602-7d92a9e2bfa6?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8N3x8c3BvcnRzd2VhciUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyM3ww&ixlib=rb-4.1.0", "by": "Olumide Adekunle", "user": "https://unsplash.com/@0rangevisuals", "c": "#738c59"}, {"u": "https://images.unsplash.com/photo-1616011869127-3508d3b14d48?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8N3x8b2ZmaWNlJTIwb3V0Zml0fGVufDF8MXx8fDE3OTMyMTQ3MjJ8MA&ixlib=rb-4.1.0", "by": "Maksym Tymchyk 🇺🇦", "user": "https://unsplash.com/@maksym_tymchyk", "c": "#264040"}], "h_casual": [{"u": "https://images.unsplash.com/photo-1649114383220-c4f0f0dbafbe?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8bWVuJTIwc3RyZWV0d2VhcnxlbnwxfDF8fHwxNzkzMjE0NzI0fDA&ixlib=rb-4.1.0", "by": "Caleb", "user": "https://unsplash.com/@calebrussell", "c": "#c0c0c0"}, {"u": "https://images.unsplash.com/photo-1523398002811-999ca8dec234?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8c3RyZWV0d2VhciUyMGZhc2hpb258ZW58MXwxfHx8MTc5MzIxNDcyM3ww&ixlib=rb-4.1.0", "by": "MARK ADRIANE", "user": "https://unsplash.com/@markadriane", "c": "#262626"}, {"u": "https://images.unsplash.com/photo-1628030328071-538b251a4455?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Nnx8bWVuJTIwc3RyZWV0d2VhcnxlbnwxfDF8fHwxNzkzMjE0NzI0fDA&ixlib=rb-4.1.0", "by": "Meriane Nassim", "user": "https://unsplash.com/@meriane092", "c": "#d9d9d9"}]};
+const C = [
+  // Femme
+  ['f','dress','Robe portefeuille satinée','#5b1a2a',89,['soiree','rdv','mariage'],['X','O','A','H'],'le croisé marque la taille'],
+  ['f','dress','Robe fourreau noire','#16171b',119,['soiree','rdv'],['X','H'],'souligne les courbes'],
+  ['f','dress','Robe évasée midi','#2d4a6b',75,['mariage','rdv','travail'],['A','V','H'],'la jupe évasée équilibre la silhouette'],
+  ['f','dress','Robe empire fluide','#c9a46a',69,['mariage','soiree','casual'],['O','A'],'la coupe sous la poitrine allonge'],
+  ['f','top','Top drapé épaule dénudée','#efe4d6',39,['soiree','rdv'],['A','H'],'attire l\'œil vers le haut'],
+  ['f','top','Chemise en soie col V','#f3efe8',55,['travail','rdv'],['V','O','X'],'le col en V affine le buste'],
+  ['f','top','Pull fin ajusté','#8a6f5a',35,['travail','casual'],['X','H','A'],'reste près du corps sans serrer'],
+  ['f','top','Brassière de sport','#1e1f24',29,['sport'],['A','V','H','X','O'],'maintien et liberté'],
+  ['f','top','T-shirt technique ample','#4c6b5c',25,['sport','casual'],['O','V'],'respirant, ne colle pas'],
+  ['f','bottom','Pantalon large taille haute','#22252b',59,['travail','soiree','casual'],['A','O','H','X'],'allonge les jambes'],
+  ['f','bottom','Jupe crayon','#3a2b28',45,['travail','rdv'],['X','V','H'],'galbe les hanches'],
+  ['f','bottom','Jupe plissée midi','#7a1f2b',49,['rdv','mariage','casual'],['V','H','O'],'donne du mouvement'],
+  ['f','bottom','Jean droit brut','#2e3f5c',49,['casual','rdv'],['V','H','X','A'],'une coupe qui va partout'],
+  ['f','bottom','Legging gainant','#1b1c20',35,['sport'],['A','V','H','X','O'],'tient sans marquer'],
+  ['f','outer','Blazer cintré','#1c1d22',95,['travail','soiree'],['A','H','O','X'],'structure les épaules'],
+  ['f','outer','Veste en jean courte','#5d7aa3',59,['casual'],['A','X','H'],'s\'arrête à la taille'],
+  ['f','bottom','Short de running','#2b2d33',22,['sport'],['A','V','H','X','O'],'léger, ne remonte pas'],
+  ['f','top','Débardeur dos nageur','#b8c4cf',19,['sport'],['V','H','X','A'],'libère les épaules'],
+  ['f','shoes','Escarpins nude','#d9b99b',69,['soiree','mariage','travail','rdv'],['A','V','H','X','O'],'prolongent la jambe'],
+  ['f','shoes','Sandales à talon fin','#16171b',59,['soiree','rdv','mariage'],['A','V','H','X','O'],'élégance du soir'],
+  ['f','shoes','Baskets blanches','#f4f4f2',65,['casual','travail'],['A','V','H','X','O'],'confort et allure'],
+  ['f','shoes','Running légères','#e05a47',89,['sport'],['A','V','H','X','O'],'amorti et légèreté'],
+  // Homme
+  ['h','top','Chemise blanche cintrée','#f5f4f0',45,['travail','mariage','soiree','rdv'],['V','H','X'],'nette et ajustée'],
+  ['h','top','Chemise lin coupe droite','#cfd8e0',49,['mariage','casual','rdv'],['O','H','A'],'tombe droit sans serrer'],
+  ['h','top','Pull col roulé fin','#1d1e22',59,['soiree','rdv','travail'],['V','H','X'],'chic et moderne'],
+  ['h','top','Polo maille','#2b3d33',45,['casual','rdv'],['V','H','A','O','X'],'entre décontracté et habillé'],
+  ['h','top','T-shirt technique','#2e4057',29,['sport'],['A','V','H','X','O'],'sèche vite'],
+  ['h','top','T-shirt épais blanc','#f2f1ec',25,['casual'],['V','H','X','A','O'],'tient sa forme'],
+  ['h','bottom','Pantalon de costume fuselé','#202330',79,['travail','mariage','soiree'],['V','H','X','A'],'allonge la silhouette'],
+  ['h','bottom','Chino droit','#b8a27f',55,['casual','travail','rdv'],['O','A','H','V','X'],'coupe droite qui flatte'],
+  ['h','bottom','Jean brut slim','#273449',59,['rdv','casual','soiree'],['V','H','X'],'net et structuré'],
+  ['h','bottom','Short de sport','#1b1c20',25,['sport'],['A','V','H','X','O'],'liberté de mouvement'],
+  ['h','bottom','Jogging fuselé','#2a2c33',35,['sport','casual'],['A','V','H','X','O'],'net même en sport'],
+  ['h','top','Débardeur technique','#6d7a86',19,['sport'],['V','H','X'],'respirant'],
+  ['h','outer','Blazer déstructuré','#3b3f4a',129,['soiree','rdv','travail','mariage'],['H','O','A','V','X'],'structure sans rigidité'],
+  ['h','outer','Surchemise','#6a4e3b',65,['casual','rdv'],['V','H','O','A','X'],'superposition facile'],
+  ['h','shoes','Derbies cuir','#3a2418',99,['travail','mariage','soiree'],['A','V','H','X','O'],'classiques et sobres'],
+  ['h','shoes','Baskets cuir blanches','#f4f4f2',79,['casual','rdv','travail'],['A','V','H','X','O'],'vont avec tout'],
+  ['h','shoes','Mocassins','#5a3a24',89,['rdv','mariage','soiree'],['A','V','H','X','O'],'élégance décontractée'],
+  ['h','shoes','Running','#3a6ea5',89,['sport'],['A','V','H','X','O'],'amorti et stabilité']
+].map(([g, k, n, c, p, o, m, w], i) => ({ id: i, g, k, n, c, p, o, m, w }));
+
+const UTM = '?utm_source=cabine&utm_medium=referral';
+const img = (p, w = 900) => `${p.u}&w=${w}&q=72&fm=webp&fit=crop&crop=faces,entropy`;
+const credit = p => `Photo <a href="${p.user}${UTM}" target="_blank" rel="noopener">${p.by}</a> / <a href="https://unsplash.com/${UTM}" target="_blank" rel="noopener">Unsplash</a>`;
+
+const MORPHS = {
+  X: { n: 'Sablier', d: 'Taille marquée', s: [15, 9, 15], t: 'On suit ta taille sans cacher tes courbes.' },
+  A: { n: 'Triangle', d: 'Hanches plus larges', s: [10, 12, 16], t: 'On attire le regard vers le haut et on laisse tomber le bas.' },
+  V: { n: 'Triangle inversé', d: 'Épaules plus larges', s: [16, 12, 10], t: 'On adoucit les épaules et on donne du volume en bas.' },
+  H: { n: 'Rectangle', d: 'Épaules, taille et hanches alignées', s: [13, 13, 13], t: 'On crée une taille avec des coupes structurées.' },
+  O: { n: 'Ronde', d: 'Volume au niveau du ventre', s: [14, 16, 14], t: 'On allonge avec des lignes verticales et des matières fluides.' }
+};
+const OCCS = { soiree: 'Soirée', rdv: 'Rendez-vous', travail: 'Travail', mariage: 'Mariage', sport: 'Sport', casual: 'Week-end' };
+const OSUB = { soiree: 'Chic et lumineux', rdv: 'Séduisant, pas trop', travail: 'Net et assuré', mariage: 'Élégant et de saison', sport: 'Beau et confortable', casual: 'Facile, toujours stylé' };
+const state = { step: 0, g: null, m: null, o: null, pick: 0, photo: null };
+
+function looks() {
+  const { g, m, o } = state, max = 300, sum = a => a.reduce((t, x) => t + x.p, 0);
+  const pool = k => C.filter(x => x.g === g && x.k === k && x.o.includes(o))
+    .map(x => ({ ...x, sc: (x.m.includes(m) ? 3 : 0) + (x.o[0] === o ? 1 : 0) })).sort((a, b) => b.sc - a.sc);
+  const tops = pool('top'), bots = pool('bottom'), shoes = pool('shoes'), outers = pool('outer'), sets = pool('dress').map(d => [d]);
+  tops.forEach(t => bots.forEach(b => sets.push([t, b])));
+  const full = sets.map(set => {
+    const sh = shoes.find(x => sum(set) + x.p <= max) || shoes[0];
+    let all = [...set, ...(sh ? [sh] : [])];
+    const ou = (o === 'travail' || (o === 'soiree' && g === 'h')) && outers[0];
+    if (ou && sum(all) + ou.p <= max) all.splice(set.length, 0, ou);
+    return { items: all, fit: set.filter(x => x.m.includes(m)).length / set.length, price: sum(all) };
+  }).filter(l => l.price <= max).sort((a, b) => b.fit - a.fit || a.price - b.price);
+  const seen = new Set(), res = [];
+  for (const l of full) { if (seen.has(l.items[0].id)) continue; seen.add(l.items[0].id); res.push(l); if (res.length === 3) break; }
+  return res;
+}
+
+const shapeSvg = (k, stroke = 'currentColor') => { const [a, b, c] = MORPHS[k].s.map(v => v * 1.15);
+  return `<svg viewBox="0 0 40 60" aria-hidden="true"><circle cx="20" cy="7" r="4.5" fill="none" stroke="${stroke}" stroke-width="1.2"/><path d="M${20 - a} 15 Q20 12 ${20 + a} 15 Q${20 + b + 1} 24 ${20 + b} 31 Q${20 + c + 1} 38 ${20 + c} 44 L${20 - c} 44 Q${20 - c - 1} 38 ${20 - b} 31 Q${20 - b - 1} 24 ${20 - a} 15 Z" fill="rgba(216,185,138,.12)" stroke="${stroke}" stroke-width="1.2"/><path d="M${20 - c * .6} 44 L${20 - 4} 58 M${20 + c * .6} 44 L${20 + 4} 58" stroke="${stroke}" stroke-width="1.2"/></svg>`; };
+
+let slideTimer;
+const SCREENS = {
+  0: () => `<section class="home">
+      <div class="slides">${PH.hero.map((p, i) => `<img src="${img(p, 1000)}" alt="" class="${i ? '' : 'on'}" ${i ? 'loading="lazy"' : 'fetchpriority="high"'}>`).join('')}</div>
+      <div class="in">
+        <span class="eyebrow">Ton styliste personnel</span>
+        <h1>La tenue qui <i>te va</i>, en trois questions.</h1>
+        <p class="sub">Ta silhouette, ton occasion : Cabine choisit les pièces qui te mettent en valeur.</p>
+        <button class="cta" type="button" data-go="1">Trouver mon look</button>
+        <div class="dots">${PH.hero.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>
+        <span class="credit" id="hcredit">${credit(PH.hero[0])}</span>
+      </div></section>`,
+  1: () => `<section class="screen fade"><span class="eyebrow">Étape 1 sur 3</span><h2>C'est pour <i>qui</i> ?</h2>
+      <div class="cards">${[['f', 'Femme', PH.g_f[0]], ['h', 'Homme', PH.g_h[0]]].map(([v, t, p], i) => `<button class="pc tall" type="button" data-set="g:${v}" style="animation-delay:${i * 90}ms"><img src="${img(p, 600)}" alt=""><span><b>${t}</b></span></button>`).join('')}</div></section>`,
+  2: () => `<section class="screen fade"><span class="eyebrow">Étape 2 sur 3</span><h2>Ta <i>silhouette</i></h2><p class="sub">Choisis celle qui te ressemble le plus.</p>
+      <div class="shapes">${Object.entries(MORPHS).map(([k, v], i) => `<button class="shape" type="button" data-set="m:${k}" style="animation-delay:${i * 70}ms;color:var(--gold)">${shapeSvg(k)}<span style="color:var(--ink)"><b>${v.n}</b><small>${v.d}</small></span><em>→</em></button>`).join('')}</div></section>`,
+  3: () => `<section class="screen fade"><span class="eyebrow">Étape 3 sur 3</span><h2>Pour quelle <i>occasion</i> ?</h2>
+      <div class="cards">${Object.entries(OCCS).map(([k, t], i) => { const p = PH[state.g + '_' + k][0]; return `<button class="pc" type="button" data-set="o:${k}" style="animation-delay:${i * 70}ms"><img src="${img(p, 500)}" alt=""><span><b>${t}</b><small>${OSUB[k]}</small></span></button>`; }).join('')}</div></section>`,
+  4: () => `<section class="screen fade"><div class="scan-wrap"><div><div class="ring" style="color:var(--gold);margin:0 auto">${shapeSvg(state.m)}</div></div>
+      <h2>Ton look <i>se prépare</i></h2>
+      <div class="steps"><span>Lecture de ta silhouette</span><span>Choix des coupes qui te vont</span><span>Assemblage de 3 tenues</span></div></div></section>`,
+  5: () => {
+    const L = looks(), l = L[state.pick], P = PH[state.g + '_' + state.o], p = P[state.pick % P.length];
+    if (!l) return `<section class="screen fade"><h2>Pas encore de look pour ce choix</h2><button class="cta" type="button" data-restart>Recommencer</button></section>`;
+    return `<section class="screen fade">
+      <span class="eyebrow">${OCCS[state.o]} · ${MORPHS[state.m].n}</span>
+      <h2>Tes 3 <i>looks</i></h2>
+      <div class="tabs">${L.map((_, i) => `<button type="button" data-pick="${i}" aria-pressed="${i === state.pick}">Look ${i + 1}</button>`).join('')}</div>
+      <div class="hero-look"><img src="${img(p, 1000)}" alt="Inspiration ${OCCS[state.o].toLowerCase()}" key="${state.pick}"><span class="badge">${Math.round(70 + l.fit * 28)} % fait pour toi</span>
+        <div class="cap"><b>Look ${state.pick + 1}</b><span>${l.price} €</span></div></div>
+      <span class="credit">${credit(p)}</span>
+      <p class="why"><b>Pourquoi ce look :</b> ${MORPHS[state.m].t}</p>
+      <div class="items">${l.items.map((x, i) => `<div class="item" style="animation-delay:${i * 80}ms"><span class="sw" style="background:${x.c}"></span><span><b>${x.n}</b><small>${x.w}</small></span><span class="p">${x.p} €</span></div>`).join('')}</div>
+      ${state.photo ? `<div class="me"><div class="sc"><img src="${state.photo}" alt="Ta photo"><span class="lbl">Toi</span></div><div><img src="${img(p, 500)}" alt=""><span class="lbl">Le look</span></div></div>
+        <p class="note">Bientôt : l'IA te montrera directement portant ce look. Ta photo reste sur ton téléphone.</p>` : ''}
+      <div class="row"><label class="ghost" for="photo" tabindex="0">${state.photo ? 'Changer ma photo' : 'Essayer sur moi'}</label>
+        <a class="cta" href="https://www.vinted.fr/catalog?search_text=${encodeURIComponent(l.items[0].n)}" target="_blank" rel="noopener">Voir sur Vinted</a></div>
+      <button class="restart" type="button" data-restart>Recommencer</button>
+    </section>`;
+  }
+};
+
+function render() {
+  clearInterval(slideTimer);
+  $('#app').innerHTML = SCREENS[state.step]();
+  $('#back').hidden = state.step === 0 || state.step === 4;
+  $('.top').style.background = state.step === 0 ? 'none' : '';
+  $('#prog').style.width = ({ 0: 0, 1: 25, 2: 50, 3: 75, 4: 90, 5: 100 })[state.step] + '%';
+  scrollTo(0, 0);
+  if (state.step === 0) {
+    let i = 0; const imgs = document.querySelectorAll('.slides img'), dots = document.querySelectorAll('.dots i');
+    slideTimer = setInterval(() => { imgs[i].classList.remove('on'); dots[i].classList.remove('on'); i = (i + 1) % imgs.length; imgs[i].classList.add('on'); dots[i].classList.add('on'); $('#hcredit').innerHTML = credit(PH.hero[i]); }, 5000);
+  }
+  if (state.step === 4) {
+    const s = document.querySelectorAll('.steps span');
+    s.forEach((x, i) => setTimeout(() => x.classList.add('on'), 250 + i * 650));
+    setTimeout(() => { if (state.step === 4) { state.step = 5; render(); } }, 2400);
+  }
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.id === 'back') { state.step = state.step === 5 ? 3 : Math.max(0, state.step - 1); state.pick = 0; }
+  else if (t.dataset.go) state.step = +t.dataset.go;
+  else if (t.dataset.set) { const [k, v] = t.dataset.set.split(':'); state[k] = v; state.step++; state.pick = 0; }
+  else if (t.dataset.pick) state.pick = +t.dataset.pick;
+  else if ('restart' in t.dataset) Object.assign(state, { step: 1, g: null, m: null, o: null, pick: 0 });
+  else return;
+  render();
+});
+document.addEventListener('keydown', e => { if (e.target.matches('label[for=photo]') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); $('#photo').click(); } });
+$('#photo').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => { state.photo = r.result; render(); }; r.readAsDataURL(f);
+});
+render();
+</script>
+</body>
+</html>
