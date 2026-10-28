@@ -29,7 +29,7 @@ jobs:
                   out.append({'q': q, 'id': p['id'], 'raw': p['urls']['raw'], 'alt': p.get('alt_description'), 'by': p['user']['name'], 'user': p['user']['links']['html']})
           json.dump(out, open('/tmp/e/habits.json', 'w'), indent=1, ensure_ascii=False)
           h = '<body style="margin:0;font:11px sans-serif;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;width:1600px">' + ''.join(
-              f'<div><img src="{p["raw"]}&w=200&h=260&fit=crop&q=60" style="width:100%;display:block"><b>{i}</b> {p["q"][:18]}</div>' for i, p in enumerate(out))
+              f'<div><img src="{p["raw"]}&w=200&h=260&fit=crop&q=60" style="width:100%;display:block"><b>{i}</b></div>' for i, p in enumerate(out))
           open('sheet.html', 'w').write(h); print(len(out))
           PY
           python3 get.py > /tmp/e/journal.txt 2>&1
@@ -37,8 +37,7 @@ jobs:
           const { chromium } = require('playwright');
           (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1600, height: 900 } });
             await p.goto('file:///tmp/pw/sheet.html'); await p.waitForTimeout(15000);
-            const h = await p.evaluate(() => document.body.scrollHeight);
-            for (let y = 0, i = 0; y < h; y += 1500, i++) await p.screenshot({ path: `/tmp/e/s${i}.png`, clip: { x: 0, y, width: 1600, height: Math.min(1500, h - y) } });
+            await p.screenshot({ path: '/tmp/e/sheet.png', fullPage: true });
             await b.close(); })();
           JS
           node t.js >> /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
