@@ -294,12 +294,19 @@ async function tryOn() {
   } catch (e) { tries[k] = { st: 'err', why: e.name === 'AbortError' ? 'pas de réponse du serveur' : String(e.message || e) }; }
   if (tkey() === k && state.step === 5) render();
 }
-// Réduit la photo avant l'envoi (plus rapide, moins lourd)
+// Réduit la photo avant l'envoi. Si le téléphone n'arrive pas à la lire, on envoie l'original.
 function shrink(file) {
-  return new Promise(res => { const im = new Image(); im.onload = () => {
-    const sc = Math.min(1, 1024 / Math.max(im.width, im.height)), c = document.createElement('canvas');
-    c.width = im.width * sc; c.height = im.height * sc; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-    res(c.toDataURL('image/jpeg', .88)); URL.revokeObjectURL(im.src); }; im.src = URL.createObjectURL(file); });
+  const raw = () => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(null); r.readAsDataURL(file); });
+  return new Promise(res => {
+    const im = new Image(), url = URL.createObjectURL(file), done = v => { clearTimeout(to); URL.revokeObjectURL(url); res(v); };
+    const to = setTimeout(() => raw().then(done), 8000);
+    im.onload = () => { try {
+      const sc = Math.min(1, 1024 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.round(im.naturalWidth * sc); c.height = Math.round(im.naturalHeight * sc); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      done(c.toDataURL('image/jpeg', .88)); } catch (_) { raw().then(done); } };
+    im.onerror = () => raw().then(done);
+    im.src = url;
+  });
 }
 
 function render() {
@@ -333,7 +340,9 @@ document.addEventListener('click', e => {
 document.addEventListener('keydown', e => { if (e.target.matches('label[for=photo]') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); $('#photo').click(); } });
 $('#photo').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
-  shrink(f).then(d => { state.photo = d; for (const k in tries) delete tries[k]; e.target.value = ''; if (state.step === 5) tryOn(); else render(); });
+  const n = document.querySelector('.note'); if (n) n.textContent = 'Préparation de ta photo…';
+  shrink(f).then(d => { e.target.value = ''; if (!d) { if (n) n.textContent = 'Impossible de lire cette photo. Essaie une autre.'; return; }
+    state.photo = d; for (const k in tries) delete tries[k]; if (state.step === 5) tryOn(); else render(); });
 });
 render();
 </script>
