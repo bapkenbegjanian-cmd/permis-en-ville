@@ -9,11 +9,14 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Vérifier la table du classement
+      - name: Noms de domaine libres
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          { echo "== GET scores"; curl -sS -m 30 -w "\nHTTP %{http_code}\n" -H "apikey: sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h" "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=pseudo,quiz,points,created_at&order=created_at.desc&limit=5"; echo; echo "== OPTIONS"; curl -sS -m 30 -o /dev/null -w "HTTP %{http_code}\n" -H "apikey: sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h" "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=count"; } > journal.txt 2>&1
+          for d in quisait.com quisait.fr quisait.app quisait.io quisait.net quisait.org quisait.games quisait.fun qui-sait.com qui-sait.fr quisait.co quisait.me quisaitquiz.com quisait.eu quizquisait.com; do
+            c=$(curl -sS -m 20 -L -o r.json -w "%{http_code}" "https://rdap.org/domain/$d")
+            if [ "$c" = "404" ]; then echo "$d LIBRE"; elif [ "$c" = "200" ]; then echo "$d PRIS (exp: $(python3 -c "import json;d=json.load(open('r.json'));print([e['eventDate'][:10] for e in d.get('events',[]) if e.get('eventAction')=='expiration'])"))"; else echo "$d ? ($c)"; fi
+          done > journal.txt 2>&1
           cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
