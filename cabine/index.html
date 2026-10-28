@@ -104,8 +104,8 @@ button:focus-visible, a:focus-visible, label:focus-visible { outline: 3px solid 
 
 /* Analyse IA */
 .log { display: grid; gap: 8px; background: rgba(29,21,48,.92); color: #fff; border-radius: 22px; padding: 16px 18px; font-size: 14px; min-height: 120px; box-shadow: 0 18px 40px rgba(29,21,48,.25); }
-.log p { margin: 0; display: flex; gap: 10px; align-items: baseline; animation: logline .4s ease both; }
-.log p::before { content: "✓"; color: var(--mint); font-weight: 800; }
+.log p { margin: 0; position: relative; padding-left: 24px; animation: logline .4s ease both; }
+.log p::before { content: "✓"; position: absolute; left: 0; color: var(--mint); font-weight: 800; }
 .log p.wait::before { content: "•"; color: var(--peach); animation: blink 1s infinite; }
 .log p b { color: var(--peach); font-weight: 700; }
 @keyframes logline { from { opacity: 0; transform: translateX(-8px); } }
@@ -182,6 +182,8 @@ function loadSeg() {
 function loadFace() {
   return faceP ||= (async () => {
     const fa = await import('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.esm.js');
+    try { await fa.tf.setBackend('webgl'); } catch (_) { await fa.tf.setBackend('cpu'); }
+    await fa.tf.ready();
     const M = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
     await fa.nets.tinyFaceDetector.loadFromUri(M); await fa.nets.ageGenderNet.loadFromUri(M);
     return fa;
