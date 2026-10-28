@@ -230,8 +230,9 @@ async function analyse(img) {
   } catch (e) { out.err = String(e); }
   try {
     const fa = await loadFace(), f = await fa.detectSingleFace(img, new fa.TinyFaceDetectorOptions({ inputSize: 416 })).withAgeAndGender();
+    console.warn('profil', f ? f.gender + ' ' + f.genderProbability.toFixed(2) : 'aucun visage');
     if (f && f.genderProbability > .7) out.g = f.gender === 'female' ? 'f' : 'h';
-  } catch (_) {}
+  } catch (e) { console.warn('profil erreur', e && e.message); }
   return out;
 }
 
