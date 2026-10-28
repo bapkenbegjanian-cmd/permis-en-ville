@@ -9,15 +9,29 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Vérifier quizzmatch.com
+      - name: Tester le temps réel Supabase
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e
-          K="sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h"; U="https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores"
-          { echo "== GET in()"; curl -sS -m 30 -w "\nHTTP %{http_code}\n" -H "apikey: $K" "$U?select=pseudo,quiz,points&quiz=in.(%22geo:m%22,%22geo%22)&limit=5"
-            echo "== derniers scores"; curl -sS -m 30 -w "\nHTTP %{http_code}\n" -H "apikey: $K" "$U?select=pseudo,quiz,points&order=created_at.desc&limit=5"
-            for u in https://quizzmatch.com/ https://quizzmatch.com/banque/basket.js https://quizzmatch.com/en/mangas/ https://quizzmatch.com/sitemap.xml; do echo "== $u"; curl -sS -m 30 -o page -w "HTTP %{http_code} %{size_download} octets\n" "$u"; grep -o "<title>[^<]*" page | head -1; done; } > journal.txt 2>&1
-          cat journal.txt
+          mkdir -p /tmp/e /tmp/rt && cd /tmp/rt
+          npm init -y >/dev/null 2>&1; npm i @supabase/supabase-js@2.45.4 >/dev/null 2>&1
+          cat > t.js <<'JS'
+          const { createClient } = require('@supabase/supabase-js');
+          const U = 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co', K = 'sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h';
+          const a = createClient(U, K), b = createClient(U, K);
+          const ca = a.channel('duel-test-1234'), cb = b.channel('duel-test-1234');
+          let got = false;
+          cb.on('broadcast', { event: 'ping' }, m => { got = true; console.log('B a recu :', JSON.stringify(m.payload)); });
+          const sub = (c, n) => new Promise(r => c.subscribe(st => { console.log(n, st); if (st === 'SUBSCRIBED' || st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') r(st); }));
+          (async () => {
+            const [x, y] = await Promise.all([sub(ca, 'A'), sub(cb, 'B')]);
+            const r = await ca.send({ type: 'broadcast', event: 'ping', payload: { hello: 'duel' } });
+            console.log('envoi :', r);
+            setTimeout(() => { console.log(got ? 'TEMPS REEL OK' : 'RIEN RECU'); process.exit(0); }, 4000);
+          })();
+          setTimeout(() => { console.log('timeout'); process.exit(0); }, 20000);
+          JS
+          node t.js > /tmp/e/journal.txt 2>&1
+          cat /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
