@@ -9,37 +9,29 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Recuperer des photos mode libres de droits (Unsplash)
+      - name: Chercher des photos mode via l'API officielle Unsplash
+        env:
+          KEY: ${{ secrets.UNSPLASH_KEY }}
         run: |
           set +e
-          mkdir -p /tmp/e/photos && cd /tmp/e/photos
+          mkdir -p /tmp/e && cd /tmp/e
+          if [ -z "$KEY" ]; then echo "PAS DE CLE" > journal.txt; exit 0; fi
           cat > get.py <<'PY'
-          import json, urllib.request, urllib.parse
-          Q = {'hero': 'fashion editorial woman', 'soiree': 'evening dress fashion', 'rdv': 'date night outfit', 'travail': 'office outfit fashion',
-               'mariage': 'wedding guest outfit', 'sport': 'sportswear fashion', 'casual': 'streetwear fashion', 'homme': 'men fashion suit',
-               'hommecasual': 'men streetwear fashion', 'studio': 'full body fashion model studio'}
-          meta = {}
-          H = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'}
+          import json, os, urllib.request, urllib.parse
+          Q = {'hero': 'fashion editorial woman', 'soiree': 'evening dress', 'rdv': 'date night outfit', 'travail': 'office outfit',
+               'mariage': 'wedding guest dress', 'sport': 'sportswear fashion', 'casual': 'streetwear fashion',
+               'homme': 'men suit fashion', 'hommecasual': 'men streetwear', 'studio': 'fashion model full body'}
+          out = {}
           for k, q in Q.items():
-              try:
-                  u = 'https://unsplash.com/napi/search/photos?per_page=20&orientation=portrait&query=' + urllib.parse.quote(q)
-                  r = json.load(urllib.request.urlopen(urllib.request.Request(u, headers=H), timeout=30))
-                  n = 0
-                  for ph in r.get('results', []):
-                      if ph.get('premium') or ph.get('plus'): continue
-                      raw = ph['urls']['raw'] + '&w=640&h=900&fit=crop&q=62&fm=webp'
-                      f = f'{k}{n}.webp'
-                      open(f, 'wb').write(urllib.request.urlopen(urllib.request.Request(raw, headers={'User-Agent': 'Mozilla/5.0'}), timeout=30).read())
-                      meta[f] = {'by': ph['user']['name'], 'link': ph['links']['html'], 'alt': ph.get('alt_description')}
-                      n += 1
-                      if n == 6: break
-                  print(k, n)
-              except Exception as e:
-                  print('ERR', k, e)
-          json.dump(meta, open('meta.json', 'w'), indent=1, ensure_ascii=False)
+              u = 'https://api.unsplash.com/search/photos?per_page=10&orientation=portrait&content_filter=high&query=' + urllib.parse.quote(q)
+              r = json.load(urllib.request.urlopen(urllib.request.Request(u, headers={'Authorization': 'Client-ID ' + os.environ['KEY'], 'Accept-Version': 'v1'}), timeout=30))
+              out[k] = [{'id': p['id'], 'url': p['urls']['regular'], 'raw': p['urls']['raw'], 'alt': p.get('alt_description'), 'color': p.get('color'),
+                         'by': p['user']['name'], 'user': p['user']['links']['html'], 'link': p['links']['html']} for p in r['results']]
+              print(k, len(out[k]))
+          json.dump(out, open('photos.json', 'w'), indent=1, ensure_ascii=False)
           PY
-          python3 get.py | tee /tmp/e/journal.txt
-          rm get.py; du -sh .
+          python3 get.py > journal.txt 2>&1; rm get.py
+          cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
