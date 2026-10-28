@@ -13,9 +13,9 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          for d in quisait.com google.com quisaitquiz.com quizquisait.com quisaitapp.com playquisait.com quisaitgame.com jouequisait.com quisaitfun.com getquisait.com; do
-            c=$(sleep 6; curl -sS -m 30 --retry 3 --retry-all-errors -o r.json -w "%{http_code}" "https://rdap.org/domain/$d")
-            if [ "$c" = "404" ]; then echo "$d LIBRE"; elif [ "$c" = "200" ]; then echo "$d PRIS (exp: $(python3 -c "import json;d=json.load(open('r.json'));print([e['eventDate'][:10] for e in d.get('events',[]) if e.get('eventAction')=='expiration'])"))"; else echo "$d ? ($c)"; fi; echo "   dns: $(dig +short NS $d | head -1)"
+          for d in quisait.com google.com quizdefi.com defiquiz.com quizpotes.com quizpote.com quizflash.com quizclash.com quizrush.com quizboom.com quizzap.com quizoo.com monquiz.com quizchrono.com quizyo.com quizpop.com quizvs.com quizduo.com quizbattle.com quizzou.com quizly.com quizfou.com quizcool.com quizzy.com quizmix.com quizking.com quizgo.com quizup.com quizzz.com quizfast.com quizfriends.com quizdual.com quiztime.com quizblitz.com quizzle.com quizlab.com quizbuzz.com quizsprint.com quizrace.com quizhero.com quizstar.com quizdefis.com quizentrepotes.com quizcash.com quizbox.com quizwave.com quizpulse.com quizkong.com quiztonpote.com; do
+            ns=$(dig +short NS $d | head -1); c=$(sleep 2; curl -sS -m 20 -o /dev/null -w "%{http_code}" "https://rdap.verisign.com/com/v1/domain/$d")
+            echo "$d rdap=$c ns=$ns"
           done > journal.txt 2>&1
           cat journal.txt
       - name: Enregistrer sur la branche « enquete »
