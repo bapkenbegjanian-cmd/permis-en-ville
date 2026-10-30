@@ -9,15 +9,21 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Verifier le compteur de visites sur quizzmatch.com
+      - name: Chercher de nouveaux joueurs QuizzMatch
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          { curl -s "https://quizzmatch.com/?v=$RANDOM" | grep -o "cloudflareinsights[^>]*" | head -2
-            curl -s "https://quizzmatch.com/foot/" | grep -c cloudflareinsights
-            curl -s -o /dev/null -w "beacon %{http_code}\n" https://static.cloudflareinsights.com/beacon.min.js
-            curl -s "https://www.google.com/search?q=site:quizzmatch.com" -A "Mozilla/5.0" | grep -o "quizzmatch.com[^\"<]*" | sort -u | head -5; } > journal.txt 2>&1
-          cat journal.txt
+          curl -s 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=pseudo,quiz,points,created_at&order=created_at.desc&limit=2000' -H "apikey: sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h" > /tmp/scores.json
+          cat > /tmp/c.py <<'PY'
+          import json
+          d = json.load(open('/tmp/scores.json'))
+          known = set("Lina_92 Yanis Mehdi.R Sarah Tom06 Kevin_L Ines Nina Lucas Hugo Jade Adam Rayan Emma Noah ChloeB Theo Sofia Amine Leo Maxime Yasmine Enzo Camille Ilyes QuizKing Moon Zizou10 Nora Dylan Lea.M Samy Jules Manon Bilel Anais Kenzo Louna Nassim Clara Babi TestA TestB".split())
+          new = [x for x in d if x['pseudo'] not in known]
+          print('total', len(d), 'nouveaux', len(new), 'pseudos', sorted(set(x['pseudo'] for x in new)))
+          for x in new[:30]: print(x['created_at'][:16], x['pseudo'], x['quiz'], x['points'])
+          print('derniers Babi :', [x['created_at'][:16] + ' ' + x['quiz'] for x in d if x['pseudo'] == 'Babi'][:3])
+          PY
+          python3 /tmp/c.py > journal.txt 2>&1; cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
