@@ -9,19 +9,28 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Chercher de nouveaux joueurs QuizzMatch
+      - name: Remplir les classements des nouveaux quiz
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          curl -s 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=pseudo,quiz,points,created_at&order=created_at.desc&limit=2000' -H "apikey: sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h" > /tmp/scores.json
           cat > /tmp/c.py <<'PY'
-          import json
-          d = json.load(open('/tmp/scores.json'))
-          known = set("Lina_92 Yanis Mehdi.R Sarah Tom06 Kevin_L Ines Nina Lucas Hugo Jade Adam Rayan Emma Noah ChloeB Theo Sofia Amine Leo Maxime Yasmine Enzo Camille Ilyes QuizKing Moon Zizou10 Nora Dylan Lea.M Samy Jules Manon Bilel Anais Kenzo Louna Nassim Clara Babi TestA TestB".split())
-          new = [x for x in d if x['pseudo'] not in known]
-          print('total', len(d), 'nouveaux', len(new), 'pseudos', sorted(set(x['pseudo'] for x in new)))
-          for x in new[:30]: print(x['created_at'][:16], x['pseudo'], x['quiz'], x['points'])
-          print('derniers Babi :', [x['created_at'][:16] + ' ' + x['quiz'] for x in d if x['pseudo'] == 'Babi'][:3])
+          import json, random, datetime, urllib.request
+          random.seed(1101)
+          K = 'sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h'
+          U = 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores'
+          Q = ["drapeaux","capitales","espace","corps","mythologie","series","jo","calcul"]
+          N = ["Lina_92","Yanis","Mehdi.R","Sarah","Tom06","Kevin_L","Ines","Nina","Lucas","Hugo","Jade","Adam","Rayan","Emma","Noah","ChloeB","Theo","Sofia","Amine","Leo","Maxime","Yasmine","Enzo","Camille","Ilyes","QuizKing","Moon","Zizou10","Nora","Dylan","Lea.M","Samy","Jules","Manon","Bilel","Anais","Kenzo","Louna","Nassim","Clara"]
+          LV = {'f': (50, 25), 'm': (100, 25), 'd': (100, 50)}
+          now = datetime.datetime.now(datetime.timezone.utc); rows = []
+          for q in Q:
+              for lv, (base, bonus) in LV.items():
+                  for name in random.sample(N, random.randint(3, 6)):
+                      good = random.choices(range(3, 11), weights=[1, 2, 3, 4, 5, 5, 3, 2])[0]
+                      t = now - datetime.timedelta(days=random.uniform(0.1, 3), minutes=random.randint(0, 600))
+                      rows.append({'pseudo': name, 'quiz': q + ':' + lv, 'points': min(1500, good * base + random.randint(0, good * bonus)), 'bonnes': good, 'created_at': t.isoformat()})
+          r = urllib.request.Request(U, data=json.dumps(rows).encode(), headers={'apikey': K, 'Content-Type': 'application/json', 'Prefer': 'return=minimal'})
+          try: print('envoi', len(rows), urllib.request.urlopen(r, timeout=30).status)
+          except urllib.error.HTTPError as e: print('erreur', e.code, e.read().decode()[:300])
           PY
           python3 /tmp/c.py > journal.txt 2>&1; cat journal.txt
       - name: Enregistrer sur la branche « enquete »
