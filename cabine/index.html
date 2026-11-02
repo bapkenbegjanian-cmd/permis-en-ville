@@ -77,12 +77,20 @@ button:focus-visible, a:focus-visible, label:focus-visible { outline: 3px solid 
 .lrow input, .loginbox input { font: inherit; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: #fff; color: var(--ink); min-width: 0; }
 .lrow .ghost { width: auto; padding: 12px 16px; }
 .loginbox { display: grid; gap: 10px; }
-.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.plan { position: relative; display: grid; gap: 2px; padding: 18px 14px; border-radius: 20px; background: var(--glass); border: 1px solid var(--line); text-decoration: none; color: var(--ink); text-align: center; }
-.plan b { font: 800 28px var(--display); }
-.plan span { font-size: 13px; color: var(--muted); }
-.plan.best { border: 2px solid var(--pink); background: #fff; }
-.plan em { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 12px; font-weight: 800; color: #fff; background: var(--grad); padding: 3px 10px; border-radius: 99px; }
+.plans { display: grid; gap: 10px; }
+.plan { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; text-align: left; padding: 16px; border-radius: 20px; background: var(--glass); backdrop-filter: blur(12px); border: 2px solid var(--line); color: var(--ink); cursor: pointer; transition: border-color .2s, box-shadow .2s, background .2s; }
+.plan .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); background: #fff; transition: all .2s; }
+.plan.on { border-color: var(--pink); background: #fff; box-shadow: 0 10px 26px rgba(47,107,255,.15); }
+.plan.on .dot { border: 7px solid var(--pink); }
+.plan .pinfo { display: grid; gap: 2px; min-width: 0; }
+.plan .pinfo b { font: 800 18px var(--display); }
+.plan small { color: var(--muted); font-size: 13px; }
+.plan em { font-style: normal; font-size: 12px; font-weight: 800; color: #fff; background: var(--grad); padding: 3px 9px; border-radius: 99px; width: max-content; margin-top: 4px; }
+.plan .pprice { text-align: right; display: grid; }
+.plan .pprice b { font: 800 22px var(--display); white-space: nowrap; }
+.recap { background: var(--glass); border: 1px dashed var(--line); border-radius: 16px; padding: 12px 14px; font-size: 14px; color: var(--muted); }
+.recap b { color: var(--ink); }
+a.cta[aria-disabled] { opacity: .5; pointer-events: none; }
 .plan[aria-disabled] { opacity: .55; pointer-events: none; }
 .tabbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); z-index: 20; display: flex; gap: 4px; padding: 5px; border-radius: 20px;
   background: rgba(18,20,30,.92); backdrop-filter: blur(14px); box-shadow: 0 14px 34px rgba(18,20,30,.3); }
@@ -215,7 +223,7 @@ const MORPHS = {
 };
 const OCCS = { soiree: ['🥂', 'Soirée', 'Chic et lumineux', '#2f6bff'], rdv: ['🌹', 'Rendez-vous', 'Séduisant, pas trop', '#ff8a5c'], travail: ['💼', 'Travail', 'Net et assuré', '#7b5cff'],
   mariage: ['💍', 'Mariage', 'Élégant', '#ffb37a'], sport: ['⚡', 'Sport', 'Beau et confortable', '#3dd6b5'], casual: ['☀️', 'Week-end', 'Facile et stylé', '#ffd23f'] };
-const state = { signup: true, quota: null, step: 0, photo: null, o: null, g: null, m: null, info: [], pick: 0, mode: 'look', garment: null, gid: 0, saved: false };
+const state = { plan: 'an', signup: true, quota: null, step: 0, photo: null, o: null, g: null, m: null, info: [], pick: 0, mode: 'look', garment: null, gid: 0, saved: false };
 try { const p = localStorage.getItem('cabine-photo'); if (p) { state.photo = p; state.saved = true; } } catch (_) {}
 const tries = {};
 const looks = () => DATA.L[state.g + '_' + state.o].map(id => ({ id, ...DATA.g[id] })).map(x => ({ ...x, fit: x.m.includes(state.m) ? 1 : 0 })).sort((a, b) => b.fit - a.fit);
@@ -503,10 +511,14 @@ const S = [
       <div class="steps3"><div><span>♾️</span><p style="margin:0"><b>Essais illimités</b>Les 3 looks, autant de fois que tu veux.</p></div>
         <div><span>🛍️</span><p style="margin:0"><b>Mode magasin sans limite</b>Photo, capture d'écran ou lien.</p></div>
         <div><span>🔓</span><p style="margin:0"><b>Sans engagement</b>Résiliable à tout moment, en un clic.</p></div></div>
-      ${state.quota && state.quota.pro ? '' : `<div class="plans">
-        <a class="plan" ${payHref('mois')}><b>9,99 €</b><span>par mois</span></a>
-        <a class="plan best" ${payHref('an')}><em>−33 %</em><b>79,99 €</b><span>par an, soit 6,67 €/mois</span></a></div>
-        <p class="note">Paiement sécurisé par Stripe. Abonnement renouvelé automatiquement, résiliable à tout moment depuis « Gérer mon abonnement » : il s'arrête à la fin de la période payée. En t'abonnant, tu acceptes les <a href="cgv.html">conditions générales de vente</a>.</p>`}
+      ${state.quota && state.quota.pro ? '' : `<div class="plans" role="radiogroup" aria-label="Choisis ta formule">
+        ${[['an', 'Annuel', '79,99 €', 'par an', 'Soit 6,67 € par mois', 'Le plus avantageux · −33 %'], ['mois', 'Mensuel', '9,99 €', 'par mois', 'Sans engagement', '']].map(([k, n, p, per, sub, tag]) =>
+          `<button type="button" class="plan ${state.plan === k ? 'on' : ''}" role="radio" aria-checked="${state.plan === k}" data-plan="${k}">
+            <span class="dot"></span><span class="pinfo"><b>${n}</b><small>${sub}</small>${tag ? `<em>${tag}</em>` : ''}</span><span class="pprice"><b>${p}</b><small>${per}</small></span></button>`).join('')}
+        </div>
+        <div class="recap">${state.plan === 'an' ? 'Aujourd\'hui : <b>79,99 €</b>, puis renouvelé chaque année.' : 'Aujourd\'hui : <b>9,99 €</b>, puis renouvelé chaque mois.'}<br>Résiliable à tout moment depuis « Gérer mon abonnement », sans frais.</div>
+        <a class="cta" ${payHref(state.plan)}>🔒 Continuer vers le paiement</a>
+        <p class="note">Paiement sécurisé par Stripe. L'abonnement s'arrête à la fin de la période payée si tu le résilies. En continuant, tu acceptes les <a href="cgv.html">conditions générales de vente</a>.</p>`}
       ${PAY.portail && session ? `<a class="ghost" href="${PAY.portail}?prefilled_email=${encodeURIComponent(session.user.email)}" target="_blank" rel="noopener">Gérer mon abonnement</a>` : ''}
       <button class="link" type="button" data-tab="look">Retour à l'accueil</button>
     </section>`
@@ -598,6 +610,7 @@ document.addEventListener('click', e => {
   else if (t.dataset.start) { state.mode = t.dataset.start; if (sb && !session) { try { localStorage.setItem('cabine-next', state.mode); } catch (_) {} state.step = 8; } else state.step = state.mode === 'shop' && state.photo ? 5 : 1; }
   else if ('switch' in t.dataset) { state.signup = !state.signup; }
   else if ('plus' in t.dataset) { state.step = 9; }
+  else if (t.dataset.plan) { state.plan = t.dataset.plan; render(true); return; }
   else if ('logout' in t.dataset) { sb.auth.signOut(); session = null; state.quota = null; }
   else if ('trylook' in t.dataset) { const l = looks()[state.pick]; tryOn(l); if ((tries[tkey(l)] || {}).st === 'quota') { state.step = 9; render(); } else render(true); return; }
   else if ('import' in t.dataset) { importLink(); return; }
