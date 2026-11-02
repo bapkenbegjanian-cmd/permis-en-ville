@@ -32,7 +32,9 @@ Deno.serve(async (req) =&gt; {
   // Renouvellement, changement ou résiliation : la date de fin suit celle de Stripe
   if (event.type.startsWith(&#x27;customer.subscription.&#x27;)) {
     const fin = event.type === &#x27;customer.subscription.deleted&#x27; || o.status === &#x27;canceled&#x27; || o.status === &#x27;unpaid&#x27;
-      ? new Date().toISOString() : new Date(o.current_period_end * 1000).toISOString();
+      ? new Date().toISOString()
+      // selon la version de l&#x27;API Stripe, la fin de période est sur l&#x27;abonnement ou sur sa première ligne
+      : new Date(((o.current_period_end ?? o.items?.data?.[0]?.current_period_end) || Date.now() / 1000 + 32 * 86400) * 1000).toISOString();
     await admin.from(&#x27;abonnes&#x27;).update({ fin, stripe_sub: o.id }).eq(&#x27;stripe_customer&#x27;, o.customer);
   }
   return new Response(&#x27;ok&#x27;);

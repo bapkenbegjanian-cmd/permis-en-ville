@@ -24,7 +24,9 @@ Deno.serve(async (req) => {
   // Renouvellement, changement ou résiliation : la date de fin suit celle de Stripe
   if (event.type.startsWith('customer.subscription.')) {
     const fin = event.type === 'customer.subscription.deleted' || o.status === 'canceled' || o.status === 'unpaid'
-      ? new Date().toISOString() : new Date(o.current_period_end * 1000).toISOString();
+      ? new Date().toISOString()
+      // selon la version de l'API Stripe, la fin de période est sur l'abonnement ou sur sa première ligne
+      : new Date(((o.current_period_end ?? o.items?.data?.[0]?.current_period_end) || Date.now() / 1000 + 32 * 86400) * 1000).toISOString();
     await admin.from('abonnes').update({ fin, stripe_sub: o.id }).eq('stripe_customer', o.customer);
   }
   return new Response('ok');
