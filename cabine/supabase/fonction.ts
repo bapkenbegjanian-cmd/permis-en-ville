@@ -1,19 +1,22 @@
 // Fonction Supabase « bright-endpoint » de Cabine.
 // Elle garde la clé FASHN côté serveur, vérifie que la personne est connectée,
-// compte ses essais (3 gratuits) et lit la photo d'un habit à partir d'un lien.
+// compte ses essais (3 gratuits ; un essai = jusqu'à 3 images, par exemple les 3 looks)
+// et lit la photo d'un habit à partir d'un lien.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
-const FREE = 3;
+const FREE = 3, PER_TRY = 3;
 const json = (d: unknown, status = 200) => new Response(JSON.stringify(d), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const fashnKey = Deno.env.get('FASHN_KEY') ?? Deno.env.get('KEY') ?? Deno.env.get('key');
 
 async function quota(uid: string) {
-  const { count } = await admin.from('essais').select('id', { count: 'exact', head: true }).eq('user_id', uid);
+  const { data: rows } = await admin.from('essais').select('id, groupe').eq('user_id', uid);
+  const groups = new Map<string, number>();
+  for (const r of rows ?? []) { const g = r.groupe ?? 'x' + r.id; groups.set(g, (groups.get(g) ?? 0) + 1); }
   const { data: ab } = await admin.from('abonnes').select('fin').eq('user_id', uid).maybeSingle();
   const pro = !!(ab && (!ab.fin || new Date(ab.fin) > new Date()));
-  return { used: count ?? 0, free: FREE, pro };
+  return { used: groups.size, free: FREE, pro, groups };
 }
 
 // Lit la photo d'aperçu (og:image) d'une page produit, comme le font les messageries pour les liens partagés
@@ -39,18 +42,20 @@ Deno.serve(async (req) => {
   const { data } = jwt ? await admin.auth.getUser(jwt) : { data: { user: null } };
   const user = data?.user;
   if (!user) return json({ error: 'connexion' }, 401);
-  const { action, body, id, link } = await req.json().catch(() => ({}));
+  const { action, body, id, link, group } = await req.json().catch(() => ({}));
 
-  if (action === 'quota') return json(await quota(user.id));
+  if (action === 'quota') { const { groups, ...q } = await quota(user.id); return json(q); }
   if (action === 'preview') return json(await preview(String(link || '')));
 
   const auth = { Authorization: `Bearer ${fashnKey}`, 'Content-Type': 'application/json' };
   if (action === 'run') {
-    const q = await quota(user.id);
-    if (!q.pro && q.used >= FREE) return json({ error: 'quota', ...q }, 402);
+    const { groups, ...q } = await quota(user.id), g = /^[\w-]{4,60}$/.test(group || '') ? group : null;
+    const inGroup = g ? groups.get(g) ?? 0 : 0;
+    if (inGroup >= PER_TRY) return json({ error: 'limite par essai' }, 429);
+    if (!q.pro && !inGroup && q.used >= FREE) return json({ error: 'quota', ...q }, 402);
     const r = await fetch('https://api.fashn.ai/v1/run', { method: 'POST', headers: auth, body: JSON.stringify(body) });
     const out = await r.json().catch(() => ({}));
-    if (out.id) await admin.from('essais').insert({ user_id: user.id, prediction: out.id });
+    if (out.id) await admin.from('essais').insert({ user_id: user.id, prediction: out.id, groupe: g });
     return json(out, r.status);
   }
   if (action === 'status' && /^[\w-]+$/.test(id || '')) {

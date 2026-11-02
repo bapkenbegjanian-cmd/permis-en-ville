@@ -14,3 +14,6 @@ create table public.abonnes (
 alter table public.essais enable row level security;
 alter table public.abonnes enable row level security;
 -- Aucune règle d'accès public : seules la fonction (clé serveur) et toi, dans le tableau de bord, peuvent lire et écrire.
+
+-- Un essai peut regrouper plusieurs images (les 3 looks) : elles partagent le même « groupe ».
+alter table public.essais add column if not exists groupe text;

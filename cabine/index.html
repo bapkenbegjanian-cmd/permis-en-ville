@@ -333,19 +333,20 @@ const left = () => state.quota ? (state.quota.pro ? Infinity : Math.max(0, state
 const quotaPill = () => state.quota && !state.quota.pro ? `<span class="pill"><i></i>${left()} essai${left() > 1 ? 's' : ''} gratuit${left() > 1 ? 's' : ''} restant${left() > 1 ? 's' : ''}</span>` : '';
 const tkey = l => state.g + state.o + l.id;
 let queue = Promise.resolve();
-function runTry(k, garment) {
+function runTry(k, garment, group) {
   if (tries[k] && tries[k].st !== 'err') return;
-  if (state.quota && left() <= 0) { tries[k] = { st: 'quota' }; return; }
+  group = group || 'g' + Date.now() + Math.random().toString(36).slice(2, 8);
+  if (state.quota && left() <= 0 && !usedGroups.has(group)) { tries[k] = { st: 'quota' }; return; }
   tries[k] = { st: 'run' };
   queue = queue.then(async () => {
     for (let attempt = 0; attempt < 2; attempt++) {
       const t0 = Date.now(); let started = false;
       try {
-        const r = await api({ action: 'run', body: { model_name: 'tryon-v1.6', inputs: { model_image: state.photo, garment_image: garment } } }, 45000);
+        const r = await api({ action: 'run', group, body: { model_name: 'tryon-v1.6', inputs: { model_image: state.photo, garment_image: garment } } }, 45000);
         if (r._s === 402) { tries[k] = { st: 'quota' }; break; }
         if (r._s === 401) { tries[k] = { st: 'err', why: 'connexion expirée, reconnecte-toi' }; break; }
         if (!r.id) throw new Error(r.message || r.error || 'refusé');
-        started = true; if (state.quota) state.quota.used++;
+        started = true; if (state.quota && !usedGroups.has(group)) state.quota.used++; usedGroups.add(group);
         while (Date.now() - t0 < 120000) {
           await wait(2500);
           const s = await api({ action: 'status', id: r.id }, 20000).catch(() => ({}));
@@ -363,7 +364,9 @@ function runTry(k, garment) {
     if (state.step === 3) onTryDone();
   });
 }
-const tryOn = l => runTry(tkey(l), pic(l, 768));
+const usedGroups = new Set();
+let lookGroup = null;   // les 3 looks d'une même analyse comptent pour un seul essai
+const tryOn = l => runTry(tkey(l), pic(l, 768), lookGroup);
 
 function shrink(file) {
   const raw = () => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(null); r.readAsDataURL(file); });
@@ -548,8 +551,9 @@ function askManual(g) {
 function startTries() {
   const L = looks();
   say(`3 pièces choisies : <b>${L.map(x => x.n).join(', ')}</b>`);
-  say('Essayage du look 1 sur ta photo… (environ 15 s)', 'wait');
-  waitingTry = true; tryOn(L[0]);
+  say('Essayage des 3 looks sur ta photo… (environ 15 s par look)', 'wait');
+  lookGroup = 'look' + Date.now() + Math.random().toString(36).slice(2, 8);
+  waitingTry = true; L.forEach(tryOn);
 }
 function onTryDone() {
   if (!waitingTry) return;
