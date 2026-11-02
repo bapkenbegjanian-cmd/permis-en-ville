@@ -9,12 +9,14 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Verifier les noms de domaine libres
+      - name: Verifier lookmiz.com
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          echo chicava chicelo chicely chiceya chicima chicino chiciva chicixo chiciza chicoka chicona chicora chicova chicura coraava coraelo coraely coraeya coraima coraino coraiva coraixo coraiza coraoka coraona coraora coraova coraura dresava dreselo dresely dreseya dresima dresino dresiva dresixo dresiza dresoka dresona dresora dresova dresura fitava fitelo fitely fiteya fitima fitino fitiva fitixo fitiza fitoka fitona fitora fitova fitura kabiava kabielo kabiely kabieya kabiima kabiino kabiiva kabiixo kabiiza kabioka kabiona kabiora kabiova kabiura lookava lookelo lookely lookeya lookima lookino lookiva lookixo lookiza lookoka lookona lookora lookova lookura lukava lukelo lukely lukeya lukima lukino lukiva lukixo lukiza lukoka lukona lukora lukova lukura lumiava lumielo lumiely lumieya lumiima lumiino lumiiva lumiixo lumiiza lumioka lumiona lumiora lumiova lumiura miraava miraelo miraely miraeya miraima miraino miraiva miraixo miraiza miraoka miraona miraora miraova miraura modaava modaelo modaely modaeya modaima modaino modaiva modaixo modaiza modaoka modaona modaora modaova modaura novaava novaelo novaely novaeya novaima novaino novaiva novaixo novaiza novaoka novaona novaora novaova novaura stylava stylelo stylely styleya stylima stylino styliva stylixo styliza styloka stylona stylora stylova stylura tryoava tryoelo tryoely tryoeya tryoima tryoino tryoiva tryoixo tryoiza tryooka tryoona tryoora tryoova tryoura velaava velaelo velaely velaeya velaima velaino velaiva velaixo velaiza velaoka velaona velaora velaova velaura vestava vestelo vestely vesteya vestima vestino vestiva vestixo vestiza vestoka vestona vestora vestova vestura vogiava vogielo vogiely vogieya vogiima vogiino vogiiva vogiixo vogiiza vogioka vogiona vogiora vogiova vogiura wearava wearelo wearely weareya wearima wearino weariva wearixo weariza wearoka wearona wearora wearova wearura zeliava zelielo zeliely zelieya zeliima zeliino zeliiva zeliixo zeliiza zelioka zeliona zeliora zeliova zeliura | tr ' ' '\n' | xargs -P 16 -I{} sh -c 'c=$(curl -s -o /dev/null -w "%{http_code}" -m 15 "https://rdap.verisign.com/com/v1/domain/{}.com"); echo "{} com=$c"' > journal.txt
-          sort journal.txt -o journal.txt; cat journal.txt
+          { dig +short lookmiz.com A; dig +short www.lookmiz.com CNAME
+            curl -s -o /dev/null -w "http %{http_code} -> %{redirect_url}\n" http://lookmiz.com/
+            curl -s -o p.html -w "https %{http_code}\n" https://lookmiz.com/; grep -o "<title>[^<]*" p.html; } > journal.txt 2>&1
+          cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
