@@ -9,32 +9,31 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Diagnostic Trouver mon look
-        timeout-minutes: 9
+      - name: Images colorees (Unsplash)
+        timeout-minutes: 8
+        env:
+          KEY: ${{ secrets.UNSPLASH_KEY }}
         run: |
           set +e
           mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
           npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
-          curl -sL -o moi.jpg 'https://images.unsplash.com/photo-1715541448446-3369e1cc0ee9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8ZmFzaGlvbiUyMG1vZGVsJTIwZnVsbCUyMGJvZHl8ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0&w=900&q=85&fm=jpg'
+          cat > get.py <<'PY'
+          import json, os, urllib.request, urllib.parse
+          out = []
+          for q in ['colorful clothes rack', 'neon clothing store', 'colorful sneakers', 'pastel wardrobe', 'vibrant fashion flat lay', 'colorful fashion boutique', 'pink clothing rack', 'colorful dresses hanging']:
+              u = 'https://api.unsplash.com/search/photos?per_page=8&orientation=portrait&content_filter=high&query=' + urllib.parse.quote(q)
+              r = json.load(urllib.request.urlopen(urllib.request.Request(u, headers={'Authorization': 'Client-ID ' + os.environ['KEY'], 'Accept-Version': 'v1'}), timeout=30))
+              out += [{'q': q, 'raw': p['urls']['raw'], 'by': p['user']['name'], 'user': p['user']['links']['html']} for p in r['results']]
+          json.dump(out, open('/tmp/e/couleurs.json', 'w'), indent=1)
+          open('sheet.html', 'w').write('<body style="margin:0;font:12px sans-serif;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;width:1600px">' + ''.join(f'<div><img src="{p["raw"]}&w=200&h=260&fit=crop&q=60" style="width:100%;display:block"><b>{i}</b></div>' for i, p in enumerate(out)))
+          PY
+          python3 get.py
           cat > t.js <<'JS'
-          const { chromium, devices } = require('playwright');
-          (async () => { const b = await chromium.launch(); const ctx = await b.newContext(devices['iPhone 13']); ctx.setDefaultTimeout(20000);
-            const p = await ctx.newPage(); const t0 = Date.now(), T = () => ((Date.now() - t0) / 1000).toFixed(1);
-            p.on('pageerror', e => console.log(T(), 'ERREUR', e.message));
-            p.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') console.log(T(), 'console', m.text().slice(0, 160)); });
-            p.on('response', async r => { if (r.url().includes('/functions/v1/')) { let body = ''; try { body = (await r.text()).slice(0, 220); } catch (_) {}
-              const req = r.request().postData() || ''; console.log(T(), 'FONCTION', r.status(), req.slice(0, 60).replace(/data:image[^"]+/, 'data:…'), '=>', body); } });
-            await p.goto('http://lookmiz.com/?v=' + Date.now()); await p.waitForTimeout(2500);
-            await p.click('[data-start="look"]'); await p.fill('#email', 'diag.' + Date.now() + '@gmail.com'); await p.fill('#pass', 'Diag-' + Date.now()); await p.click('#login .cta');
-            await p.waitForTimeout(3000); console.log(T(), 'ecran', await p.textContent('h2').catch(() => '?'));
-            await p.setInputFiles('#photo', 'moi.jpg'); await p.waitForTimeout(1500); await p.click('[data-go="2"]'); await p.waitForTimeout(800);
-            await p.click('[data-occ="soiree"]');
-            for (let i = 0; i < 24; i++) { await p.waitForTimeout(5000); const h = await p.textContent('h2').catch(() => '?'); const log = await p.textContent('#log').catch(() => '');
-              console.log(T(), 'ETAT', h, '|', (log || '').slice(-140)); if (/looks|Passe/i.test(h)) break; }
-            console.log(T(), 'badge', await p.textContent('.badge').catch(() => '-'));
-            await p.screenshot({ path: '/tmp/e/diag.png', fullPage: true }); await b.close(); })().catch(e => console.log('ECHEC', e.message));
+          const { chromium } = require('playwright');
+          (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1600, height: 900 } });
+            await p.goto('file:///tmp/pw/sheet.html'); await p.waitForTimeout(14000); await p.screenshot({ path: '/tmp/e/couleurs.png', fullPage: true }); await b.close(); })();
           JS
-          timeout 500 node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
+          node t.js > /tmp/e/journal.txt 2>&1; echo fini >> /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
