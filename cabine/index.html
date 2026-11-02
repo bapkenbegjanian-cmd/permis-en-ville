@@ -346,7 +346,11 @@ let queue = Promise.resolve();
 function runTry(k, garment, group) {
   if (tries[k] && tries[k].st !== 'err') return;
   group = group || 'g' + Date.now() + Math.random().toString(36).slice(2, 8);
-  if (state.quota && left(kindOf(group)) <= 0 && !usedGroups.has(group)) { tries[k] = { st: 'quota' }; return; }
+  if (state.quota && left(kindOf(group)) <= 0 && !usedGroups.has(group)) {
+    tries[k] = { st: 'quota' }; waitingTry = false;
+    if (state.step === 3 || state.step === 4 || state.step === 6) setTimeout(() => { state.step = 9; render(); }, 600);
+    return;
+  }
   tries[k] = { st: 'run' };
   queue = queue.then(async () => {
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -532,7 +536,7 @@ function render(soft) {
     sc.appendChild(col); sc.classList.add('split');
   }
   if (soft) { const sc = $('#app .screen'); if (sc) sc.style.animation = 'none'; scrollTo(0, y); } else scrollTo(0, 0);
-  $('#back').hidden = state.step === 0 || state.step === 3 || state.step === 7;
+  $('#back').hidden = state.step === 0 || state.step === 7;
   document.querySelectorAll('[data-tab]').forEach(b => b.closest('.tabbar') && b.setAttribute('aria-pressed', b.dataset.tab === state.mode));
 
 }
@@ -543,7 +547,7 @@ function say(html, cls = '') { const p = document.createElement('p'); p.classNam
 async function runAnalysis() {
   const log = $('#log'), img = await imgOf(state.photo);
   await new Promise(r => $('#simg').complete ? r() : $('#simg').onload = r);
-  const a = await analyse(img);
+  const a = await Promise.race([analyse(img), wait(25000).then(() => ({ ok: false, slow: true }))]);
   if (state.step !== 3) return;
   log.innerHTML = '';
   if (!a.ok) {
@@ -582,7 +586,7 @@ function startTries() {
 function onTryDone() {
   if (!waitingTry) return;
   const st = looks().map(x => (tries[tkey(x)] || {}).st);
-  if (st.includes('ok') || !st.includes('run')) { waitingTry = false; state.step = 4; state.pick = Math.max(0, st.indexOf('ok')); render(); }
+  if (st.some(x => x && x !== 'run')) { waitingTry = false; state.step = 4; state.pick = Math.max(0, st.indexOf('ok')); render(); }
 }
 
 document.addEventListener('click', e => {
