@@ -96,6 +96,8 @@ a.cta[aria-disabled] { opacity: .5; pointer-events: none; }
 .dlabel { font: 800 15px var(--display); }
 .phone { width: min(78%, 290px); aspect-ratio: 390 / 844; border-radius: 34px; padding: 8px; background: var(--ink); box-shadow: 0 24px 50px rgba(18,20,30,.28); }
 .phone video { width: 100%; height: 100%; display: block; border-radius: 27px; object-fit: cover; background: #eef1f5; }
+.steps3 .mephoto { grid-template-columns: 64px 1fr; }
+.mephoto img { width: 64px; height: 84px; object-fit: cover; border-radius: 12px; }
 .tabbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); z-index: 20; display: flex; gap: 4px; padding: 5px; border-radius: 20px;
   background: rgba(18,20,30,.92); backdrop-filter: blur(14px); box-shadow: 0 14px 34px rgba(18,20,30,.3); }
 .tabbar button { border: 0; background: none; color: rgba(255,255,255,.65); font-weight: 800; font-size: 14px; padding: 11px 18px; border-radius: 15px; cursor: pointer; white-space: nowrap; }
@@ -491,12 +493,12 @@ const S = [
       <div class="shophero media"><span class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff"><i></i>En boutique</span>
         <h2>Essaie sans <span class="hl">cabine</span></h2><p class="sub" style="color:#c9cdd8">Tu vois un habit en magasin ? Prends-le en photo et vois-le sur toi, sans faire la queue.</p></div>
       <div class="steps3">
-        <div><span>🧍</span><p style="margin:0"><b>Ta photo</b>Une seule fois, elle reste sur ton téléphone.</p></div>
+        ${state.photo ? `<div class="mephoto"><img src="${state.photo}" alt="Ta photo"><p style="margin:0"><b>✅ Ta photo est prête</b>Elle reste sur ton téléphone.<br><label class="link" for="photo" tabindex="0">Changer de photo</label></p></div>`
+          : `<div><span>🧍</span><p style="margin:0"><b>Ta photo</b>Une seule fois, elle reste sur ton téléphone.</p></div>`}
         <div><span>📷</span><p style="margin:0"><b>L'habit</b>Photographie-le en entier, sur le cintre ou le mannequin.</p></div>
         <div><span>🪞</span><p style="margin:0"><b>Sur toi</b>En 15 secondes, tu te vois avec.</p></div>
       </div>
-      <button class="cta" type="button" data-start="shop">📷 ${state.photo ? 'Photographier un habit' : 'Commencer'}</button>
-      ${state.photo ? `<label class="link" for="photo" tabindex="0">Changer ma photo</label>` : ''}
+      <button class="cta" type="button" data-start="shop">${state.photo ? '👕 Choisir un habit' : '📷 Commencer'}</button>
       ${account()}
     </section>`,
   () => `<section class="screen solo">
@@ -554,7 +556,7 @@ function render(soft) {
     sc.appendChild(col); sc.classList.add('split');
   }
   if (soft) { const sc = $('#app .screen'); if (sc) sc.style.animation = 'none'; scrollTo(0, y); } else scrollTo(0, 0);
-  $('#back').hidden = state.step === 0 || state.step === 7;
+  $('#back').hidden = state.step === 0;
   document.querySelectorAll('[data-tab]').forEach(b => b.closest('.tabbar') && b.setAttribute('aria-pressed', b.dataset.tab === state.mode));
 
 }
@@ -609,13 +611,13 @@ function onTryDone() {
 
 document.addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return;
-  if (t.id === 'back') { state.step = state.step === 8 ? (state.mode === 'shop' ? 7 : 0) : state.step === 9 ? 0 : state.step === 4 ? 2 : state.step === 5 ? 7 : state.step === 6 ? 5 : state.step === 1 && state.mode === 'shop' ? 7 : Math.max(0, state.step - 1); }
-  else if (t.dataset.tab) { state.mode = t.dataset.tab; state.step = state.mode === 'shop' ? 7 : 0; }
+  if (t.id === 'back') { state.step = state.step === 7 ? 0 : state.step === 8 ? (state.mode === 'shop' ? 7 : 0) : state.step === 9 ? (state.prev ?? 0) : state.step === 4 ? 2 : state.step === 5 ? 7 : state.step === 6 ? 5 : state.step === 1 && state.mode === 'shop' ? 7 : Math.max(0, state.step - 1); }
+  else if (t.dataset.tab) { if (t.closest('.tabbar') || state.step !== 7) state.mode = t.dataset.tab; state.step = t.dataset.tab === 'shop' ? 7 : 0; if (t.dataset.tab === 'look') state.mode = 'look'; }
   else if ('forget' in t.dataset) { try { localStorage.removeItem('cabine-photo'); } catch (_) {} state.photo = null; state.saved = false; }
   else if (t.dataset.mode) { state.mode = t.dataset.mode; state.step = 1; }
   else if (t.dataset.start) { state.mode = t.dataset.start; if (sb && !session) { try { localStorage.setItem('cabine-next', state.mode); } catch (_) {} state.step = 8; } else state.step = state.mode === 'shop' && state.photo ? 5 : 1; }
   else if ('switch' in t.dataset) { state.signup = !state.signup; }
-  else if ('plus' in t.dataset) { state.step = 9; }
+  else if ('plus' in t.dataset) { state.prev = state.step === 9 ? state.prev : state.step; state.step = 9; }
   else if (t.dataset.plan) { state.plan = t.dataset.plan; render(true); return; }
   else if ('logout' in t.dataset) { sb.auth.signOut(); session = null; state.quota = null; }
   else if ('trylook' in t.dataset) { const l = looks()[state.pick]; tryOn(l); if ((tries[tkey(l)] || {}).st === 'quota') { state.step = 9; render(); } else render(true); return; }
