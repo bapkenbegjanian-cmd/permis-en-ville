@@ -9,14 +9,15 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Verifier la nouvelle fonction Cabine
+      - name: Tester quels sites de vetements acceptent la lecture des liens
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          K=sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h
-          F=https://ctgjnpxdaqdnrcxjwnkp.supabase.co/functions/v1/bright-endpoint
-          { echo "sans compte :"; curl -s -w " [%{http_code}]" -X POST "$F" -H "apikey: $K" -H "Authorization: Bearer $K" -H 'Content-Type: application/json' -d '{"action":"quota"}'; echo
-            echo "tables :"; curl -s -w " [%{http_code}]" "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/essais?select=id&limit=1" -H "apikey: $K"; echo; } > journal.txt 2>&1
+          UA='Mozilla/5.0 (compatible; CabineBot/1.0; aperçu de lien)'
+          for u in https://www.zara.com/fr/ https://www.vinted.fr/ https://fr.shein.com/ https://www.asos.com/fr/ https://www2.hm.com/fr_fr/index.html https://www.zalando.fr/ https://www.kiabi.com/ https://www.decathlon.fr/ https://www.nike.com/fr/ https://www.amazon.fr/ https://www.uniqlo.com/fr/fr/ https://www.bershka.com/fr/ https://www.mango.com/fr https://www.laredoute.fr/ https://www.celio.com/ https://www.jules.com/fr-fr/ https://www.galerieslafayette.com/ https://www.lacoste.com/fr/ https://www.adidas.fr/ https://www.primark.com/fr-fr ; do
+            code=$(curl -s -m 12 -L -A "$UA" -o p.html -w "%{http_code}" "$u"); og=$(grep -io '<meta[^>]*og:image[^>]*>' p.html | head -1 | cut -c1-70)
+            echo "$code $u ${og:+OG}" >> journal.txt
+          done
           cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
