@@ -13,10 +13,10 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          for n in habilo vestora tryloo essayly cabinoo lookfit modyz cintra essayo mirora vestio fitzo cabino lookora tenuo habilly essaya vestyl lookzy trylook stylmi lookami miroa dressly fitmi tenua habiz lookio essayz mirly styloo lookeo cabinea vestimo tryzy outfiz lookyz habilia dresso; do
-            c=$(curl -s -o /dev/null -w "%{http_code}" -m 15 "https://rdap.verisign.com/com/v1/domain/$n.com")
-            f=$(curl -s -o /dev/null -w "%{http_code}" -m 15 "https://rdap.nic.fr/domain/$n.fr")
-            echo "$n com=$c fr=$f" >> journal.txt
+          for n in zqxwvkjhgfd7391 google habilly essayz tryzy lookyz outfiz vestimo essayly tryloo stylmi lookami mirly styloo fitzo modyz cabinoo vestyl lookzy trylook; do
+            c=$(curl -s -m 15 "https://rdap.verisign.com/com/v1/domain/$n.com" -o r.json -w "%{http_code}"); h=$(head -c 120 r.json | tr -d '\n')
+            w=$(whois $n.com 2>/dev/null | grep -ci "no match for")
+            echo "$n com=$c nomatch=$w :: $h" >> journal.txt
           done
           cat journal.txt
       - name: Enregistrer sur la branche « enquete »
