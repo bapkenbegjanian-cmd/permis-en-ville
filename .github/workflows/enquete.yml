@@ -9,41 +9,41 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Video de demonstration Lookmiz
-        timeout-minutes: 12
+      - name: Tester la lecture de vraies fiches produits
+        timeout-minutes: 8
         run: |
           set +e
-          mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
-          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
-          curl -sL -o moi.jpg 'https://images.unsplash.com/photo-1715541448446-3369e1cc0ee9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8ZmFzaGlvbiUyMG1vZGVsJTIwZnVsbCUyMGJvZHl8ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0&w=900&q=85&fm=jpg'
-          cat > t.js <<'JS'
-          const { chromium, devices } = require('playwright');
-          (async () => {
-            const b = await chromium.launch();
-            const ctx = await b.newContext({ ...devices['iPhone 13'], recordVideo: { dir: '/tmp/pw/v', size: { width: 390, height: 664 } } }); ctx.setDefaultTimeout(20000);
-            const p = await ctx.newPage(); const t0 = Date.now(), T = {}; const mark = k => T[k] = (Date.now() - t0) / 1000;
-            await p.goto('http://lookmiz.com/?v=' + Date.now()); await p.waitForTimeout(4000);
-            await p.mouse.wheel(0, 300); await p.waitForTimeout(1500); await p.mouse.wheel(0, -300); await p.waitForTimeout(800);
-            mark('login'); await p.click('[data-start="look"]'); await p.waitForTimeout(500);
-            await p.fill('#email', 'demo.lookmiz.' + Date.now() + '@gmail.com'); await p.fill('#pass', 'Demo-' + Date.now()); await p.click('#login .cta');
-            await p.waitForFunction(() => /photo/i.test((document.querySelector('h2') || {}).textContent || ''), null, { timeout: 20000 }).catch(() => {});
-            mark('photo'); await p.waitForTimeout(800);
-            await p.setInputFiles('#photo', 'moi.jpg'); await p.waitForTimeout(2200);
-            await p.click('[data-go="2"]'); await p.waitForTimeout(1800);
-            await p.click('[data-occ="soiree"]');
-            await p.waitForFunction(() => /Essayage/.test((document.querySelector('#log') || {}).textContent || ''), null, { timeout: 60000 }).catch(() => {});
-            await p.waitForTimeout(1500); mark('wait');
-            await p.waitForSelector('.tabs', { timeout: 180000 }).catch(() => {}); mark('result');
-            await p.waitForTimeout(3500);
-            await p.waitForFunction(() => document.querySelectorAll('.tabs .ld').length === 0, null, { timeout: 120000 }).catch(() => {});
-            mark('all');
-            for (const i of [1, 2, 0]) { await p.click('[data-pick="' + i + '"]'); await p.waitForTimeout(3200); }
-            await p.mouse.wheel(0, 500); await p.waitForTimeout(1500); mark('end');
-            console.log(JSON.stringify(T)); await ctx.close(); await b.close();
-          })().catch(e => console.log('ECHEC', e.message));
-          JS
-          timeout 600 node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
-          cp $(ls /tmp/pw/v/*.webm | head -1) /tmp/e/brut.webm
+          mkdir -p /tmp/e && cd /tmp/e
+          cat > t.py <<'PY'
+          import re, urllib.request, urllib.parse
+          UA = {'User-Agent': 'Mozilla/5.0 (compatible; CabineBot/1.0; aperçu de lien)', 'Accept-Language': 'fr,en'}
+          def get(u):
+              try:
+                  r = urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=15); return r.status, r.read(800000).decode('utf8', 'ignore')
+              except urllib.error.HTTPError as e: return e.code, ''
+              except Exception as e: return 0, ''
+          def og(h):
+              m = re.search(r'<meta[^>]+(?:property|name)=.og:image.[^>]*content=.([^"\']+)', h, re.I) or re.search(r'<meta[^>]+content=.([^"\']+).[^>]*(?:property|name)=.og:image', h, re.I)
+              return m.group(1)[:90] if m else None
+          SITES = {
+            'Vinted': ('https://www.vinted.fr/catalog?search_text=robe', r'https://www\.vinted\.fr/items/\d+[^"\' <>]*'),
+            'Shein': ('https://fr.shein.com/', r'https://fr\.shein\.com/[^"\' <>]*-p-\d+[^"\' <>]*\.html'),
+            'Zalando': ('https://www.zalando.fr/robes/', r'https://www\.zalando\.fr/[a-z0-9-]+-[a-z0-9]{9}-[a-z0-9]{3}\.html'),
+            'Amazon': ('https://www.amazon.fr/s?k=pull+femme', r'/[^"\' <>]*/dp/[A-Z0-9]{10}'),
+            'Nike': ('https://www.nike.com/fr/w/hommes-sweats-a-capuche-6riveznik1', r'https://www\.nike\.com/fr/t/[^"\' <>]+'),
+            'Jules': ('https://www.jules.com/fr-fr/', r'https://www\.jules\.com/fr-fr/p/[^"\' <>]+'),
+            'Primark': ('https://www.primark.com/fr-fr', r'https://www\.primark\.com/fr-fr/p/[^"\' <>]+'),
+          }
+          for name, (start, pat) in SITES.items():
+              c, h = get(start)
+              links = re.findall(pat, h)
+              if name == 'Amazon': links = ['https://www.amazon.fr' + l for l in links]
+              if not links: print(f'{name}: liste {c}, aucun article trouvé'); continue
+              u = links[0].split('"')[0]
+              c2, h2 = get(u)
+              print(f'{name}: article {c2} photo={"OUI " + og(h2) if og(h2) else "NON"}  ({u[:80]})')
+          PY
+          python3 t.py > journal.txt 2>&1; cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
