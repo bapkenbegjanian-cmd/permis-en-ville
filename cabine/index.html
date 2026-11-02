@@ -188,6 +188,7 @@ button:focus-visible, a:focus-visible, label:focus-visible { outline: 3px solid 
   <nav class="tabbar" aria-label="Espaces"><button type="button" data-tab="look" aria-pressed="true">✨ Mes looks</button><button type="button" data-tab="shop" aria-pressed="false">🛍️ En magasin</button></nav>
   <input id="photo" type="file" accept="image/*" hidden>
   <input id="garment" type="file" accept="image/*" capture="environment" hidden>
+  <input id="garment2" type="file" accept="image/*" hidden>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script type="module">
@@ -435,7 +436,7 @@ const S = [
       <label class="media" for="garment" tabindex="0" style="cursor:pointer;display:block">${state.garment ? frame(state.garment) : `<div class="frame"><div class="empty"><span class="plus">📷</span><b>Prendre l'habit en photo</b>Bien à plat ou sur un cintre, en entier</div></div>`}</label>
       <div class="tips"><span>👕 L'habit en entier</span><span>💡 Bonne lumière</span><span>🧺 Fond simple</span></div>
       <button class="cta" type="button" data-shoptry ${state.garment ? '' : 'disabled'}>🪄 Me l'essayer</button>
-      ${state.garment ? `<label class="link" for="garment" tabindex="0">Reprendre la photo</label>` : ''}
+      <div class="row"><label class="ghost" for="garment" tabindex="0">📷 Prendre une photo</label><label class="ghost" for="garment2" tabindex="0">🖼️ Capture d'écran</label></div>
       <div class="linkbox"><b>🔗 Ou colle le lien d'un habit</b><small>Vinted, Zara, Shein, Asos… la photo de l'article est récupérée.</small>
         <div class="lrow"><input id="glink" type="url" inputmode="url" placeholder="https://…" aria-label="Lien de l'habit"><button class="ghost" type="button" data-import>Importer</button></div>
         <p class="note" id="gmsg" role="status"></p></div>
@@ -589,16 +590,16 @@ $('#photo').addEventListener('change', e => {
     loadPose().catch(() => {}); loadSeg().catch(() => {}); loadFace().catch(() => {});
     if (state.step === 4) { state.step = 3; render(); runAnalysis(); } else render(); });
 });
-$('#garment').addEventListener('change', e => {
+['#garment', '#garment2'].forEach(id => $(id).addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
   shrink(f).then(d => { e.target.value = ''; if (!d) return; state.garment = d; state.gid++; render(); });
-});
+}));
 async function importLink() {
   const v = $('#glink').value.trim(), m = $('#gmsg'); if (!v) return;
   if (sb && !session) { state.step = 8; render(); return; }
   m.textContent = 'Recherche de la photo…';
   const r = await api({ action: 'preview', link: v }, 20000).catch(() => ({ error: 'pas de réponse' }));
-  if (!r.image) { m.textContent = `Impossible : ${r.error || 'erreur'}. Essaie une capture d'écran de l'article.`; return; }
+  if (!r.image) { m.textContent = r.error && /403|401/.test(r.error) ? 'Ce site bloque la lecture de ses pages. Fais une capture d\'écran de l\'article et touche « 🖼️ Capture d\'écran ».' : `Impossible : ${r.error || 'erreur'}. Fais une capture d'écran de l'article et touche « 🖼️ Capture d'écran ».`; return; }
   state.garment = r.image; state.gid++; render();
 }
 document.addEventListener('submit', async e => {
@@ -630,7 +631,7 @@ if (sb) {
   });
   if (authErr) { state.step = 8; setTimeout(() => { const m = $('#lmsg'); if (m) m.textContent = 'Le lien n\'a pas marché (' + authErr + '). Redemande un lien.'; }, 50); }
 }
-document.addEventListener('keydown', e => { if (e.target.matches('label[for=garment]') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); $('#garment').click(); } });
+document.addEventListener('keydown', e => { const l = e.target.closest && e.target.closest('label[for^=garment]'); if (l && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); $('#' + l.htmlFor).click(); } });
 render();
 </script>
 </body>
