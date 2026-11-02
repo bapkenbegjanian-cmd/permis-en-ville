@@ -501,7 +501,7 @@ const S = [
         <div><span>🔓</span><p style="margin:0"><b>Sans engagement</b>Résiliable à tout moment, en un clic.</p></div></div>
       ${state.quota && state.quota.pro ? '' : `<div class="plans">
         <a class="plan" ${payHref('mois')}><b>9,99 €</b><span>par mois</span></a>
-        <a class="plan best" ${payHref('an')}><em>−34 %</em><b>79 €</b><span>par an, soit 6,58 €/mois</span></a></div>
+        <a class="plan best" ${payHref('an')}><em>−33 %</em><b>79,99 €</b><span>par an, soit 6,67 €/mois</span></a></div>
         <p class="note">Paiement sécurisé par Stripe. Abonnement renouvelé automatiquement, résiliable à tout moment depuis « Gérer mon abonnement » : il s'arrête à la fin de la période payée. En t'abonnant, tu acceptes les <a href="cgv.html">conditions générales de vente</a>.</p>`}
       ${PAY.portail && session ? `<a class="ghost" href="${PAY.portail}?prefilled_email=${encodeURIComponent(session.user.email)}" target="_blank" rel="noopener">Gérer mon abonnement</a>` : ''}
       <button class="link" type="button" data-tab="look">Retour à l'accueil</button>
@@ -515,9 +515,9 @@ function payHref(k) {
   return `href="${PAY[k]}?client_reference_id=${session.user.id}&prefilled_email=${encodeURIComponent(session.user.email)}"`;
 }
 function account() {
-  if (!sb) return `<p class="note"><button class="link" type="button" data-plus>Cabine+ : essais illimités dès 6,58 €/mois</button></p>`;
+  if (!sb) return `<p class="note"><button class="link" type="button" data-plus>Cabine+ : essais illimités dès 6,67 €/mois</button></p>`;
   return session ? `<p class="note">Connecté : ${session.user.email.replace(/[<>&"]/g, '')} · <button class="link" type="button" data-plus>${state.quota && state.quota.pro ? 'Mon abonnement' : 'Cabine+'}</button> · <button class="link" type="button" data-logout>Se déconnecter</button></p>`
-    : `<p class="note"><button class="link" type="button" data-plus>Cabine+ : essais illimités dès 6,58 €/mois</button></p>`;
+    : `<p class="note"><button class="link" type="button" data-plus>Cabine+ : essais illimités dès 6,67 €/mois</button></p>`;
 }
 
 const wide = matchMedia('(min-width: 900px)');
