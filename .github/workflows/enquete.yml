@@ -9,41 +9,24 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Tester la lecture de vraies fiches produits
+      - name: Captures de Lookmiz
         timeout-minutes: 8
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e
-          cat > t.py <<'PY'
-          import re, urllib.request, urllib.parse
-          UA = {'User-Agent': 'Mozilla/5.0 (compatible; CabineBot/1.0; aperçu de lien)', 'Accept-Language': 'fr,en'}
-          def get(u):
-              try:
-                  r = urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=15); return r.status, r.read(800000).decode('utf8', 'ignore')
-              except urllib.error.HTTPError as e: return e.code, ''
-              except Exception as e: return 0, ''
-          def og(h):
-              m = re.search(r'<meta[^>]+(?:property|name)=.og:image.[^>]*content=.([^"\']+)', h, re.I) or re.search(r'<meta[^>]+content=.([^"\']+).[^>]*(?:property|name)=.og:image', h, re.I)
-              return m.group(1)[:90] if m else None
-          SITES = {
-            'Vinted': ('https://www.vinted.fr/catalog?search_text=robe', r'https://www\.vinted\.fr/items/\d+[^"\' <>]*'),
-            'Shein': ('https://fr.shein.com/', r'https://fr\.shein\.com/[^"\' <>]*-p-\d+[^"\' <>]*\.html'),
-            'Zalando': ('https://www.zalando.fr/robes/', r'https://www\.zalando\.fr/[a-z0-9-]+-[a-z0-9]{9}-[a-z0-9]{3}\.html'),
-            'Amazon': ('https://www.amazon.fr/s?k=pull+femme', r'/[^"\' <>]*/dp/[A-Z0-9]{10}'),
-            'Nike': ('https://www.nike.com/fr/w/hommes-sweats-a-capuche-6riveznik1', r'https://www\.nike\.com/fr/t/[^"\' <>]+'),
-            'Jules': ('https://www.jules.com/fr-fr/', r'https://www\.jules\.com/fr-fr/p/[^"\' <>]+'),
-            'Primark': ('https://www.primark.com/fr-fr', r'https://www\.primark\.com/fr-fr/p/[^"\' <>]+'),
-          }
-          for name, (start, pat) in SITES.items():
-              c, h = get(start)
-              links = re.findall(pat, h)
-              if name == 'Amazon': links = ['https://www.amazon.fr' + l for l in links]
-              if not links: print(f'{name}: liste {c}, aucun article trouvé'); continue
-              u = links[0].split('"')[0]
-              c2, h2 = get(u)
-              print(f'{name}: article {c2} photo={"OUI " + og(h2) if og(h2) else "NON"}  ({u[:80]})')
-          PY
-          python3 t.py > journal.txt 2>&1; cat journal.txt
+          mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
+          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
+          sleep 60
+          cat > t.js <<'JS'
+          const { chromium, devices } = require('playwright');
+          (async () => { const b = await chromium.launch();
+            for (const [n, o] of [['m', devices['iPhone 13']], ['d', { viewport: { width: 1440, height: 900 } }]]) {
+              const p = await (await b.newContext(o)).newPage(); const e = []; p.on('pageerror', x => e.push(x.message));
+              await p.goto('http://lookmiz.com/?v=' + Date.now()); await p.waitForTimeout(5000);
+              await p.screenshot({ path: `/tmp/e/${n}-accueil.png`, fullPage: true });
+              console.log(n, e, await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)); }
+            await b.close(); })();
+          JS
+          node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
