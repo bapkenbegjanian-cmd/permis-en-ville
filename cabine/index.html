@@ -207,7 +207,7 @@ const MORPHS = {
 };
 const OCCS = { soiree: ['🥂', 'Soirée', 'Chic et lumineux', '#2f6bff'], rdv: ['🌹', 'Rendez-vous', 'Séduisant, pas trop', '#ff8a5c'], travail: ['💼', 'Travail', 'Net et assuré', '#7b5cff'],
   mariage: ['💍', 'Mariage', 'Élégant', '#ffb37a'], sport: ['⚡', 'Sport', 'Beau et confortable', '#3dd6b5'], casual: ['☀️', 'Week-end', 'Facile et stylé', '#ffd23f'] };
-const state = { quota: null, step: 0, photo: null, o: null, g: null, m: null, info: [], pick: 0, mode: 'look', garment: null, gid: 0, saved: false };
+const state = { signup: true, quota: null, step: 0, photo: null, o: null, g: null, m: null, info: [], pick: 0, mode: 'look', garment: null, gid: 0, saved: false };
 try { const p = localStorage.getItem('cabine-photo'); if (p) { state.photo = p; state.saved = true; } } catch (_) {}
 const tries = {};
 const looks = () => DATA.L[state.g + '_' + state.o].map(id => ({ id, ...DATA.g[id] })).map(x => ({ ...x, fit: x.m.includes(state.m) ? 1 : 0 })).sort((a, b) => b.fit - a.fit);
@@ -466,12 +466,14 @@ const S = [
       ${account()}
     </section>`,
   () => `<section class="screen solo">
-      <h2>Ton compte <span class="hl">gratuit</span></h2>
-      <p class="sub">Crée ton compte en 10 secondes, sans mot de passe : tu reçois un lien par e-mail. <b>3 essais offerts.</b></p>
+      <h2>${state.signup ? 'Crée ton compte' : 'Connecte-toi'} <span class="hl">${state.signup ? 'gratuit' : ''}</span></h2>
+      <p class="sub">${state.signup ? 'Un e-mail et un mot de passe, c\'est tout. <b>3 essais offerts.</b>' : 'Avec l\'e-mail et le mot de passe de ton compte.'}</p>
       ${session ? `<button class="cta" type="button" data-go="1">Tu es connecté, continuer →</button>` : ''}
-      <form id="login" class="loginbox"><input id="email" type="email" required autocomplete="email" placeholder="ton@email.com" aria-label="Adresse e-mail">
-        <input id="pass" type="password" autocomplete="current-password" placeholder="Mot de passe (si tu en as un)" aria-label="Mot de passe">
-        <button class="cta" type="submit">Recevoir mon lien</button><p class="note" id="lmsg" role="status"></p></form>
+      <form id="login" class="loginbox">
+        <input id="email" type="email" required autocomplete="email" placeholder="ton@email.com" aria-label="Adresse e-mail">
+        <input id="pass" type="password" required minlength="6" autocomplete="${state.signup ? 'new-password' : 'current-password'}" placeholder="${state.signup ? 'Choisis un mot de passe (6 caractères min.)' : 'Ton mot de passe'}" aria-label="Mot de passe">
+        <button class="cta" type="submit">${state.signup ? 'Créer mon compte' : 'Se connecter'}</button><p class="note" id="lmsg" role="status"></p></form>
+      <button class="link" type="button" data-switch>${state.signup ? 'J\'ai déjà un compte' : 'Pas encore de compte ? Crée-le'}</button>
       <p class="note">Ton e-mail sert seulement à ton compte. Ta photo reste sur ton téléphone, sauf au moment de l'essayage.</p>
     </section>`,
   () => `<section class="screen">
@@ -561,6 +563,7 @@ document.addEventListener('click', e => {
   else if ('forget' in t.dataset) { try { localStorage.removeItem('cabine-photo'); } catch (_) {} state.photo = null; state.saved = false; }
   else if (t.dataset.mode) { state.mode = t.dataset.mode; state.step = 1; }
   else if (t.dataset.start) { state.mode = t.dataset.start; if (sb && !session) { try { localStorage.setItem('cabine-next', state.mode); } catch (_) {} state.step = 8; } else state.step = state.mode === 'shop' && state.photo ? 5 : 1; }
+  else if ('switch' in t.dataset) { state.signup = !state.signup; }
   else if ('logout' in t.dataset) { sb.auth.signOut(); session = null; state.quota = null; }
   else if ('trylook' in t.dataset) { const l = looks()[state.pick]; tryOn(l); if ((tries[tkey(l)] || {}).st === 'quota') { state.step = 9; render(); } else render(true); return; }
   else if ('import' in t.dataset) { importLink(); return; }
@@ -598,17 +601,17 @@ async function importLink() {
   if (!r.image) { m.textContent = `Impossible : ${r.error || 'erreur'}. Essaie une capture d'écran de l'article.`; return; }
   state.garment = r.image; state.gid++; render();
 }
-document.addEventListener('input', e => { if (e.target.id === 'pass') e.target.form.querySelector('.cta').textContent = e.target.value ? 'Se connecter' : 'Recevoir mon lien'; });
 document.addEventListener('submit', async e => {
   if (e.target.id !== 'login') return; e.preventDefault();
   const m = $('#lmsg'), b = e.target.querySelector('button'); b.disabled = true;
-  const email = $('#email').value.trim(), pass = $('#pass').value;
-  if (pass) {   // compte avec mot de passe : connexion directe, sans e-mail
-    const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-    m.textContent = error ? 'E-mail ou mot de passe incorrect.' : '✅ Connecté !';
+  const email = $('#email').value.trim(), password = $('#pass').value;
+  if (state.signup) {
+    const { data, error } = await sb.auth.signUp({ email, password });
+    m.textContent = error ? (/registered|already/i.test(error.message) ? 'Ce compte existe déjà : connecte-toi.' : /password/i.test(error.message) ? 'Mot de passe trop court (6 caractères minimum).' : 'Création impossible : ' + error.message)
+      : data.session ? '✅ Compte créé !' : 'Compte créé, mais il doit être confirmé par e-mail.';
   } else {
-    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
-    m.textContent = error ? (/rate limit/i.test(error.message) ? 'Trop de demandes de lien pour le moment. Réessaie dans une heure.' : `Envoi impossible : ${error.message}`) : '📩 C\'est envoyé ! Ouvre l\'e-mail sur ce téléphone et touche le lien.';
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    m.textContent = error ? 'E-mail ou mot de passe incorrect.' : '✅ Connecté !';
   }
   b.disabled = false;
 });
