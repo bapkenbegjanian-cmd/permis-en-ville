@@ -96,8 +96,9 @@ a.cta[aria-disabled] { opacity: .5; pointer-events: none; }
 .dlabel { font: 800 15px var(--display); }
 .phone { width: min(78%, 290px); aspect-ratio: 390 / 844; border-radius: 34px; padding: 8px; background: var(--ink); box-shadow: 0 24px 50px rgba(18,20,30,.28); }
 .phone video { width: 100%; height: 100%; display: block; border-radius: 27px; object-fit: cover; background: #eef1f5; }
-.steps3 .mephoto { grid-template-columns: 64px 1fr; }
-.mephoto img { width: 64px; height: 84px; object-fit: cover; border-radius: 12px; }
+.mephoto { display: grid; grid-template-columns: 54px 1fr; gap: 12px; align-items: center; background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 18px; padding: 10px 12px; font-size: 14px; }
+.mephoto b { display: block; font: 800 15px var(--display); }
+.mephoto img { width: 54px; height: 70px; object-fit: cover; border-radius: 12px; }
 .tabbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); z-index: 20; display: flex; gap: 4px; padding: 5px; border-radius: 20px;
   background: rgba(18,20,30,.92); backdrop-filter: blur(14px); box-shadow: 0 14px 34px rgba(18,20,30,.3); }
 .tabbar button { border: 0; background: none; color: rgba(255,255,255,.65); font-weight: 800; font-size: 14px; padding: 11px 18px; border-radius: 15px; cursor: pointer; white-space: nowrap; }
@@ -490,15 +491,16 @@ const S = [
     </section>`;
   },
   () => `<section class="screen">
-      <div class="shophero media"><span class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff"><i></i>En boutique</span>
-        <h2>Essaie sans <span class="hl">cabine</span></h2><p class="sub" style="color:#c9cdd8">Tu vois un habit en magasin ? Prends-le en photo et vois-le sur toi, sans faire la queue.</p></div>
-      <div class="steps3">
-        ${state.photo ? `<div class="mephoto"><img src="${state.photo}" alt="Ta photo"><p style="margin:0"><b>✅ Ta photo est prête</b>Elle reste sur ton téléphone.<br><label class="link" for="photo" tabindex="0">Changer de photo</label></p></div>`
-          : `<div><span>🧍</span><p style="margin:0"><b>Ta photo</b>Une seule fois, elle reste sur ton téléphone.</p></div>`}
-        <div><span>📷</span><p style="margin:0"><b>L'habit</b>Photographie-le en entier, sur le cintre ou le mannequin.</p></div>
-        <div><span>🪞</span><p style="margin:0"><b>Sur toi</b>En 15 secondes, tu te vois avec.</p></div>
-      </div>
-      <button class="cta" type="button" data-start="shop">${state.photo ? '👕 Choisir un habit' : '📷 Commencer'}</button>
+      <span class="pill"><i></i>En boutique ou en ligne</span>
+      <h1>Essaie sans <span class="hl">cabine.</span></h1>
+      <p class="sub">Un habit te plaît en magasin ou sur un site ? Prends-le en photo, fais une capture ou colle son lien : tu le vois sur toi en 15 secondes.</p>
+      <div class="showcase media">${['95', '14', '183'].map((id, i) => `<div class="card c${i}"><img src="${pic(DATA.g[id], 500)}" alt="${DATA.g[id].n}"></div>`).join('')}
+        <span class="float a">📷 Photo de l'habit</span><span class="float b">🔗 Ou son lien</span><span class="float c">🪞 Sur ta propre photo</span></div>
+      <button class="cta" type="button" data-start="shop">👕 Choisir un habit</button>
+      ${state.photo ? `<div class="mephoto"><img src="${state.photo}" alt="Ta photo"><p style="margin:0"><b>✅ Ta photo est prête</b>Elle reste sur ton téléphone. <label class="link" for="photo" tabindex="0">Changer</label></p></div>`
+        : `<label class="ghost" for="photo" tabindex="0">🧍 Ajouter ma photo d'abord</label>`}
+      <div class="marquee" aria-hidden="true"><div>${Array(2).fill('Zara <b>✦</b> Vinted <b>✦</b> Shein <b>✦</b> H&amp;M <b>✦</b> Zalando <b>✦</b> En boutique <b>✦</b>').join(' ')}</div></div>
+      <div class="how"><div><span>🧍</span>Ta photo</div><div><span>📷</span>L'habit</div><div><span>🪞</span>Sur toi</div></div>
       ${account()}
     </section>`,
   () => `<section class="screen solo">
