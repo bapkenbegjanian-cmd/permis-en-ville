@@ -47,11 +47,11 @@ jobs:
           node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
           V=$(ls /tmp/pw/v/*.webm | head -1); cp "$V" /tmp/e/brut.webm
           T=$(grep '^{' /tmp/e/journal.txt | head -1)
-          W=$(echo "$T" | python3 -c "import json,sys; print(json.load(sys.stdin)['wait'])"); R=$(echo "$T" | python3 -c "import json,sys; print(json.load(sys.stdin)['result'])"); A=$(echo "$T" | python3 -c "import json,sys; print(json.load(sys.stdin)['all'])")
+          eval $(echo "$T" | python3 -c "import json,sys; t=json.load(sys.stdin); print(f\"W={t['wait']} R={t['result']} R2={t['result']+3.5} A={t['all']}\")")
           # on accélère les moments d'attente (essayage en cours)
-          ffmpeg -y -loglevel error -i /tmp/e/brut.webm -filter_complex "[0:v]trim=0:$W,setpts=PTS-STARTPTS[a];[0:v]trim=$W:$R,setpts=(PTS-STARTPTS)/8[b];[0:v]trim=$R:$R+3.5,setpts=PTS-STARTPTS[c];[0:v]trim=$R+3.5:$A,setpts=(PTS-STARTPTS)/8[d];[0:v]trim=$A,setpts=PTS-STARTPTS[e];[a][b][c][d][e]concat=n=5:v=1[out]" -map "[out]" -c:v libx264 -preset slow -crf 26 -pix_fmt yuv420p -movflags +faststart -an /tmp/e/demo.mp4 >> /tmp/e/journal.txt 2>&1
+          ffmpeg -y -loglevel error -i /tmp/e/brut.webm -filter_complex "[0:v]trim=0:$W,setpts=PTS-STARTPTS[a];[0:v]trim=$W:$R,setpts=(PTS-STARTPTS)/8[b];[0:v]trim=$R:$R2,setpts=PTS-STARTPTS[c];[0:v]trim=$R2:$A,setpts=(PTS-STARTPTS)/8[d];[0:v]trim=$A,setpts=PTS-STARTPTS[e];[a][b][c][d][e]concat=n=5:v=1[out]" -map "[out]" -c:v libx264 -preset slow -crf 26 -pix_fmt yuv420p -movflags +faststart -an /tmp/e/demo.mp4 >> /tmp/e/journal.txt 2>&1
           ffmpeg -y -loglevel error -ss 2 -i /tmp/e/demo.mp4 -frames:v 1 /tmp/e/demo.jpg
-          ls -la /tmp/e >> /tmp/e/journal.txt; rm -f /tmp/e/brut.webm
+          ls -la /tmp/e >> /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
