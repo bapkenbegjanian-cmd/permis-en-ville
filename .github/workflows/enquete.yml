@@ -9,22 +9,25 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Captures de Lookmiz
+      - name: Test retour arriere Lookmiz
         timeout-minutes: 8
         run: |
           set +e
           mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
           npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
-          sleep 60
+          curl -sL -o moi.jpg 'https://images.unsplash.com/photo-1715541448446-3369e1cc0ee9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8ZmFzaGlvbiUyMG1vZGVsJTIwZnVsbCUyMGJvZHl8ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0&w=900&q=85&fm=jpg'
           cat > t.js <<'JS'
           const { chromium, devices } = require('playwright');
-          (async () => { const b = await chromium.launch();
-            for (const [n, o] of [['m', devices['iPhone 13']], ['d', { viewport: { width: 1440, height: 900 } }]]) {
-              const p = await (await b.newContext(o)).newPage(); const e = []; p.on('pageerror', x => e.push(x.message));
-              await p.goto('http://lookmiz.com/?v=' + Date.now()); await p.waitForTimeout(6000);
-              await p.screenshot({ path: `/tmp/e/${n}-accueil.png`, fullPage: true });
-              console.log(n, e, await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)); }
-            await b.close(); })();
+          (async () => { const b = await chromium.launch(); const ctx = await b.newContext(devices['iPhone 13']); ctx.setDefaultTimeout(15000); const p = await ctx.newPage();
+            const h = async () => (await p.locator('.choices').count()) ? 'ACCUEIL' : (await p.textContent('h2').catch(() => '?'));
+            const hist = async () => p.evaluate(() => history.length + ' etat=' + JSON.stringify(history.state));
+            await p.goto('https://example.com'); await p.goto('http://lookmiz.com/?v=' + Date.now()); await p.waitForTimeout(3000);
+            await p.click('[data-start="look"]'); await p.fill('#email', 'back.' + Date.now() + '@gmail.com'); await p.fill('#pass', 'Back-' + Date.now()); await p.click('#login .cta'); await p.waitForTimeout(3500);
+            console.log('apres connexion:', await h(), await hist());
+            await p.setInputFiles('#photo', 'moi.jpg'); await p.waitForTimeout(1500); console.log('photo:', await h(), await hist());
+            await p.click('[data-go="2"]'); await p.waitForTimeout(800); console.log('occasion:', await h(), await hist());
+            for (let i = 1; i <= 6; i++) { await p.goBack().catch(() => {}); await p.waitForTimeout(1200); console.log('retour', i, ':', p.url().includes('example') ? 'QUITTE' : await h(), p.url().includes('example') ? '' : await hist()); if (p.url().includes('example')) break; }
+            await b.close(); })().catch(e => console.log('ECHEC', e.message));
           JS
           node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
