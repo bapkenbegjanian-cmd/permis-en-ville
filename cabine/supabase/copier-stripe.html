@@ -26,7 +26,7 @@ Deno.serve(async (req) =&gt; {
   // Premier paiement : on relie le compte Cabine (client_reference_id) à l&#x27;abonnement Stripe
   if (event.type === &#x27;checkout.session.completed&#x27; &amp;&amp; o.client_reference_id) {
     await admin.from(&#x27;abonnes&#x27;).upsert({ user_id: o.client_reference_id, stripe_customer: o.customer, stripe_sub: o.subscription,
-      // durée payée : un an pour la formule annuelle (80 €), sinon un mois ; Stripe la précise ensuite à chaque renouvellement
+      // durée payée : un an pour la formule annuelle (79 €), sinon un mois ; Stripe la précise ensuite à chaque renouvellement
       fin: new Date(Date.now() + ((o.amount_total ?? 0) &gt;= 5000 ? 367 : 32) * 86400000).toISOString() });
   }
   // Renouvellement, changement ou résiliation : la date de fin suit celle de Stripe
