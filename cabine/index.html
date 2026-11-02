@@ -154,6 +154,30 @@ button:focus-visible, a:focus-visible, label:focus-visible { outline: 3px solid 
 .credit a { color: inherit; }
 .link { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; justify-self: center; font-size: 14px; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition: none !important; } .opt { opacity: 1; transform: none; } }
+
+/* Ordinateur : deux colonnes, visuel à gauche, contenu à droite */
+.col { display: grid; gap: 18px; min-width: 0; align-content: start; }
+@media (min-width: 900px) {
+  .app { max-width: 1140px; padding-left: 40px; padding-right: 40px; }
+  .top { grid-template-columns: 44px auto 1fr; gap: 16px; margin-bottom: 26px; }
+  .logo { grid-column: 2; text-align: left; font-size: 30px; }
+  .tabbar { top: 18px; bottom: auto; left: auto; right: max(24px, calc((100vw - 1140px) / 2 + 40px)); transform: none; }
+  .app { padding-bottom: 48px !important; }
+  .screen.split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 64px; align-items: start; }
+  .screen.split > .media { position: sticky; top: 24px; width: 100%; max-width: 500px; justify-self: center; }
+  .screen.split > .showcase { height: 520px; max-width: 520px; }
+  .screen.split .col { padding-top: 10px; }
+  .screen.solo { max-width: 760px; margin: 0 auto; width: 100%; }
+  .screen.solo .options { grid-template-columns: repeat(3, 1fr); }
+  h1 { font-size: 68px; }
+  h2 { font-size: 46px; }
+  .sub { font-size: 18px; }
+  .cta, .ghost { max-width: 460px; }
+  .row .cta, .row .ghost { max-width: none; }
+  .marquee { margin: 6px 0; border-radius: 14px; }
+  .opt { padding: 24px 18px; }
+  .opt:hover { transform: translateY(-3px); }
+}
 </style>
 </head>
 <body>
@@ -361,7 +385,7 @@ const S = [
       <span class="pill"><i></i>Essayage virtuel, en 20 secondes</span>
       <h1>Essaie tout. <span class="hl">Sur toi.</span></h1>
       <p class="sub">Une photo suffit. Cabine lit ta silhouette, choisit les pièces qui te vont et te les fait porter.</p>
-      <div class="showcase">${showIds.map((id, i) => `<div class="card c${i}"><img src="${pic(DATA.g[id], 500)}" alt="${DATA.g[id].n}"></div>`).join('')}
+      <div class="showcase media">${showIds.map((id, i) => `<div class="card c${i}"><img src="${pic(DATA.g[id], 500)}" alt="${DATA.g[id].n}"></div>`).join('')}
         <span class="float a">✨ Analyse de silhouette</span><span class="float b">👔 3 looks pour toi</span><span class="float c">🪞 Sur ta propre photo</span></div>
       <button class="cta" type="button" data-start="look">✨ Trouver mon look</button>
       <button class="ghost" type="button" data-tab="shop">🛍️ En boutique ? Essaie sans cabine</button>
@@ -372,17 +396,17 @@ const S = [
   () => `<section class="screen">
       <h2>D'abord, <span class="hl">ta photo</span></h2>
       <p class="sub">Elle sert seulement à t'analyser et t'habiller.</p>
-      <label for="photo" tabindex="0" style="cursor:pointer;display:block">${state.photo ? frame(state.photo) : `<div class="frame"><div class="empty"><span class="plus">+</span><b>Ajoute ta photo</b>Touche ici pour choisir une photo</div></div>`}</label>
+      <label class="media" for="photo" tabindex="0" style="cursor:pointer;display:block">${state.photo ? frame(state.photo) : `<div class="frame"><div class="empty"><span class="plus">+</span><b>Ajoute ta photo</b>Touche ici pour choisir une photo</div></div>`}</label>
       <div class="tips"><span>🧍 En entier</span><span>👀 De face</span><span>💡 Bien éclairée</span></div>
       <button class="cta" type="button" data-go="${state.mode === 'shop' ? 5 : 2}" ${state.photo ? '' : 'disabled'}>Continuer <span>→</span></button>
       ${state.photo && state.saved ? `<p class="note">📱 Ta photo est gardée sur ce téléphone uniquement. <button class="link" type="button" data-forget>L'effacer</button></p>` : ''}
       ${state.photo ? `<label class="link" for="photo" tabindex="0">Changer de photo</label>` : ''}
     </section>`,
-  () => `<section class="screen"><h2>Pour quelle <span class="hl">occasion</span> ?</h2>
+  () => `<section class="screen solo"><h2>Pour quelle <span class="hl">occasion</span> ?</h2>
       <div class="options">${Object.entries(OCCS).map(([k, [e, t, d, col]], i) => `<button class="opt" type="button" data-occ="${k}" style="--c:${col};animation-delay:${i * 60}ms"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div></section>`,
   () => `<section class="screen">
       <h2>Analyse de <span class="hl">ta silhouette</span></h2>
-      <div class="frame scan" id="sframe"><div class="blur" style="background-image:url('${state.photo}')"></div><img src="${state.photo}" alt="Ta photo" id="simg"><canvas id="cv"></canvas></div>
+      <div class="frame scan media" id="sframe"><div class="blur" style="background-image:url('${state.photo}')"></div><img src="${state.photo}" alt="Ta photo" id="simg"><canvas id="cv"></canvas></div>
       <div class="log" id="log"><p class="wait">Lecture de ta photo…</p></div>
     </section>`,
   () => {
@@ -392,7 +416,7 @@ const S = [
       <h2>Tes 3 <span class="hl">looks</span></h2>
       <div class="chips">${state.info.map(x => `<span>${x}</span>`).join('')}</div>
       <div class="tabs">${L.map((x, i) => { const s = tries[tkey(x)] || {}; return `<button type="button" data-pick="${i}" aria-pressed="${i === state.pick}">Look ${i + 1}${s.st === 'run' ? '<span class="ld"></span>' : ''}</button>`; }).join('')}</div>
-      <div class="frame ${t.st === 'run' ? 'scan' : ''}"><div class="blur" style="background-image:url('${src}')"></div><img src="${src}" alt="${t.st === 'ok' ? 'Toi avec ' + l.n : 'Ta photo'}" class="${t.st === 'ok' ? 'reveal' : ''}">
+      <div class="frame media ${t.st === 'run' ? 'scan' : ''}"><div class="blur" style="background-image:url('${src}')"></div><img src="${src}" alt="${t.st === 'ok' ? 'Toi avec ' + l.n : 'Ta photo'}" class="${t.st === 'ok' ? 'reveal' : ''}">
         <span class="badge">${t.st === 'run' ? '🪄 Essayage en cours…' : t.st === 'ok' ? `✨ Toi · Look ${state.pick + 1}` : t.st === 'err' ? 'Essayage impossible' : '👗 Pas encore essayé'}</span></div>
       ${!t.st ? `<button class="cta" type="button" data-trylook>✨ Me voir avec ce look</button>` : ''}
       ${quotaPill()}
@@ -408,7 +432,7 @@ const S = [
   () => `<section class="screen">
       <h2>Photographie <span class="hl">l'habit</span></h2>
       <p class="sub">En boutique, sur le cintre ou le mannequin. Tu le vois sur ta photo.</p>
-      <label for="garment" tabindex="0" style="cursor:pointer;display:block">${state.garment ? frame(state.garment) : `<div class="frame"><div class="empty"><span class="plus">📷</span><b>Prendre l'habit en photo</b>Bien à plat ou sur un cintre, en entier</div></div>`}</label>
+      <label class="media" for="garment" tabindex="0" style="cursor:pointer;display:block">${state.garment ? frame(state.garment) : `<div class="frame"><div class="empty"><span class="plus">📷</span><b>Prendre l'habit en photo</b>Bien à plat ou sur un cintre, en entier</div></div>`}</label>
       <div class="tips"><span>👕 L'habit en entier</span><span>💡 Bonne lumière</span><span>🧺 Fond simple</span></div>
       <button class="cta" type="button" data-shoptry ${state.garment ? '' : 'disabled'}>🪄 Me l'essayer</button>
       ${state.garment ? `<label class="link" for="garment" tabindex="0">Reprendre la photo</label>` : ''}
@@ -421,7 +445,7 @@ const S = [
     const t = tries['shop' + state.gid] || {}, src = t.st === 'ok' ? t.url : state.photo;
     return `<section class="screen">
       <h2>${t.st === 'ok' ? 'Et voilà, <span class="hl">sur toi</span>' : 'Essayage <span class="hl">en cours</span>'}</h2>
-      <div class="frame ${t.st === 'run' ? 'scan' : ''}"><div class="blur" style="background-image:url('${src}')"></div><img src="${src}" alt="${t.st === 'ok' ? 'Toi avec l\'habit' : 'Ta photo'}" class="${t.st === 'ok' ? 'reveal' : ''}">
+      <div class="frame media ${t.st === 'run' ? 'scan' : ''}"><div class="blur" style="background-image:url('${src}')"></div><img src="${src}" alt="${t.st === 'ok' ? 'Toi avec l\'habit' : 'Ta photo'}" class="${t.st === 'ok' ? 'reveal' : ''}">
         <span class="badge">${t.st === 'run' ? '🪄 Essayage en cours… environ 15 s' : t.st === 'ok' ? '✨ Toi avec cet habit' : 'Essayage impossible'}</span></div>
       ${t.st === 'err' ? `<p class="note">Ça n'a pas marché (${t.why}). Reprends l'habit en entier, bien éclairé. <button class="link" type="button" data-shoptry>Réessayer</button></p>` : ''}
       <div class="piece"><div class="ph"><img src="${state.garment}" alt="L'habit photographié"></div><div><b>L'habit de la boutique</b><small>Tu peux l'essayer avec une autre photo de toi, ou essayer un autre habit.</small></div></div>
@@ -430,7 +454,7 @@ const S = [
     </section>`;
   },
   () => `<section class="screen">
-      <div class="shophero"><span class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff"><i></i>En boutique</span>
+      <div class="shophero media"><span class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff"><i></i>En boutique</span>
         <h2>Essaie sans <span class="hl">cabine</span></h2><p class="sub" style="color:#c9cdd8">Tu vois un habit en magasin ? Prends-le en photo et vois-le sur toi, sans faire la queue.</p></div>
       <div class="steps3">
         <div><span>🧍</span><p style="margin:0"><b>Ta photo</b>Une seule fois, elle reste sur ton téléphone.</p></div>
@@ -441,7 +465,7 @@ const S = [
       ${state.photo ? `<label class="link" for="photo" tabindex="0">Changer ma photo</label>` : ''}
       ${account()}
     </section>`,
-  () => `<section class="screen">
+  () => `<section class="screen solo">
       <h2>Ton compte <span class="hl">gratuit</span></h2>
       <p class="sub">Crée ton compte en 10 secondes, sans mot de passe : tu reçois un lien par e-mail. <b>3 essais offerts.</b></p>
       ${session ? `<button class="cta" type="button" data-go="1">Tu es connecté, continuer →</button>` : ''}
@@ -465,9 +489,17 @@ function account() {
   return session ? `<p class="note">Connecté : ${session.user.email.replace(/[<>&"]/g, '')} · <button class="link" type="button" data-logout>Se déconnecter</button></p>` : '';
 }
 
+const wide = matchMedia('(min-width: 900px)');
+wide.addEventListener('change', () => render(true));
 function render(soft) {
   const y = scrollY;
   $('#app').innerHTML = S[state.step]();
+  const sc = $('#app .screen'), m = sc && sc.querySelector(':scope > .media');
+  if (wide.matches && m && !sc.classList.contains('solo')) {
+    const col = document.createElement('div'); col.className = 'col';
+    [...sc.children].filter(c => c !== m).forEach(c => col.appendChild(c));
+    sc.appendChild(col); sc.classList.add('split');
+  }
   if (soft) { const sc = $('#app .screen'); if (sc) sc.style.animation = 'none'; scrollTo(0, y); } else scrollTo(0, 0);
   $('#back').hidden = state.step === 0 || state.step === 3 || state.step === 7;
   document.querySelectorAll('[data-tab]').forEach(b => b.closest('.tabbar') && b.setAttribute('aria-pressed', b.dataset.tab === state.mode));
