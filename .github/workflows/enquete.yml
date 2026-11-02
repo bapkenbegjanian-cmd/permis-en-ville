@@ -9,7 +9,7 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Images colorees (Unsplash)
+      - name: Images mode avec personnes (Unsplash)
         timeout-minutes: 8
         env:
           KEY: ${{ secrets.UNSPLASH_KEY }}
@@ -20,18 +20,18 @@ jobs:
           cat > get.py <<'PY'
           import json, os, urllib.request, urllib.parse
           out = []
-          for q in ['colorful clothes rack', 'neon clothing store', 'colorful sneakers', 'pastel wardrobe', 'vibrant fashion flat lay', 'colorful fashion boutique', 'pink clothing rack', 'colorful dresses hanging']:
-              u = 'https://api.unsplash.com/search/photos?per_page=8&orientation=portrait&content_filter=high&query=' + urllib.parse.quote(q)
+          for q in ['fashion model colorful background', 'streetwear model studio', 'fashion editorial color', 'man fashion colorful wall', 'woman fashion pastel background', 'fashion couple stylish', 'model bright outfit studio', 'fashion photoshoot vibrant']:
+              u = 'https://api.unsplash.com/search/photos?per_page=8&orientation=portrait&content_filter=high&order_by=relevant&query=' + urllib.parse.quote(q)
               r = json.load(urllib.request.urlopen(urllib.request.Request(u, headers={'Authorization': 'Client-ID ' + os.environ['KEY'], 'Accept-Version': 'v1'}), timeout=30))
-              out += [{'q': q, 'raw': p['urls']['raw'], 'by': p['user']['name'], 'user': p['user']['links']['html']} for p in r['results']]
-          json.dump(out, open('/tmp/e/couleurs.json', 'w'), indent=1)
-          open('sheet.html', 'w').write('<body style="margin:0;font:12px sans-serif;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;width:1600px">' + ''.join(f'<div><img src="{p["raw"]}&w=200&h=260&fit=crop&q=60" style="width:100%;display:block"><b>{i}</b></div>' for i, p in enumerate(out)))
+              out += [{'q': q, 'raw': p['urls']['raw'], 'by': p['user']['name'], 'user': p['user']['links']['html']} for p in r['results'] if not (p.get('premium') or p.get('plus'))]
+          json.dump(out, open('/tmp/e/modeles.json', 'w'), indent=1)
+          open('sheet.html', 'w').write('<body style="margin:0;font:12px sans-serif;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;width:1600px">' + ''.join(f'<div><img src="{p["raw"]}&w=200&h=260&fit=crop&crop=faces&q=60" style="width:100%;display:block"><b>{i}</b></div>' for i, p in enumerate(out)))
           PY
           python3 get.py
           cat > t.js <<'JS'
           const { chromium } = require('playwright');
           (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1600, height: 900 } });
-            await p.goto('file:///tmp/pw/sheet.html'); await p.waitForTimeout(14000); await p.screenshot({ path: '/tmp/e/couleurs.png', fullPage: true }); await b.close(); })();
+            await p.goto('file:///tmp/pw/sheet.html'); await p.waitForTimeout(14000); await p.screenshot({ path: '/tmp/e/modeles.png', fullPage: true }); await b.close(); })();
           JS
           node t.js > /tmp/e/journal.txt 2>&1; echo fini >> /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
