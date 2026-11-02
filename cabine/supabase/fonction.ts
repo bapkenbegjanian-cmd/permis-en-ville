@@ -22,6 +22,25 @@ async function quota(uid: string) {
   return { used, free: FREE, pro, groups };
 }
 
+// Contenu d'une balise <meta property="..."> (écrit sans expressions régulières à guillemets, pour survivre aux copier-coller)
+function metaContent(html: string, name: string) {
+  const low = html.toLowerCase();
+  let i = 0;
+  while ((i = low.indexOf('<meta', i)) !== -1) {
+    const end = low.indexOf('>', i);
+    if (end === -1) break;
+    const tag = html.slice(i, end), tl = low.slice(i, end);
+    const hit = ['property=', 'name='].some(k => [String.fromCharCode(34), String.fromCharCode(39)].some(q => tl.includes(k + q + name + q)));
+    const c = tl.indexOf('content=');
+    if (hit && c !== -1) {
+      const q = tag.charAt(c + 8), stop = tag.indexOf(q, c + 9);
+      if (stop !== -1) return tag.slice(c + 9, stop);
+    }
+    i = end;
+  }
+  return '';
+}
+
 // Lit la photo d'aperçu (og:image) d'une page produit, comme le font les messageries pour les liens partagés
 async function preview(link: string) {
   let u: URL;
@@ -32,7 +51,7 @@ async function preview(link: string) {
     const r = await fetch(u, { signal: c.signal, redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CabineBot/1.0; aperçu de lien)', 'Accept-Language': 'fr,en' } });
     if (!r.ok) return { error: 'site inaccessible (' + r.status + ')' };
     const html = (await r.text()).slice(0, 600000);
-    const meta = (p: string) => (html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${p}["'][^>]*content=["']([^"']+)`, 'i')) || html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${p}["']`, 'i')) || [])[1];
+    const meta = (p: string) => metaContent(html, p);
     const img = meta('og:image') || meta('og:image:url') || meta('twitter:image');
     if (!img) return { error: 'pas de photo trouvée sur cette page' };
     return { image: new URL(img.replace(/&amp;/g, '&'), u).href, title: (meta('og:title') || '').replace(/&amp;/g, '&').slice(0, 120) };
@@ -50,7 +69,7 @@ Deno.serve(async (req) => {
   if (action === 'quota') { const { groups, ...q } = await quota(user.id); return json(q); }
   if (action === 'preview') return json(await preview(String(link || '')));
 
-  const auth = { Authorization: `Bearer ${fashnKey}`, 'Content-Type': 'application/json' };
+  const auth = { Authorization: 'Bearer ' + fashnKey, 'Content-Type': 'application/json' };
   if (action === 'run') {
     const { groups, ...q } = await quota(user.id), g = /^[\w-]{4,60}$/.test(group || '') ? group : null;
     const inGroup = g ? groups.get(g) ?? 0 : 0;
@@ -63,7 +82,7 @@ Deno.serve(async (req) => {
     return json(out, r.status);
   }
   if (action === 'status' && /^[\w-]+$/.test(id || '')) {
-    const r = await fetch(`https://api.fashn.ai/v1/status/${id}`, { headers: auth });
+    const r = await fetch('https://api.fashn.ai/v1/status/' + id, { headers: auth });
     return json(await r.json().catch(() => ({})), r.status);
   }
   return json({ error: 'demande invalide' }, 400);
