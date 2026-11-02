@@ -9,21 +9,48 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Verifier la video sur Cabine
+      - name: Audit complet de Cabine
         run: |
           set +e
           mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
-          { curl -s "https://bapkenbegjanian-cmd.github.io/permis-en-ville/cabine/?v=$RANDOM" | grep -o 'demo.mp4[^>]*' | head -1
-            curl -s -o /dev/null -w "mp4 %{http_code} %{content_type} %{size_download}\n" https://bapkenbegjanian-cmd.github.io/permis-en-ville/cabine/demo.mp4; } > /tmp/e/journal.txt
-          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps webkit >/dev/null 2>&1
+          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
+          curl -sL -o moi.jpg 'https://images.unsplash.com/photo-1715541448446-3369e1cc0ee9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8ZmFzaGlvbiUyMG1vZGVsJTIwZnVsbCUyMGJvZHl8ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0&w=900&q=85&fm=jpg'; curl -sL -o habit.jpg 'https://images.unsplash.com/photo-1772571157276-a76fa80f2a1a?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8N3x8cmVkJTIwZHJlc3MlMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg1fDA&ixlib=rb-4.1.0&w=900&q=85&fm=jpg'
           cat > t.js <<'JS'
-          const { webkit, devices } = require('playwright');
-          (async () => { const b = await webkit.launch(); const p = await (await b.newContext({ ...devices['iPhone 13'] })).newPage();
-            await p.goto('https://bapkenbegjanian-cmd.github.io/permis-en-ville/cabine/?v=' + Date.now()); await p.waitForTimeout(6000);
-            const v = await p.evaluate(() => { const x = document.querySelector('.demo video'); return x ? { ready: x.readyState, paused: x.paused, t: x.currentTime, err: x.error && x.error.code } : null; });
-            console.log('video', JSON.stringify(v)); await p.locator('.demo').screenshot({ path: '/tmp/e/vid.png' }).catch(e => console.log(e.message)); await b.close(); })();
+          const { chromium, devices } = require('playwright');
+          const URL = 'https://bapkenbegjanian-cmd.github.io/permis-en-ville/cabine/?v=' + Date.now();
+          (async () => {
+            const b = await chromium.launch();
+            for (const [dev, opts] of [['m', devices['iPhone 13']], ['d', { viewport: { width: 1440, height: 900 } }]]) {
+              const p = await (await b.newContext(opts)).newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+              let n = 0; const snap = async name => { await p.waitForTimeout(1200); await p.screenshot({ path: `/tmp/e/${dev}${String(++n).padStart(2, '0')}-${name}.png`, fullPage: true });
+                const info = await p.evaluate(() => ({ wide: document.documentElement.scrollWidth > innerWidth, back: !document.querySelector('#back').hidden, h: (document.querySelector('h1,h2') || {}).textContent }));
+                console.log(dev, n, name, JSON.stringify(info)); };
+              await p.goto(URL); await snap('accueil');
+              await p.click('.tabbar [data-tab="shop"]'); await snap('magasin');
+              await p.click('[data-plus]'); await snap('cabineplus');
+              await p.click('#back'); await p.click('.tabbar [data-tab="look"]');
+              await p.click('[data-start="look"]'); await snap('inscription');
+              if (dev === 'm') {
+                await p.click('[data-switch]'); await snap('connexion'); await p.click('[data-switch]');
+                await p.fill('#email', 'audit.cabine.' + Date.now() + '@gmail.com'); await p.fill('#pass', 'Audit-' + Date.now()); await p.click('#login .cta');
+                await p.waitForTimeout(3000); await snap('apres-inscription');
+                await p.setInputFiles('#photo', 'moi.jpg'); await snap('photo');
+                await p.click('[data-go="2"]'); await snap('occasion');
+                await p.click('[data-occ="travail"]'); await p.waitForTimeout(9000); await snap('analyse');
+                await p.waitForSelector('.tabs', { timeout: 180000 }).catch(() => {}); await p.waitForTimeout(45000); await snap('looks1');
+                await p.click('[data-pick="1"]'); await snap('looks2'); await p.click('[data-pick="2"]'); await snap('looks3');
+                await p.click('.tabbar [data-tab="shop"]'); await snap('magasin-connecte');
+                await p.click('[data-start="shop"]'); await snap('habit');
+                await p.setInputFiles('#garment2', 'habit.jpg'); await snap('habit-choisi');
+                await p.click('[data-shoptry]'); await p.waitForFunction(() => !document.querySelector('.frame.scan'), null, { timeout: 150000 }).catch(() => {}); await snap('magasin-resultat');
+                await p.click('[data-plus]'); await snap('cabineplus-connecte');
+              }
+              console.log(dev, 'erreurs', errs);
+            }
+            await b.close();
+          })().catch(e => console.log('ECHEC', e.message));
           JS
-          node t.js >> /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
+          node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
