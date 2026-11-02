@@ -444,6 +444,7 @@ const S = [
   () => `<section class="screen">
       <h2>Ton compte <span class="hl">gratuit</span></h2>
       <p class="sub">Crée ton compte en 10 secondes, sans mot de passe : tu reçois un lien par e-mail. <b>3 essais offerts.</b></p>
+      ${session ? `<button class="cta" type="button" data-go="1">Tu es connecté, continuer →</button>` : ''}
       <form id="login" class="loginbox"><input id="email" type="email" required autocomplete="email" placeholder="ton@email.com" aria-label="Adresse e-mail">
         <button class="cta" type="submit">Recevoir mon lien</button><p class="note" id="lmsg" role="status"></p></form>
       <p class="note">Ton e-mail sert seulement à ton compte. Ta photo reste sur ton téléphone, sauf au moment de l'essayage.</p>
@@ -571,14 +572,20 @@ document.addEventListener('submit', async e => {
   m.textContent = error ? `Envoi impossible : ${error.message}` : '📩 C\'est envoyé ! Ouvre l\'e-mail sur ce téléphone et touche le lien.';
   b.disabled = false;
 });
+// Après le lien reçu par e-mail : on reprend là où la personne en était (ou au début du parcours)
+function afterLogin() {
+  let next = null; try { next = localStorage.getItem('cabine-next'); localStorage.removeItem('cabine-next'); } catch (_) {}
+  if (next || state.step === 8) { state.mode = next || state.mode || 'look'; state.step = state.mode === 'shop' && state.photo ? 5 : 1; render(); }
+  else render(true);
+}
+const authErr = new URLSearchParams(location.hash.slice(1)).get('error_description') || new URLSearchParams(location.search).get('error_description');
 if (sb) {
   sb.auth.onAuthStateChange((ev, s) => {
-    session = s;
-    if (s) refreshQuota().then(() => { if (state.step === 8 || ev === 'SIGNED_IN') {
-      let next = null; try { next = localStorage.getItem('cabine-next'); localStorage.removeItem('cabine-next'); } catch (_) {}
-      if (next) { state.mode = next; state.step = next === 'shop' && state.photo ? 5 : 1; }
-    } render(true); });
+    const was = !!session; session = s;
+    if (s && !was) setTimeout(() => { afterLogin(); refreshQuota().then(() => render(true)); }, 0);
+    if (!s && was) render(true);
   });
+  if (authErr) { state.step = 8; setTimeout(() => { const m = $('#lmsg'); if (m) m.textContent = 'Le lien n\'a pas marché (' + authErr + '). Redemande un lien.'; }, 50); }
 }
 document.addEventListener('keydown', e => { if (e.target.matches('label[for=garment]') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); $('#garment').click(); } });
 render();
