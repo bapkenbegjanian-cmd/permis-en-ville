@@ -9,12 +9,49 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Verifier la fonction Stripe
+      - name: Enregistrer une video de demonstration de Cabine
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e
-          curl -s -w " [%{http_code}]" -X POST https://ctgjnpxdaqdnrcxjwnkp.supabase.co/functions/v1/bright-service -d '{}' > journal.txt 2>&1
-          cat journal.txt
+          mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
+          sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
+          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
+          curl -sL -o moi.jpg 'https://images.unsplash.com/photo-1715541448446-3369e1cc0ee9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8ZmFzaGlvbiUyMG1vZGVsJTIwZnVsbCUyMGJvZHl8ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0&w=900&q=85&fm=jpg'
+          cat > t.js <<'JS'
+          const { chromium, devices } = require('playwright');
+          (async () => {
+            const b = await chromium.launch();
+            const ctx = await b.newContext({ ...devices['iPhone 13'], recordVideo: { dir: '/tmp/pw/v', size: { width: 390, height: 844 } } });
+            const p = await ctx.newPage(); const t0 = Date.now(), T = {}; const mark = k => T[k] = (Date.now() - t0) / 1000;
+            const errs = []; p.on('pageerror', e => errs.push(e.message));
+            await p.goto('https://bapkenbegjanian-cmd.github.io/permis-en-ville/cabine/?v=' + Date.now()); await p.waitForTimeout(4000);
+            await p.mouse.wheel(0, 300); await p.waitForTimeout(1500); await p.mouse.wheel(0, -300); await p.waitForTimeout(800);
+            mark('login'); await p.click('[data-start="look"]'); await p.waitForTimeout(800);
+            await p.fill('#email', 'demo.cabine.' + Date.now() + '@gmail.com'); await p.fill('#pass', 'Demo-' + Date.now()); await p.click('#login .cta');
+            await p.waitForSelector('#photo', { state: 'attached' }); await p.waitForFunction(() => document.querySelector('h2') && /photo/i.test(document.querySelector('h2').textContent), null, { timeout: 20000 }).catch(() => {});
+            mark('photo'); await p.waitForTimeout(1000);
+            await p.setInputFiles('#photo', 'moi.jpg'); await p.waitForTimeout(2200);
+            await p.click('[data-go="2"]'); await p.waitForTimeout(1800);
+            await p.click('[data-occ="soiree"]'); mark('scan');
+            await p.waitForFunction(() => /Essayage/.test((document.querySelector('#log') || {}).textContent || ''), null, { timeout: 60000 }).catch(() => {});
+            await p.waitForTimeout(1500); mark('wait');
+            await p.waitForSelector('.tabs', { timeout: 180000 }).catch(() => {}); mark('result');
+            await p.waitForTimeout(3500);
+            await p.waitForFunction(() => [...document.querySelectorAll('.tabs .ld')].length === 0, null, { timeout: 120000 }).catch(() => {});
+            mark('all');
+            for (const i of [1, 2, 0]) { await p.click('[data-pick="' + i + '"]'); await p.waitForTimeout(3200); }
+            await p.mouse.wheel(0, 500); await p.waitForTimeout(1500); mark('end');
+            console.log(JSON.stringify(T)); console.log('erreurs', errs, 'badge', await p.textContent('.badge').catch(() => ''));
+            await ctx.close(); await b.close();
+          })().catch(e => console.log('ECHEC', e.message));
+          JS
+          node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
+          V=$(ls /tmp/pw/v/*.webm | head -1); cp "$V" /tmp/e/brut.webm
+          T=$(grep '^{' /tmp/e/journal.txt | head -1)
+          W=$(echo "$T" | python3 -c "import json,sys; print(json.load(sys.stdin)['wait'])"); R=$(echo "$T" | python3 -c "import json,sys; print(json.load(sys.stdin)['result'])"); A=$(echo "$T" | python3 -c "import json,sys; print(json.load(sys.stdin)['all'])")
+          # on accélère les moments d'attente (essayage en cours)
+          ffmpeg -y -loglevel error -i /tmp/e/brut.webm -filter_complex "[0:v]trim=0:$W,setpts=PTS-STARTPTS[a];[0:v]trim=$W:$R,setpts=(PTS-STARTPTS)/8[b];[0:v]trim=$R:$R+3.5,setpts=PTS-STARTPTS[c];[0:v]trim=$R+3.5:$A,setpts=(PTS-STARTPTS)/8[d];[0:v]trim=$A,setpts=PTS-STARTPTS[e];[a][b][c][d][e]concat=n=5:v=1[out]" -map "[out]" -c:v libx264 -preset slow -crf 26 -pix_fmt yuv420p -movflags +faststart -an /tmp/e/demo.mp4 >> /tmp/e/journal.txt 2>&1
+          ffmpeg -y -loglevel error -ss 2 -i /tmp/e/demo.mp4 -frames:v 1 /tmp/e/demo.jpg
+          ls -la /tmp/e >> /tmp/e/journal.txt; rm -f /tmp/e/brut.webm
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
