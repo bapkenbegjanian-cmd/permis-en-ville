@@ -1,0 +1,16 @@
+-- Tables de Cabine : essais faits par chaque compte, et abonnés.
+create table public.essais (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  prediction text,
+  created_at timestamptz default now()
+);
+create index on public.essais (user_id);
+create table public.abonnes (
+  user_id uuid primary key references auth.users on delete cascade,
+  fin timestamptz,
+  created_at timestamptz default now()
+);
+alter table public.essais enable row level security;
+alter table public.abonnes enable row level security;
+-- Aucune règle d'accès public : seules la fonction (clé serveur) et toi, dans le tableau de bord, peuvent lire et écrire.

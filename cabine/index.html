@@ -71,6 +71,12 @@ button:focus-visible, a:focus-visible, label:focus-visible { outline: 3px solid 
 .marquee b { color: var(--peach); }
 @keyframes slide { to { transform: translateX(-50%); } }
 .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.linkbox { display: grid; gap: 6px; background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 18px; padding: 14px; }
+.linkbox small { color: var(--muted); }
+.lrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.lrow input, .loginbox input { font: inherit; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: #fff; color: var(--ink); min-width: 0; }
+.lrow .ghost { width: auto; padding: 12px 16px; }
+.loginbox { display: grid; gap: 10px; }
 .tabbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); z-index: 20; display: flex; gap: 4px; padding: 5px; border-radius: 20px;
   background: rgba(18,20,30,.92); backdrop-filter: blur(14px); box-shadow: 0 14px 34px rgba(18,20,30,.3); }
 .tabbar button { border: 0; background: none; color: rgba(255,255,255,.65); font-weight: 800; font-size: 14px; padding: 11px 18px; border-radius: 15px; cursor: pointer; white-space: nowrap; }
@@ -159,6 +165,7 @@ button:focus-visible, a:focus-visible, label:focus-visible { outline: 3px solid 
   <input id="photo" type="file" accept="image/*" hidden>
   <input id="garment" type="file" accept="image/*" capture="environment" hidden>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script type="module">
 const $ = s => document.querySelector(s);
 const DATA = {"g": {"30": {"u": "https://images.unsplash.com/photo-1772571157276-a76fa80f2a1a?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8N3x8cmVkJTIwZHJlc3MlMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg1fDA&ixlib=rb-4.1.0", "by": "atelierbyvineeth ...", "user": "https://unsplash.com/@atelierbyvineeth", "n": "Robe rouge cintrée", "p": 89, "m": "XAH", "a": "Escarpins nude et pochette dorée"}, "40": {"u": "https://images.unsplash.com/photo-1687380330652-7badcb8f44c3?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NXx8YmxhY2slMjBkcmVzcyUyMGhhbmdlcnxlbnwxfHx8fDE3OTMyMTgwODZ8MA&ixlib=rb-4.1.0", "by": "Jason Leung", "user": "https://unsplash.com/@ninjason", "n": "Robe portefeuille noire", "p": 79, "m": "XOAH", "a": "Talons fins et bijoux dorés"}, "14": {"u": "https://images.unsplash.com/photo-1604531825858-a8e24ed6b43d?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8ZXZlbmluZyUyMGdvd24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg1fDA&ixlib=rb-4.1.0", "by": "Nathan Walker", "user": "https://unsplash.com/@nwphoto", "n": "Robe en dentelle blanche", "p": 95, "m": "AVHX", "a": "Ballerines et petit sac"}, "69": {"u": "https://images.unsplash.com/photo-1721824299322-6b77921d8c14?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fGZsb3JhbCUyMGRyZXNzJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4Nnww&ixlib=rb-4.1.0", "by": "Lisa Anna", "user": "https://unsplash.com/@lisaanna195", "n": "Robe fleurie manches longues", "p": 69, "m": "AVHO", "a": "Bottines et veste en jean"}, "11": {"u": "https://images.unsplash.com/photo-1578747522731-9e5a179b02f7?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTJ8fGRyZXNzJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg1fDA&ixlib=rb-4.1.0", "by": "Content Pixie", "user": "https://unsplash.com/@contentpixie", "n": "Top blanc sans manches", "p": 29, "m": "AHVX", "a": "Pantalon taille haute et mocassins"}, "175": {"u": "https://images.unsplash.com/photo-1761499101317-e32c4ed50b2f?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8OHx8bWVuJTIwYmxhemVyJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Rodrigo Rodrigues | WOLF Λ R T", "user": "https://unsplash.com/@wolfart32", "n": "Blazer clair", "p": 99, "m": "AHOX", "a": "Chemise blanche et pantalon droit"}, "117": {"u": "https://images.unsplash.com/photo-1548606704-5eadbed74bd9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fHNwb3J0c3dlYXIlMjBmbGF0JTIwbGF5fGVufDF8fHx8MTc5MzIxODA4N3ww&ixlib=rb-4.1.0", "by": "Sincerely Media", "user": "https://unsplash.com/@sincerelymedia", "n": "Brassière et legging", "p": 59, "m": "AVHXO", "a": "Baskets de running et casquette"}, "110": {"u": "https://images.unsplash.com/photo-1548606703-580672e56c26?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8c3BvcnRzd2VhciUyMGZsYXQlMjBsYXl8ZW58MXx8fHwxNzkzMjE4MDg3fDA&ixlib=rb-4.1.0", "by": "Sincerely Media", "user": "https://unsplash.com/@sincerelymedia", "n": "Ensemble sport noir", "p": 55, "m": "AVHXO", "a": "Baskets et gourde"}, "192": {"u": "https://images.unsplash.com/photo-1620799140188-3b2a02fd9a77?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8aG9vZGllJTIwZmxhdCUyMGxheXxlbnwxfHx8fDE3OTMyMTgwODh8MA&ixlib=rb-4.1.0", "by": "Mediamodifier", "user": "https://unsplash.com/@mediamodifier", "n": "Sweat à capuche blanc", "p": 45, "m": "AVHXO", "a": "Jean clair et baskets blanches"}, "129": {"u": "https://images.unsplash.com/photo-1586084611164-a9accaeab607?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fGplYW5zJTIwYW5kJTIwc2hpcnQlMjBmbGF0JTIwbGF5fGVufDF8fHx8MTc5MzIxODA4N3ww&ixlib=rb-4.1.0", "by": "Sincerely Media", "user": "https://unsplash.com/@sincerelymedia", "n": "Marinière et jean", "p": 65, "m": "VHXA", "a": "Baskets blanches ou espadrilles"}, "165": {"u": "https://images.unsplash.com/photo-1564584217132-2271feaeb3c5?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTB8fG1lbiUyMHNoaXJ0JTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg3fDA&ixlib=rb-4.1.0", "by": "Cristofer Maximilian", "user": "https://unsplash.com/@cristofer", "n": "T-shirt gris chiné", "p": 19, "m": "VHXAO", "a": "Jean droit et baskets"}, "91": {"u": "https://images.unsplash.com/photo-1667283831517-5b747b3c17c8?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8OHx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "Vetrivel Viswanathar", "user": "https://unsplash.com/@vetrivikashviswanathar", "n": "Costume bleu marine", "p": 189, "m": "VHXAO", "a": "Chemise blanche et derbies"}, "89": {"u": "https://images.unsplash.com/photo-1667284152861-36e03571486a?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Nnx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "Vetrivel Viswanathar", "user": "https://unsplash.com/@vetrivikashviswanathar", "n": "Veste bordeaux", "p": 149, "m": "VHX", "a": "Col roulé noir et mocassins"}, "85": {"u": "https://images.unsplash.com/photo-1598808503746-f34c53b9323e?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Mnx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "LOGAN WEAVER | @LGNWVR", "user": "https://unsplash.com/@lgnwvr", "n": "Costume noir", "p": 199, "m": "VHXA", "a": "Cravate fine et souliers noirs"}, "95": {"u": "https://images.unsplash.com/photo-1784749615306-10675f31bae2?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTJ8fGJsYXplciUyMG9uJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4Nnww&ixlib=rb-4.1.0", "by": "Alexander Mass", "user": "https://unsplash.com/@alexandermassph", "n": "Veste camel", "p": 129, "m": "HOAVX", "a": "Chemise ouverte et chino"}, "159": {"u": "https://images.unsplash.com/photo-1611312449412-6cefac5dc3e4?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8bWVuJTIwc2hpcnQlMjBvbiUyMGhhbmdlcnxlbnwxfHx8fDE3OTMyMTgwODd8MA&ixlib=rb-4.1.0", "by": "Caio Coelho", "user": "https://unsplash.com/@smokthebikini", "n": "Chemise à carreaux", "p": 39, "m": "VHXAO", "a": "Jean brut et bottines"}, "182": {"u": "https://images.unsplash.com/photo-1625910513413-c23b8bb81cba?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8M3x8cG9sbyUyMHNoaXJ0fGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Clément Vatte", "user": "https://unsplash.com/@clement_vatte", "n": "Polo noir", "p": 35, "m": "VHXA", "a": "Chino beige et baskets"}, "84": {"u": "https://images.unsplash.com/photo-1592343516109-362f7bd871aa?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8YmxhemVyJTIwb24lMjBoYW5nZXJ8ZW58MXx8fHwxNzkzMjE4MDg2fDA&ixlib=rb-4.1.0", "by": "Victoria Priessnitz", "user": "https://unsplash.com/@victoriapriessnitz", "n": "Veste de costume noire", "p": 119, "m": "VHXAO", "a": "Chemise blanche et pantalon gris"}, "83": {"u": "https://images.unsplash.com/photo-1621773881532-fe65715b5137?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MTJ8fGJsb3VzZSUyMG9uJTIwaGFuZ2VyfGVufDF8fHx8MTc5MzIxODA4Nnww&ixlib=rb-4.1.0", "by": "Lisanto 李奕良", "user": "https://unsplash.com/@lisanto_", "n": "Chemise blanche", "p": 39, "m": "VHXAO", "a": "Pantalon fuselé et ceinture cuir"}, "180": {"u": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8MXx8cG9sbyUyMHNoaXJ0fGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Haryo Setyadi", "user": "https://unsplash.com/@uyk", "n": "T-shirt blanc", "p": 19, "m": "VHXAO", "a": "Jogging et baskets"}, "196": {"u": "https://images.unsplash.com/photo-1739384994765-d44f7af12029?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NXx8aG9vZGllJTIwZmxhdCUyMGxheXxlbnwxfHx8fDE3OTMyMTgwODh8MA&ixlib=rb-4.1.0", "by": "philippe wehrli", "user": "https://unsplash.com/@philippewehrli", "n": "Sweat bleu et jean", "p": 69, "m": "VHXAO", "a": "Baskets de course"}, "125": {"u": "https://images.unsplash.com/photo-1739384879592-79903b12b2a6?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8Nnx8amVhbnMlMjBhbmQlMjBzaGlydCUyMGZsYXQlMjBsYXl8ZW58MXx8fHwxNzkzMjE4MDg3fDA&ixlib=rb-4.1.0", "by": "philippe wehrli", "user": "https://unsplash.com/@philippewehrli", "n": "Veste beige et jean", "p": 99, "m": "VHXAO", "a": "Baskets blanches"}, "183": {"u": "https://images.unsplash.com/photo-1671438118097-479e63198629?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8cG9sbyUyMHNoaXJ0fGVufDF8fHx8MTc5MzIxODA4OHww&ixlib=rb-4.1.0", "by": "Mediamodifier", "user": "https://unsplash.com/@mediamodifier", "n": "Polo blanc", "p": 35, "m": "VHXAO", "a": "Short chino et sneakers"}}, "L": {"f_soiree": [30, 40, 14], "f_rdv": [14, 30, 69], "f_travail": [175, 11, 69], "f_mariage": [69, 14, 30], "f_sport": [117, 110, 192], "f_casual": [129, 165, 192], "h_soiree": [91, 89, 85], "h_rdv": [95, 159, 182], "h_travail": [84, 83, 175], "h_mariage": [91, 175, 85], "h_sport": [180, 192, 196], "h_casual": [125, 196, 183]}};
@@ -176,7 +183,7 @@ const MORPHS = {
 };
 const OCCS = { soiree: ['🥂', 'Soirée', 'Chic et lumineux', '#2f6bff'], rdv: ['🌹', 'Rendez-vous', 'Séduisant, pas trop', '#ff8a5c'], travail: ['💼', 'Travail', 'Net et assuré', '#7b5cff'],
   mariage: ['💍', 'Mariage', 'Élégant', '#ffb37a'], sport: ['⚡', 'Sport', 'Beau et confortable', '#3dd6b5'], casual: ['☀️', 'Week-end', 'Facile et stylé', '#ffd23f'] };
-const state = { step: 0, photo: null, o: null, g: null, m: null, info: [], pick: 0, mode: 'look', garment: null, gid: 0, saved: false };
+const state = { quota: null, step: 0, photo: null, o: null, g: null, m: null, info: [], pick: 0, mode: 'look', garment: null, gid: 0, saved: false };
 try { const p = localStorage.getItem('cabine-photo'); if (p) { state.photo = p; state.saved = true; } } catch (_) {}
 const tries = {};
 const looks = () => DATA.L[state.g + '_' + state.o].map(id => ({ id, ...DATA.g[id] })).map(x => ({ ...x, fit: x.m.includes(state.m) ? 1 : 0 })).sort((a, b) => b.fit - a.fit);
@@ -285,21 +292,35 @@ async function drawMeasure(ctx, a, label, y, w, color) {
 }
 
 /* ---------- Essayage (FASHN via la fonction Supabase : la clé reste côté serveur) ---------- */
-const FN = 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co/functions/v1/bright-endpoint';
+const SBURL = 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co', SBKEY = 'sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h';
+const FN = SBURL + '/functions/v1/bright-endpoint';
+const sb = window.supabase ? window.supabase.createClient(SBURL, SBKEY) : null;
+let session = null;
 const api = (d, ms) => { const c = new AbortController(), to = setTimeout(() => c.abort(), ms);
-  return fetch(FN, { method: 'POST', signal: c.signal, headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h' }, body: JSON.stringify(d) })
-    .then(r => r.json()).finally(() => clearTimeout(to)); };
+  return fetch(FN, { method: 'POST', signal: c.signal, headers: { 'Content-Type': 'application/json', apikey: SBKEY, Authorization: 'Bearer ' + (session ? session.access_token : SBKEY) }, body: JSON.stringify(d) })
+    .then(async r => ({ ...(await r.json().catch(() => ({}))), _s: r.status })).finally(() => clearTimeout(to)); };
+async function refreshQuota() {
+  if (!session) { state.quota = null; return; }
+  const q = await api({ action: 'quota' }, 15000).catch(() => null);
+  if (q && q._s === 200) state.quota = q;
+}
+const left = () => state.quota ? (state.quota.pro ? Infinity : Math.max(0, state.quota.free - state.quota.used)) : 0;
+const quotaPill = () => state.quota && !state.quota.pro ? `<span class="pill"><i></i>${left()} essai${left() > 1 ? 's' : ''} gratuit${left() > 1 ? 's' : ''} restant${left() > 1 ? 's' : ''}</span>` : '';
 const tkey = l => state.g + state.o + l.id;
 let queue = Promise.resolve();
 function runTry(k, garment) {
   if (tries[k] && tries[k].st !== 'err') return;
+  if (state.quota && left() <= 0) { tries[k] = { st: 'quota' }; return; }
   tries[k] = { st: 'run' };
   queue = queue.then(async () => {
     for (let attempt = 0; attempt < 2; attempt++) {
-      const t0 = Date.now();
+      const t0 = Date.now(); let started = false;
       try {
         const r = await api({ action: 'run', body: { model_name: 'tryon-v1.6', inputs: { model_image: state.photo, garment_image: garment } } }, 45000);
+        if (r._s === 402) { tries[k] = { st: 'quota' }; break; }
+        if (r._s === 401) { tries[k] = { st: 'err', why: 'connexion expirée, reconnecte-toi' }; break; }
         if (!r.id) throw new Error(r.message || r.error || 'refusé');
+        started = true; if (state.quota) state.quota.used++;
         while (Date.now() - t0 < 120000) {
           await wait(2500);
           const s = await api({ action: 'status', id: r.id }, 20000).catch(() => ({}));
@@ -308,8 +329,11 @@ function runTry(k, garment) {
         }
         if (tries[k].st === 'ok') break;
         throw new Error('trop long');
-      } catch (e) { tries[k] = { st: attempt ? 'err' : 'run', why: e.name === 'AbortError' ? 'pas de réponse' : e.message }; if (!attempt) await wait(1500); }
+      } catch (e) { const why = e.name === 'AbortError' ? 'pas de réponse' : e.message;
+        // un essai déjà lancé compte dans le quota : on ne relance pas tout seul
+        if (started || attempt) { tries[k] = { st: 'err', why }; break; } await wait(1500); }
     }
+    if (tries[k].st === 'quota' && (state.step === 3 || state.step === 4 || state.step === 6)) { state.step = 9; render(); return; }
     if (state.step === 4 || state.step === 6) render(true);
     if (state.step === 3) onTryDone();
   });
@@ -339,10 +363,11 @@ const S = [
       <p class="sub">Une photo suffit. Cabine lit ta silhouette, choisit les pièces qui te vont et te les fait porter.</p>
       <div class="showcase">${showIds.map((id, i) => `<div class="card c${i}"><img src="${pic(DATA.g[id], 500)}" alt="${DATA.g[id].n}"></div>`).join('')}
         <span class="float a">✨ Analyse de silhouette</span><span class="float b">👔 3 looks pour toi</span><span class="float c">🪞 Sur ta propre photo</span></div>
-      <button class="cta" type="button" data-mode="look">✨ Trouver mon look</button>
+      <button class="cta" type="button" data-start="look">✨ Trouver mon look</button>
       <button class="ghost" type="button" data-tab="shop">🛍️ En boutique ? Essaie sans cabine</button>
       <div class="marquee" aria-hidden="true"><div>${Array(2).fill('Soirée <b>✦</b> Mariage <b>✦</b> Travail <b>✦</b> Rendez-vous <b>✦</b> Sport <b>✦</b> Week-end <b>✦</b>').join(' ')}</div></div>
       <div class="how"><div><span>📸</span>Ta photo</div><div><span>🧠</span>Ta silhouette lue</div><div><span>🪄</span>Tu te vois habillé·e</div></div>
+      ${account()}
     </section>`,
   () => `<section class="screen">
       <h2>D'abord, <span class="hl">ta photo</span></h2>
@@ -368,7 +393,9 @@ const S = [
       <div class="chips">${state.info.map(x => `<span>${x}</span>`).join('')}</div>
       <div class="tabs">${L.map((x, i) => { const s = tries[tkey(x)] || {}; return `<button type="button" data-pick="${i}" aria-pressed="${i === state.pick}">Look ${i + 1}${s.st === 'run' ? '<span class="ld"></span>' : ''}</button>`; }).join('')}</div>
       <div class="frame ${t.st === 'run' ? 'scan' : ''}"><div class="blur" style="background-image:url('${src}')"></div><img src="${src}" alt="${t.st === 'ok' ? 'Toi avec ' + l.n : 'Ta photo'}" class="${t.st === 'ok' ? 'reveal' : ''}">
-        <span class="badge">${t.st === 'run' ? '🪄 Essayage en cours…' : t.st === 'ok' ? `✨ Toi · Look ${state.pick + 1}` : t.st === 'err' ? 'Essayage impossible' : ''}</span></div>
+        <span class="badge">${t.st === 'run' ? '🪄 Essayage en cours…' : t.st === 'ok' ? `✨ Toi · Look ${state.pick + 1}` : t.st === 'err' ? 'Essayage impossible' : '👗 Pas encore essayé'}</span></div>
+      ${!t.st ? `<button class="cta" type="button" data-trylook>✨ Me voir avec ce look</button>` : ''}
+      ${quotaPill()}
       ${t.st === 'err' ? `<p class="note">Ça n'a pas marché (${t.why}). <button class="link" type="button" data-retry>Réessayer</button></p>` : ''}
       <p class="why"><b>${l.fit ? 'Idéal pour ta silhouette.' : 'Va bien avec ta silhouette.'}</b> ${MORPHS[state.m].t}</p>
       <div class="piece"><div class="ph"><img src="${pic(l, 300)}" alt="${l.n}"></div><div><b>${l.n}</b><span class="price">≈ ${l.p} €</span><small>À porter avec : ${l.a}</small></div></div>
@@ -385,6 +412,10 @@ const S = [
       <div class="tips"><span>👕 L'habit en entier</span><span>💡 Bonne lumière</span><span>🧺 Fond simple</span></div>
       <button class="cta" type="button" data-shoptry ${state.garment ? '' : 'disabled'}>🪄 Me l'essayer</button>
       ${state.garment ? `<label class="link" for="garment" tabindex="0">Reprendre la photo</label>` : ''}
+      <div class="linkbox"><b>🔗 Ou colle le lien d'un habit</b><small>Vinted, Zara, Shein, Asos… la photo de l'article est récupérée.</small>
+        <div class="lrow"><input id="glink" type="url" inputmode="url" placeholder="https://…" aria-label="Lien de l'habit"><button class="ghost" type="button" data-import>Importer</button></div>
+        <p class="note" id="gmsg" role="status"></p></div>
+      ${quotaPill()}
     </section>`,
   () => {
     const t = tries['shop' + state.gid] || {}, src = t.st === 'ok' ? t.url : state.photo;
@@ -406,10 +437,32 @@ const S = [
         <div><span>📷</span><p style="margin:0"><b>L'habit</b>Photographie-le en entier, sur le cintre ou le mannequin.</p></div>
         <div><span>🪞</span><p style="margin:0"><b>Sur toi</b>En 15 secondes, tu te vois avec.</p></div>
       </div>
-      <button class="cta" type="button" data-go="${state.photo ? 5 : 1}">📷 ${state.photo ? 'Photographier un habit' : 'Commencer'}</button>
+      <button class="cta" type="button" data-start="shop">📷 ${state.photo ? 'Photographier un habit' : 'Commencer'}</button>
       ${state.photo ? `<label class="link" for="photo" tabindex="0">Changer ma photo</label>` : ''}
+      ${account()}
+    </section>`,
+  () => `<section class="screen">
+      <h2>Ton compte <span class="hl">gratuit</span></h2>
+      <p class="sub">Crée ton compte en 10 secondes, sans mot de passe : tu reçois un lien par e-mail. <b>3 essais offerts.</b></p>
+      <form id="login" class="loginbox"><input id="email" type="email" required autocomplete="email" placeholder="ton@email.com" aria-label="Adresse e-mail">
+        <button class="cta" type="submit">Recevoir mon lien</button><p class="note" id="lmsg" role="status"></p></form>
+      <p class="note">Ton e-mail sert seulement à ton compte. Ta photo reste sur ton téléphone, sauf au moment de l'essayage.</p>
+    </section>`,
+  () => `<section class="screen">
+      <div class="shophero"><span class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff"><i></i>Cabine+</span>
+        <h2>Tes 3 essais gratuits <span class="hl">sont utilisés</span></h2>
+        <p class="sub" style="color:#c9cdd8">Cabine+ arrive bientôt : essais illimités, tous les looks, le mode magasin sans limite.</p></div>
+      <div class="steps3"><div><span>♾️</span><p style="margin:0"><b>Essais illimités</b>Tous les habits que tu veux.</p></div>
+        <div><span>🛍️</span><p style="margin:0"><b>Mode magasin</b>Photo ou lien, sans limite.</p></div>
+        <div><span>⚡</span><p style="margin:0"><b>Prioritaire</b>Résultats plus rapides.</p></div></div>
+      <button class="cta" type="button" disabled>Bientôt disponible</button>
+      <button class="link" type="button" data-tab="look">Retour à l'accueil</button>
     </section>`
 ];
+function account() {
+  if (!sb) return '';
+  return session ? `<p class="note">Connecté : ${session.user.email.replace(/[<>&"]/g, '')} · <button class="link" type="button" data-logout>Se déconnecter</button></p>` : '';
+}
 
 function render(soft) {
   const y = scrollY;
@@ -458,8 +511,8 @@ function askManual(g) {
 function startTries() {
   const L = looks();
   say(`3 pièces choisies : <b>${L.map(x => x.n).join(', ')}</b>`);
-  say('Essayage sur ta photo… (environ 15 s)', 'wait');
-  waitingTry = true; tryOn(L[0]); setTimeout(() => { tryOn(L[1]); tryOn(L[2]); }, 1500);
+  say('Essayage du look 1 sur ta photo… (environ 15 s)', 'wait');
+  waitingTry = true; tryOn(L[0]);
 }
 function onTryDone() {
   if (!waitingTry) return;
@@ -469,11 +522,15 @@ function onTryDone() {
 
 document.addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return;
-  if (t.id === 'back') { state.step = state.step === 4 ? 2 : state.step === 5 ? 7 : state.step === 6 ? 5 : state.step === 1 && state.mode === 'shop' ? 7 : Math.max(0, state.step - 1); }
+  if (t.id === 'back') { state.step = state.step === 8 ? (state.mode === 'shop' ? 7 : 0) : state.step === 9 ? 0 : state.step === 4 ? 2 : state.step === 5 ? 7 : state.step === 6 ? 5 : state.step === 1 && state.mode === 'shop' ? 7 : Math.max(0, state.step - 1); }
   else if (t.dataset.tab) { state.mode = t.dataset.tab; state.step = state.mode === 'shop' ? 7 : 0; }
   else if ('forget' in t.dataset) { try { localStorage.removeItem('cabine-photo'); } catch (_) {} state.photo = null; state.saved = false; }
   else if (t.dataset.mode) { state.mode = t.dataset.mode; state.step = 1; }
-  else if ('shoptry' in t.dataset) { const k = 'shop' + state.gid; delete tries[k]; runTry(k, state.garment); state.step = 6; }
+  else if (t.dataset.start) { state.mode = t.dataset.start; if (sb && !session) { try { localStorage.setItem('cabine-next', state.mode); } catch (_) {} state.step = 8; } else state.step = state.mode === 'shop' && state.photo ? 5 : 1; }
+  else if ('logout' in t.dataset) { sb.auth.signOut(); session = null; state.quota = null; }
+  else if ('trylook' in t.dataset) { const l = looks()[state.pick]; tryOn(l); if ((tries[tkey(l)] || {}).st === 'quota') { state.step = 9; render(); } else render(true); return; }
+  else if ('import' in t.dataset) { importLink(); return; }
+  else if ('shoptry' in t.dataset) { const k = 'shop' + state.gid; delete tries[k]; runTry(k, state.garment); state.step = tries[k].st === 'quota' ? 9 : 6; }
   else if (t.dataset.go) { state.step = +t.dataset.go; if (t.dataset.newg) state.garment = null; if (state.step === 2) { loadPose().catch(() => {}); loadSeg().catch(() => {}); loadFace().catch(() => {}); } }
   else if (t.dataset.occ) { state.o = t.dataset.occ; state.step = 3; render(); runAnalysis(); return; }
   else if (t.dataset.gender) { state.g = t.dataset.gender; t.closest('p').remove(); say(`Profil : <b>${state.g === 'f' ? 'Femme' : 'Homme'}</b>`); if (!state.m) state.m = 'H'; startTries(); return; }
@@ -499,6 +556,30 @@ $('#garment').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
   shrink(f).then(d => { e.target.value = ''; if (!d) return; state.garment = d; state.gid++; render(); });
 });
+async function importLink() {
+  const v = $('#glink').value.trim(), m = $('#gmsg'); if (!v) return;
+  if (sb && !session) { state.step = 8; render(); return; }
+  m.textContent = 'Recherche de la photo…';
+  const r = await api({ action: 'preview', link: v }, 20000).catch(() => ({ error: 'pas de réponse' }));
+  if (!r.image) { m.textContent = `Impossible : ${r.error || 'erreur'}. Essaie une capture d'écran de l'article.`; return; }
+  state.garment = r.image; state.gid++; render();
+}
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'login') return; e.preventDefault();
+  const m = $('#lmsg'), b = e.target.querySelector('button'); b.disabled = true;
+  const { error } = await sb.auth.signInWithOtp({ email: $('#email').value.trim(), options: { emailRedirectTo: location.origin + location.pathname } });
+  m.textContent = error ? `Envoi impossible : ${error.message}` : '📩 C\'est envoyé ! Ouvre l\'e-mail sur ce téléphone et touche le lien.';
+  b.disabled = false;
+});
+if (sb) {
+  sb.auth.onAuthStateChange((ev, s) => {
+    session = s;
+    if (s) refreshQuota().then(() => { if (state.step === 8 || ev === 'SIGNED_IN') {
+      let next = null; try { next = localStorage.getItem('cabine-next'); localStorage.removeItem('cabine-next'); } catch (_) {}
+      if (next) { state.mode = next; state.step = next === 'shop' && state.photo ? 5 : 1; }
+    } render(true); });
+  });
+}
 document.addEventListener('keydown', e => { if (e.target.matches('label[for=garment]') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); $('#garment').click(); } });
 render();
 </script>
