@@ -17,3 +17,8 @@ alter table public.abonnes enable row level security;
 
 -- Un essai peut regrouper plusieurs images (les 3 looks) : elles partagent le même « groupe ».
 alter table public.essais add column if not exists groupe text;
+
+-- Abonnement Stripe : identifiants du client et de l'abonnement, pour suivre renouvellements et résiliations.
+alter table public.abonnes add column if not exists stripe_customer text;
+alter table public.abonnes add column if not exists stripe_sub text;
+create index if not exists abonnes_customer on public.abonnes (stripe_customer);
