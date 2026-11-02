@@ -13,12 +13,8 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          for n in essaiemonlook monlookia lookmiapp getlookmi trylookmi lookmicabine habillemoi monessayage cabinelook essayelook cabinemode macabine macabinemode lookcabine essayeur essaylook trylookapp monlookcabine lookessai cabinevirtuelle essaievirtuel essayagelook lookmifr lookmode habilleur essaieca essayemoi monlookmode looklive essayo-app tryonmoi lookmatch stylematch outfitmatch habitmatch looktry lookessaye essayetonlook cabineia essaiecabine lookoo lookmio lookmia lookmiz lookami-app modessai tenuemoi tenuessai mytenue matenue montenue; do
-            c=$(curl -s -o /dev/null -w "%{http_code}" -m 15 "https://rdap.verisign.com/com/v1/domain/$n.com")
-            f=$(curl -s -o /dev/null -w "%{http_code}" -m 15 "https://rdap.nic.fr/domain/$n.fr")
-            echo "$n com=$c fr=$f" >> journal.txt
-          done
-          cat journal.txt
+          echo dresli dresmo dresoka dresu dresy dresya dreszo drexi drezo fitie fitiva fitlo fitmo fitoka fitora fitvia fitx fitya fyto kabiva kabu kabya lookie lookiva lookmo lookra lookuu lookvo lookx lookya lookza lukaa lukeo lukiva lukmo lukoa luku lukya lukzo luvio luxie miravo miraya mirazo mirlo mirmo miroka mirqa miru miry mirya modexa modiva outfa outfy outvo outza stylaa stylix stylo styloka stylq stylvo styly stylya stylza stymo styu trenza tryie trylo trymo tryo tryoka tryvia tryvio tryx tryya tryza velu velura vestia vestiq vestlo vesto vestoka vestx vestya vesu weari wearie wearka wearlo wearmo wearo wearvia wearx wearya wearzy wero | tr ' ' '\n' | xargs -P 12 -I{} sh -c 'c=$(curl -s -o /dev/null -w "%{http_code}" -m 15 "https://rdap.verisign.com/com/v1/domain/{}.com"); echo "{} com=$c"' > journal.txt
+          sort journal.txt -o journal.txt; cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
