@@ -470,6 +470,7 @@ const S = [
       <p class="sub">Crée ton compte en 10 secondes, sans mot de passe : tu reçois un lien par e-mail. <b>3 essais offerts.</b></p>
       ${session ? `<button class="cta" type="button" data-go="1">Tu es connecté, continuer →</button>` : ''}
       <form id="login" class="loginbox"><input id="email" type="email" required autocomplete="email" placeholder="ton@email.com" aria-label="Adresse e-mail">
+        <input id="pass" type="password" autocomplete="current-password" placeholder="Mot de passe (si tu en as un)" aria-label="Mot de passe">
         <button class="cta" type="submit">Recevoir mon lien</button><p class="note" id="lmsg" role="status"></p></form>
       <p class="note">Ton e-mail sert seulement à ton compte. Ta photo reste sur ton téléphone, sauf au moment de l'essayage.</p>
     </section>`,
@@ -597,11 +598,18 @@ async function importLink() {
   if (!r.image) { m.textContent = `Impossible : ${r.error || 'erreur'}. Essaie une capture d'écran de l'article.`; return; }
   state.garment = r.image; state.gid++; render();
 }
+document.addEventListener('input', e => { if (e.target.id === 'pass') e.target.form.querySelector('.cta').textContent = e.target.value ? 'Se connecter' : 'Recevoir mon lien'; });
 document.addEventListener('submit', async e => {
   if (e.target.id !== 'login') return; e.preventDefault();
   const m = $('#lmsg'), b = e.target.querySelector('button'); b.disabled = true;
-  const { error } = await sb.auth.signInWithOtp({ email: $('#email').value.trim(), options: { emailRedirectTo: location.origin + location.pathname } });
-  m.textContent = error ? `Envoi impossible : ${error.message}` : '📩 C\'est envoyé ! Ouvre l\'e-mail sur ce téléphone et touche le lien.';
+  const email = $('#email').value.trim(), pass = $('#pass').value;
+  if (pass) {   // compte avec mot de passe : connexion directe, sans e-mail
+    const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+    m.textContent = error ? 'E-mail ou mot de passe incorrect.' : '✅ Connecté !';
+  } else {
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    m.textContent = error ? (/rate limit/i.test(error.message) ? 'Trop de demandes de lien pour le moment. Réessaie dans une heure.' : `Envoi impossible : ${error.message}`) : '📩 C\'est envoyé ! Ouvre l\'e-mail sur ce téléphone et touche le lien.';
+  }
   b.disabled = false;
 });
 // Après le lien reçu par e-mail : on reprend là où la personne en était (ou au début du parcours)
