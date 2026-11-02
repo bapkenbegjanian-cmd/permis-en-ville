@@ -9,24 +9,31 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Captures de Lookmiz
+      - name: Images d'ambiance (Unsplash)
         timeout-minutes: 8
+        env:
+          KEY: ${{ secrets.UNSPLASH_KEY }}
         run: |
           set +e
           mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
           npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
-          sleep 60
+          cat > get.py <<'PY'
+          import json, os, urllib.request, urllib.parse
+          out = []
+          for q in ['fitting room mirror', 'clothing boutique interior', 'minimal fashion store', 'clothes rack aesthetic', 'pastel clothing store']:
+              u = 'https://api.unsplash.com/search/photos?per_page=8&orientation=landscape&content_filter=high&query=' + urllib.parse.quote(q)
+              r = json.load(urllib.request.urlopen(urllib.request.Request(u, headers={'Authorization': 'Client-ID ' + os.environ['KEY'], 'Accept-Version': 'v1'}), timeout=30))
+              out += [{'q': q, 'raw': p['urls']['raw'], 'by': p['user']['name'], 'user': p['user']['links']['html'], 'alt': p.get('alt_description')} for p in r['results']]
+          json.dump(out, open('/tmp/e/ambiance.json', 'w'), indent=1)
+          open('sheet.html', 'w').write('<body style="margin:0;font:12px sans-serif;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;width:1500px">' + ''.join(f'<div><img src="{p["raw"]}&w=300&h=200&fit=crop&q=60" style="width:100%;display:block"><b>{i}</b></div>' for i, p in enumerate(out)))
+          PY
+          python3 get.py
           cat > t.js <<'JS'
-          const { chromium, devices } = require('playwright');
-          (async () => { const b = await chromium.launch();
-            for (const [n, o] of [['m', devices['iPhone 13']], ['d', { viewport: { width: 1440, height: 900 } }]]) {
-              const p = await (await b.newContext(o)).newPage(); const e = []; p.on('pageerror', x => e.push(x.message));
-              await p.goto('http://lookmiz.com/?v=' + Date.now()); await p.waitForTimeout(5000);
-              await p.screenshot({ path: `/tmp/e/${n}-accueil.png`, fullPage: true });
-              console.log(n, e, await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)); }
-            await b.close(); })();
+          const { chromium } = require('playwright');
+          (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1500, height: 900 } });
+            await p.goto('file:///tmp/pw/sheet.html'); await p.waitForTimeout(12000); await p.screenshot({ path: '/tmp/e/ambiance.png', fullPage: true }); await b.close(); })();
           JS
-          node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
+          node t.js > /tmp/e/journal.txt 2>&1; echo fini >> /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
