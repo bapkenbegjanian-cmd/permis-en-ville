@@ -329,14 +329,17 @@ async function refreshQuota() {
   const q = await api({ action: 'quota' }, 15000).catch(() => null);
   if (q && q._s === 200) state.quota = q;
 }
-const left = () => state.quota ? (state.quota.pro ? Infinity : Math.max(0, state.quota.free - state.quota.used)) : 0;
-const quotaPill = () => state.quota && !state.quota.pro ? `<span class="pill"><i></i>${left()} essai${left() > 1 ? 's' : ''} gratuit${left() > 1 ? 's' : ''} restant${left() > 1 ? 's' : ''}</span>` : '';
+// Essais gratuits : 1 pour « Mes looks » (les 3 looks), 1 pour « En magasin »
+const kindOf = g => String(g).startsWith('shop') ? 'shop' : 'look';
+const left = (k = state.mode === 'shop' ? 'shop' : 'look') => { const q = state.quota; if (!q) return 0; if (q.pro) return Infinity;
+  const used = typeof q.used === 'object' ? q.used[k] : q.used, free = typeof q.free === 'object' ? q.free[k] : q.free; return Math.max(0, free - used); };
+const quotaPill = () => state.quota && !state.quota.pro ? `<span class="pill"><i></i>${left() ? `${left()} essai gratuit ${state.mode === 'shop' ? 'en magasin' : 'de looks'}` : `Essai gratuit ${state.mode === 'shop' ? 'en magasin' : 'de looks'} utilisé`}</span>` : '';
 const tkey = l => state.g + state.o + l.id;
 let queue = Promise.resolve();
 function runTry(k, garment, group) {
   if (tries[k] && tries[k].st !== 'err') return;
   group = group || 'g' + Date.now() + Math.random().toString(36).slice(2, 8);
-  if (state.quota && left() <= 0 && !usedGroups.has(group)) { tries[k] = { st: 'quota' }; return; }
+  if (state.quota && left(kindOf(group)) <= 0 && !usedGroups.has(group)) { tries[k] = { st: 'quota' }; return; }
   tries[k] = { st: 'run' };
   queue = queue.then(async () => {
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -346,7 +349,9 @@ function runTry(k, garment, group) {
         if (r._s === 402) { tries[k] = { st: 'quota' }; break; }
         if (r._s === 401) { tries[k] = { st: 'err', why: 'connexion expirée, reconnecte-toi' }; break; }
         if (!r.id) throw new Error(r.message || r.error || 'refusé');
-        started = true; if (state.quota && !usedGroups.has(group)) state.quota.used++; usedGroups.add(group);
+        started = true;
+        if (state.quota && !usedGroups.has(group)) { const q = state.quota, kk = kindOf(group); if (typeof q.used === 'object') q.used[kk]++; else q.used++; }
+        usedGroups.add(group);
         while (Date.now() - t0 < 120000) {
           await wait(2500);
           const s = await api({ action: 'status', id: r.id }, 20000).catch(() => ({}));
@@ -471,7 +476,7 @@ const S = [
     </section>`,
   () => `<section class="screen solo">
       <h2>${state.signup ? 'Crée ton compte' : 'Connecte-toi'} <span class="hl">${state.signup ? 'gratuit' : ''}</span></h2>
-      <p class="sub">${state.signup ? 'Un e-mail et un mot de passe, c\'est tout. <b>3 essais offerts.</b>' : 'Avec l\'e-mail et le mot de passe de ton compte.'}</p>
+      <p class="sub">${state.signup ? 'Un e-mail et un mot de passe, c\'est tout. <b>1 essai de looks et 1 essai en magasin offerts.</b>' : 'Avec l\'e-mail et le mot de passe de ton compte.'}</p>
       ${session ? `<button class="cta" type="button" data-go="1">Tu es connecté, continuer →</button>` : ''}
       <form id="login" class="loginbox">
         <input id="email" type="email" required autocomplete="email" placeholder="ton@email.com" aria-label="Adresse e-mail">
@@ -482,7 +487,7 @@ const S = [
     </section>`,
   () => `<section class="screen">
       <div class="shophero"><span class="pill" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff"><i></i>Cabine+</span>
-        <h2>Tes 3 essais gratuits <span class="hl">sont utilisés</span></h2>
+        <h2>Ton essai gratuit <span class="hl">est utilisé</span></h2>
         <p class="sub" style="color:#c9cdd8">Cabine+ arrive bientôt : essais illimités, tous les looks, le mode magasin sans limite.</p></div>
       <div class="steps3"><div><span>♾️</span><p style="margin:0"><b>Essais illimités</b>Tous les habits que tu veux.</p></div>
         <div><span>🛍️</span><p style="margin:0"><b>Mode magasin</b>Photo ou lien, sans limite.</p></div>
@@ -572,7 +577,7 @@ document.addEventListener('click', e => {
   else if ('logout' in t.dataset) { sb.auth.signOut(); session = null; state.quota = null; }
   else if ('trylook' in t.dataset) { const l = looks()[state.pick]; tryOn(l); if ((tries[tkey(l)] || {}).st === 'quota') { state.step = 9; render(); } else render(true); return; }
   else if ('import' in t.dataset) { importLink(); return; }
-  else if ('shoptry' in t.dataset) { const k = 'shop' + state.gid; delete tries[k]; runTry(k, state.garment); state.step = tries[k].st === 'quota' ? 9 : 6; }
+  else if ('shoptry' in t.dataset) { const k = 'shop' + state.gid; delete tries[k]; runTry(k, state.garment, 'shop' + Date.now() + state.gid); state.step = tries[k].st === 'quota' ? 9 : 6; }
   else if (t.dataset.go) { state.step = +t.dataset.go; if (t.dataset.newg) state.garment = null; if (state.step === 2) { loadPose().catch(() => {}); loadSeg().catch(() => {}); loadFace().catch(() => {}); } }
   else if (t.dataset.occ) { state.o = t.dataset.occ; state.step = 3; render(); runAnalysis(); return; }
   else if (t.dataset.gender) { state.g = t.dataset.gender; t.closest('p').remove(); say(`Profil : <b>${state.g === 'f' ? 'Femme' : 'Homme'}</b>`); if (!state.m) state.m = 'H'; startTries(); return; }
@@ -590,7 +595,7 @@ $('#photo').addEventListener('change', e => {
   shrink(f).then(d => { e.target.value = ''; if (!d) return;
     state.photo = d; state.g = state.m = null; for (const k in tries) delete tries[k];
     try { localStorage.setItem('cabine-photo', d); state.saved = true; } catch (_) {}
-    if (state.step === 6) { runTry('shop' + state.gid, state.garment); render(); return; }
+    if (state.step === 6) { runTry('shop' + state.gid, state.garment, 'shop' + Date.now() + state.gid); render(); return; }
     loadPose().catch(() => {}); loadSeg().catch(() => {}); loadFace().catch(() => {});
     if (state.step === 4) { state.step = 3; render(); runAnalysis(); } else render(); });
 });

@@ -1,11 +1,12 @@
 // Fonction Supabase « bright-endpoint » de Cabine.
 // Elle garde la clé FASHN côté serveur, vérifie que la personne est connectée,
-// compte ses essais (3 gratuits ; un essai = jusqu'à 3 images, par exemple les 3 looks)
+// compte ses essais gratuits (1 essai « looks » de 3 images + 1 essai « magasin »)
 // et lit la photo d'un habit à partir d'un lien.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
-const FREE = 3, PER_TRY = 3;
+const FREE = { look: 1, shop: 1 }, PER_TRY = 3;
+const kind = (g: string) => g.startsWith('shop') ? 'shop' : 'look';
 const json = (d: unknown, status = 200) => new Response(JSON.stringify(d), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const fashnKey = Deno.env.get('FASHN_KEY') ?? Deno.env.get('KEY') ?? Deno.env.get('key');
@@ -16,7 +17,9 @@ async function quota(uid: string) {
   for (const r of rows ?? []) { const g = r.groupe ?? 'x' + r.id; groups.set(g, (groups.get(g) ?? 0) + 1); }
   const { data: ab } = await admin.from('abonnes').select('fin').eq('user_id', uid).maybeSingle();
   const pro = !!(ab && (!ab.fin || new Date(ab.fin) > new Date()));
-  return { used: groups.size, free: FREE, pro, groups };
+  const used = { look: 0, shop: 0 };
+  for (const g of groups.keys()) used[kind(g)]++;
+  return { used, free: FREE, pro, groups };
 }
 
 // Lit la photo d'aperçu (og:image) d'une page produit, comme le font les messageries pour les liens partagés
@@ -52,7 +55,8 @@ Deno.serve(async (req) => {
     const { groups, ...q } = await quota(user.id), g = /^[\w-]{4,60}$/.test(group || '') ? group : null;
     const inGroup = g ? groups.get(g) ?? 0 : 0;
     if (inGroup >= PER_TRY) return json({ error: 'limite par essai' }, 429);
-    if (!q.pro && !inGroup && q.used >= FREE) return json({ error: 'quota', ...q }, 402);
+    const k = kind(g ?? 'look');
+    if (!q.pro && !inGroup && q.used[k] >= FREE[k]) return json({ error: 'quota', kind: k, used: q.used, free: FREE }, 402);
     const r = await fetch('https://api.fashn.ai/v1/run', { method: 'POST', headers: auth, body: JSON.stringify(body) });
     const out = await r.json().catch(() => ({}));
     if (out.id) await admin.from('essais').insert({ user_id: user.id, prediction: out.id, groupe: g });
