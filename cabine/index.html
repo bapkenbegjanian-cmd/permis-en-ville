@@ -508,7 +508,7 @@ const S = [
     </section>`
 ];
 // Liens de paiement Stripe (Payment Links) et espace client pour résilier
-const PAY = { mois: 'https://buy.stripe.com/dRm4gzbGU6tybcw1FO0sU00', an: 'https://buy.stripe.com/aFadR9h1eg48dkE2JS0sU01', portail: '' };
+const PAY = { mois: 'https://buy.stripe.com/dRm4gzbGU6tybcw1FO0sU00', an: 'https://buy.stripe.com/aFadR9h1eg48dkE2JS0sU01', portail: 'https://billing.stripe.com/p/login/dRm4gzbGU6tybcw1FO0sU00' };
 function payHref(k) {
   if (!PAY[k]) return 'aria-disabled="true" title="Bientôt disponible"';
   if (!session) return 'href="#" data-start="look"';
