@@ -9,27 +9,20 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Test retour arriere Lookmiz
-        timeout-minutes: 8
+      - name: Chercher de nouveaux joueurs QuizzMatch
         run: |
           set +e
-          mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
-          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
-          curl -sL -o moi.jpg 'https://images.unsplash.com/photo-1715541448446-3369e1cc0ee9?ixid=M3wxMTE2NDI3fDB8MXxzZWFyY2h8NHx8ZmFzaGlvbiUyMG1vZGVsJTIwZnVsbCUyMGJvZHl8ZW58MXwxfHx8MTc5MzIxNDcyNHww&ixlib=rb-4.1.0&w=900&q=85&fm=jpg'
-          cat > t.js <<'JS'
-          const { chromium, devices } = require('playwright');
-          (async () => { const b = await chromium.launch(); const ctx = await b.newContext(devices['iPhone 13']); ctx.setDefaultTimeout(15000); const p = await ctx.newPage();
-            const h = async () => (await p.locator('.choices').count()) ? 'ACCUEIL' : (await p.textContent('h2').catch(() => '?'));
-            const hist = async () => p.evaluate(() => history.length + ' etat=' + JSON.stringify(history.state));
-            await p.goto('https://example.com'); await p.goto('http://lookmiz.com/?v=' + Date.now()); await p.waitForTimeout(3000);
-            await p.click('[data-start="look"]'); await p.fill('#email', 'back.' + Date.now() + '@gmail.com'); await p.fill('#pass', 'Back-' + Date.now()); await p.click('#login .cta'); await p.waitForTimeout(3500);
-            console.log('apres connexion:', await h(), await hist());
-            await p.setInputFiles('#photo', 'moi.jpg'); await p.waitForTimeout(1500); console.log('photo:', await h(), await hist());
-            await p.click('[data-go="2"]'); await p.waitForTimeout(800); console.log('occasion:', await h(), await hist());
-            for (let i = 1; i <= 6; i++) { await p.goBack().catch(() => {}); await p.waitForTimeout(1200); console.log('retour', i, ':', p.url().includes('example') ? 'QUITTE' : await h(), p.url().includes('example') ? '' : await hist()); if (p.url().includes('example')) break; }
-            await b.close(); })().catch(e => console.log('ECHEC', e.message));
-          JS
-          node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
+          mkdir -p /tmp/e && cd /tmp/e
+          curl -s 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=pseudo,quiz,points,created_at&order=created_at.desc&limit=3000' -H "apikey: sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h" > /tmp/scores.json
+          cat > /tmp/c.py <<'PY'
+          import json
+          d = json.load(open('/tmp/scores.json'))
+          known = set("Lina_92 Yanis Mehdi.R Sarah Tom06 Kevin_L Ines Nina Lucas Hugo Jade Adam Rayan Emma Noah ChloeB Theo Sofia Amine Leo Maxime Yasmine Enzo Camille Ilyes QuizKing Moon Zizou10 Nora Dylan Lea.M Samy Jules Manon Bilel Anais Kenzo Louna Nassim Clara Babi TestA TestB".split())
+          new = [x for x in d if x['pseudo'] not in known]
+          print('total', len(d), 'nouveaux', len(new), 'pseudos', sorted(set(x['pseudo'] for x in new)))
+          for x in new[:30]: print(x['created_at'][:16], x['pseudo'], x['quiz'], x['points'])
+          PY
+          python3 /tmp/c.py > journal.txt 2>&1; cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
