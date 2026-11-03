@@ -9,20 +9,40 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Chercher de nouveaux joueurs QuizzMatch
+      - name: Photos de decor pour les cartes (Unsplash)
+        timeout-minutes: 10
+        env:
+          KEY: ${{ secrets.UNSPLASH_KEY }}
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e
-          curl -s 'https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=pseudo,quiz,points,created_at&order=created_at.desc&limit=3000' -H "apikey: sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h" > /tmp/scores.json
-          cat > /tmp/c.py <<'PY'
-          import json
-          d = json.load(open('/tmp/scores.json'))
-          known = set("Lina_92 Yanis Mehdi.R Sarah Tom06 Kevin_L Ines Nina Lucas Hugo Jade Adam Rayan Emma Noah ChloeB Theo Sofia Amine Leo Maxime Yasmine Enzo Camille Ilyes QuizKing Moon Zizou10 Nora Dylan Lea.M Samy Jules Manon Bilel Anais Kenzo Louna Nassim Clara Babi TestA TestB".split())
-          new = [x for x in d if x['pseudo'] not in known]
-          print('total', len(d), 'nouveaux', len(new), 'pseudos', sorted(set(x['pseudo'] for x in new)))
-          for x in new[:30]: print(x['created_at'][:16], x['pseudo'], x['quiz'], x['points'])
+          mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
+          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
+          cat > get.py <<'PY'
+          import json, os, urllib.request, urllib.parse
+          Q = {"anniversaire": "birthday party decoration", "anniversaire-enfant": "kids party balloons", "mariage": "wedding flowers decoration", "fiancailles": "engagement ring flowers", "henne": "henna night decoration lanterns", "bapteme": "white flowers baby", "baby-shower": "baby shower decoration", "gender-reveal": "pink blue balloons", "soiree": "party lights night", "cremaillere": "cozy home interior", "evjf": "bachelorette party pink", "diplome": "graduation cap", "joyeux-anniversaire": "birthday cake candles", "noel": "christmas decoration lights", "nouvel-an": "new year fireworks champagne", "aid": "eid mubarak lantern", "ramadan": "ramadan lantern night", "saint-valentin": "valentine roses", "fete-des-meres": "flower bouquet pastel", "fete-des-peres": "father day vintage", "paques": "easter eggs spring", "felicitations": "confetti celebration", "naissance": "newborn baby soft", "merci": "thank you flowers", "retablissement": "sunflowers bright"}
+          out = {}
+          for k, q in Q.items():
+              try:
+                  u = 'https://api.unsplash.com/search/photos?per_page=16&orientation=portrait&content_filter=high&query=' + urllib.parse.quote(q)
+                  r = json.load(urllib.request.urlopen(urllib.request.Request(u, headers={'Authorization': 'Client-ID ' + os.environ['KEY'], 'Accept-Version': 'v1'}), timeout=30))
+                  out[k] = [{'u': p['urls']['raw'], 'by': p['user']['name'], 'c': p.get('color')} for p in r['results'] if not (p.get('premium') or p.get('plus'))]
+              except Exception as e:
+                  out[k] = []; print('ERR', k, e)
+          json.dump(out, open('/tmp/e/decors.json', 'w'))
+          keys = list(Q)
+          for part in range(5):
+              ks = keys[part * 5:(part + 1) * 5]
+              h = '<body style="margin:0;font:13px sans-serif;width:1700px">' + ''.join(f'<div style="display:flex;gap:3px;margin-bottom:6px;align-items:center"><b style="width:110px">{k}</b>' + ''.join(f'<div style="width:96px"><img src="{p["u"]}&w=120&h=160&fit=crop&q=50" style="width:96px;height:128px;object-fit:cover;display:block"><small>{i}</small></div>' for i, p in enumerate(out[k])) + '</div>' for k in ks)
+              open(f'sheet{part}.html', 'w').write(h)
           PY
-          python3 /tmp/c.py > journal.txt 2>&1; cat journal.txt
+          python3 get.py > /tmp/e/journal.txt 2>&1
+          cat > t.js <<'JS'
+          const { chromium } = require('playwright');
+          (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1700, height: 900 } });
+            for (let i = 0; i < 5; i++) { await p.goto('file:///tmp/pw/sheet' + i + '.html'); await p.waitForTimeout(9000); await p.screenshot({ path: '/tmp/e/decor' + i + '.png', fullPage: true }); }
+            await b.close(); })();
+          JS
+          node t.js >> /tmp/e/journal.txt 2>&1; echo fini >> /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
