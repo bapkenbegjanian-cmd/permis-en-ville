@@ -16,8 +16,8 @@ jobs:
           npm i -s playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
           cat > s.js <<'JS'
           const {chromium,devices}=require('playwright');(async()=>{const b=await chromium.launch({args:['--use-gl=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});const p=await b.newPage({...devices['iPhone 13'],deviceScaleFactor:2});const L=[];p.on('pageerror',x=>L.push('ERR '+x.message));p.on('console',m=>{if(m.type()==='error')L.push('C '+m.text())});
-          await new Promise(r=>setTimeout(r,70000));await p.goto('https://lookmiz.com/?v='+Date.now()+'#m-mariage-1',{waitUntil:'networkidle'});await p.waitForTimeout(1500);
-          await p.fill('[data-f=noms]','Claire & Thomas');await p.click('[data-preview]',{force:true});await p.waitForTimeout(5000);await p.screenshot({path:'a0.png'});
+          await new Promise(r=>setTimeout(r,70000));await p.goto('https://lookmiz.com/?v='+Date.now()+'#m-anniversaire-enfant-3',{waitUntil:'networkidle'});await p.waitForTimeout(1500);
+          await p.fill('[data-f=noms]','Lucas');await p.click('[data-preview]',{force:true});await p.waitForTimeout(5000);await p.screenshot({path:'a0.png'});
           L.push('3D: '+await p.evaluate(()=>!!document.querySelector('.g3 canvas')));
           await p.mouse.click(195,420);for(let i=1;i<6;i++){await p.waitForTimeout(500);await p.screenshot({path:'a'+i+'.png'});}
           require('fs').writeFileSync('journal.txt',L.join('\n'));await b.close()})()
