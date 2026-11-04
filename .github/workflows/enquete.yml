@@ -15,11 +15,11 @@ jobs:
           mkdir -p /tmp/e && cd /tmp/e
           npm i -s playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
           cat > s.js <<'JS'
-          const {chromium,devices}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({...devices['Pixel 5']});const L=[];p.on('pageerror',x=>L.push('ERR '+x.message));
-          await new Promise(r=>setTimeout(r,60000));await p.goto('https://lookmiz.com/?v='+Date.now()+'#m-mariage-6',{waitUntil:'networkidle'});await p.waitForTimeout(1500);
-          await p.click('[data-ouv=coffret]',{force:true});await p.fill('[data-f=yt]','https://www.youtube.com/watch?v=hT_nvWreIhg');await p.click('[data-preview]',{force:true});await p.waitForTimeout(4000);
-          await p.mouse.click(196,420);await p.waitForTimeout(1200);await p.screenshot({path:'a.png'});await p.waitForTimeout(5000);await p.screenshot({path:'b.png'});
-          L.push('etat lecteur: '+await p.evaluate(()=>{try{return YTP.getPlayerState()+' t='+YTP.getCurrentTime()}catch(e){return 'x '+e.message}}));L.push('tap: '+await p.evaluate(()=>!!document.querySelector('.music.tap')));
+          const {chromium,devices}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({...devices['Pixel 5'],deviceScaleFactor:1});const L=[];
+          await p.goto('https://istudio.am/wedding/artur-yeva',{waitUntil:'networkidle',timeout:60000});await p.waitForTimeout(3000);await p.screenshot({path:'a0.png'});
+          await p.mouse.click(196,600);for(let i=1;i<6;i++){await p.waitForTimeout(700);await p.screenshot({path:'a'+i+'.png'});}
+          await p.waitForTimeout(3000);await p.screenshot({path:'b.png',fullPage:true});
+          L.push(await p.title());L.push((await p.innerText('body')).slice(0,5000));L.push('audio/video/iframe: '+await p.evaluate(()=>[...document.querySelectorAll('audio,video,iframe,canvas')].map(e=>e.tagName+' '+(e.src||'').slice(0,80)).join(' | ')));
           require('fs').writeFileSync('journal.txt',L.join('\n'));await b.close()})()
           JS
           node s.js > err.txt 2>&1; rm -rf node_modules package*.json s.js
