@@ -9,7 +9,7 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Captures des cartes Lookmiz
+      - name: Captures Lookmiz
         timeout-minutes: 8
         run: |
           set +e
@@ -18,13 +18,14 @@ jobs:
           sleep 70
           cat > t.js <<'JS'
           const { chromium, devices } = require('playwright');
-          (async () => { const b = await chromium.launch(); const p = await (await b.newContext(devices['iPhone 13'])).newPage(); const e = []; p.on('pageerror', x => e.push(x.message));
-            const U = 'http://lookmiz.com/?v=' + Date.now();
-            for (const o of ['mariage']) { await p.goto(U + '#o-' + o); await p.waitForTimeout(6000); await p.screenshot({ path: `/tmp/e/g-${o}.png`, fullPage: true }); }
-            await p.goto(U + '#m-anniversaire-1'); await p.waitForTimeout(5000); await p.screenshot({ path: '/tmp/e/ed.png' });
-            await p.click('[data-preview]', { force: true }); await p.waitForTimeout(1500); await p.screenshot({ path: '/tmp/e/env.png' });
-            await p.click('#env'); await p.waitForTimeout(4500); await p.screenshot({ path: '/tmp/e/open.png', fullPage: true });
-            await p.goto(U); await p.waitForTimeout(6000); await p.screenshot({ path: '/tmp/e/home.png', fullPage: true }); await p.goto(U + '#cat-inv'); await p.waitForTimeout(5000); await p.screenshot({ path: '/tmp/e/cat.png', fullPage: true });
+          (async () => { const b = await chromium.launch(); const e = [];
+            for (const [n, o] of [['m', devices['iPhone 13']], ['d', { viewport: { width: 1440, height: 900 } }]]) {
+              const p = await (await b.newContext(o)).newPage(); p.on('pageerror', x => e.push(x.message));
+              const U = 'http://lookmiz.com/?v=' + Date.now();
+              await p.goto(U); await p.waitForTimeout(7000); await p.screenshot({ path: `/tmp/e/${n}-home.png`, fullPage: true });
+              if (n === 'm') { await p.goto(U + '#m-mariage-2'); await p.waitForTimeout(4000);
+                for (const x of ['Camille', 'Thomas et Julie']) { await p.fill('#tagin', x); await p.click('[data-addtag]'); }
+                await p.screenshot({ path: '/tmp/e/m-ed.png', fullPage: true }); } }
             console.log('erreurs', e); await b.close(); })();
           JS
           node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
