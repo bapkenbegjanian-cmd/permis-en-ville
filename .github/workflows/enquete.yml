@@ -14,11 +14,23 @@ jobs:
           set +e
           mkdir -p /tmp/e && cd /tmp/e
           F=https://ctgjnpxdaqdnrcxjwnkp.supabase.co/functions/v1/paiement-
+          R=https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1
           K=sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h
-          ID=test$(date +%s)ab; CLE=clefdetest$(date +%s)
-          { echo "carte:"; curl -s -w " [%{http_code}]" -X POST "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/cartes" -H "apikey: $K" -H 'Content-Type: application/json' -H 'Prefer: return=minimal' -d "{\"id\":\"$ID\",\"cle\":\"$CLE\",\"data\":{\"mid\":\"mariage-1\",\"f\":{\"titre\":\"Test\",\"dest\":[\"A\",\"B\"]}}}"; echo
-            echo "lire avant paiement:"; curl -s -X POST "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/rpc/lire_carte" -H "apikey: $K" -H 'Content-Type: application/json' -d "{\"p_id\":\"$ID\"}"; echo
-            echo "checkout:"; curl -s -w " [%{http_code}]" -X POST "$F" -H "apikey: $K" -H "Authorization: Bearer $K" -H 'Content-Type: application/json' -d "{\"action\":\"checkout\",\"id\":\"$ID\",\"cle\":\"$CLE\"}" | cut -c1-90; echo; } > journal.txt 2>&1
+          for N in 1 3; do
+            ID=t$N$(date +%s)ab; CLE=clefdetest$(date +%s)
+            DEST=$( [ $N = 1 ] && echo '[]' || echo '["A","B","C"]' )
+            echo "== $N personne(s)" >> journal.txt
+            curl -s -w "insert [%{http_code}]\n" -X POST "$R/cartes" -H "apikey: $K" -H 'Content-Type: application/json' -H 'Prefer: return=minimal' -d "{\"id\":\"$ID\",\"cle\":\"$CLE\",\"invites\":[{\"t\":\"x1\",\"n\":\"A\"}],\"data\":{\"mid\":\"mariage-1\",\"f\":{\"titre\":\"Test\",\"dest\":$DEST}}}" >> journal.txt
+            echo -n "ouvrir avant paiement: " >> journal.txt; curl -s -X POST "$R/rpc/ouvrir_carte" -H "apikey: $K" -H 'Content-Type: application/json' -d "{\"p_id\":\"$ID\",\"p_t\":\"x1\",\"p_dev\":\"d1\"}" >> journal.txt; echo >> journal.txt
+            U=$(curl -s -X POST "$F" -H "apikey: $K" -H "Authorization: Bearer $K" -H 'Content-Type: application/json' -d "{\"action\":\"checkout\",\"id\":\"$ID\",\"cle\":\"$CLE\"}" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('url') or d)")
+            echo "checkout: ${U:0:60}" >> journal.txt
+            echo "$U" > u$N.txt
+          done
+          npm i -s playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
+          cat > s.js <<'JS'
+          const {chromium}=require('playwright');(async()=>{const b=await chromium.launch();for(const n of [1,3]){const p=await b.newPage({viewport:{width:1100,height:800}});await p.goto(require('fs').readFileSync('u'+n+'.txt','utf8').trim());await p.waitForTimeout(6000);await p.screenshot({path:'stripe'+n+'.png'});}await b.close()})()
+          JS
+          node s.js >> journal.txt 2>&1; rm -rf node_modules package*.json s.js
           cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
