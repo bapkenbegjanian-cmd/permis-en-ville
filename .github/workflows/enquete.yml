@@ -9,26 +9,17 @@ jobs:
   enquete:
     runs-on: ubuntu-latest
     steps:
-      - name: Video ouverture Lookmiz
-        timeout-minutes: 8
+      - name: Test paiement Lookmiz
         run: |
           set +e
-          mkdir -p /tmp/e /tmp/pw && cd /tmp/pw
-          sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
-          npm init -y >/dev/null 2>&1; npm i playwright@1.47.2 >/dev/null 2>&1; npx playwright install --with-deps chromium >/dev/null 2>&1
-          sleep 70
-          cat > t.js <<'JS'
-          const { chromium, devices } = require('playwright');
-          (async () => { const b = await chromium.launch(); const e = [];
-            const ctx = await b.newContext({ ...devices['iPhone 13'], recordVideo: { dir: '/tmp/pw/v', size: { width: 390, height: 664 } } });
-            const p = await ctx.newPage(); p.on('pageerror', x => e.push(x.message));
-            await p.goto('http://lookmiz.com/?v=' + Date.now() + '#m-mariage-1'); await p.waitForTimeout(3000);
-            await p.click('[data-preview]', { force: true }); await p.waitForTimeout(2000);
-            await p.click('.env3d', { force: true }); await p.waitForTimeout(5000);
-            await ctx.close(); console.log('erreurs', e); await b.close(); })();
-          JS
-          node t.js > /tmp/e/journal.txt 2>&1; cat /tmp/e/journal.txt
-          V=$(ls /tmp/pw/v/*.webm | head -1); for t in 5.0 5.5 6.0 6.4 6.8 7.2 7.8 8.6; do ffmpeg -v error -y -ss $t -i "$V" -frames:v 1 -vf scale=230:-1 /tmp/e/f$t.png; done
+          mkdir -p /tmp/e && cd /tmp/e
+          F=https://ctgjnpxdaqdnrcxjwnkp.supabase.co/functions/v1/paiement-
+          K=sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h
+          ID=test$(date +%s)ab; CLE=clefdetest$(date +%s)
+          { echo "carte:"; curl -s -w " [%{http_code}]" -X POST "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/cartes" -H "apikey: $K" -H 'Content-Type: application/json' -H 'Prefer: return=minimal' -d "{\"id\":\"$ID\",\"cle\":\"$CLE\",\"data\":{\"mid\":\"mariage-1\",\"f\":{\"titre\":\"Test\",\"dest\":[\"A\",\"B\"]}}}"; echo
+            echo "lire avant paiement:"; curl -s -X POST "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/rpc/lire_carte" -H "apikey: $K" -H 'Content-Type: application/json' -d "{\"p_id\":\"$ID\"}"; echo
+            echo "checkout:"; curl -s -w " [%{http_code}]" -X POST "$F" -H "apikey: $K" -H "Authorization: Bearer $K" -H 'Content-Type: application/json' -d "{\"action\":\"checkout\",\"id\":\"$ID\",\"cle\":\"$CLE\"}" | cut -c1-90; echo; } > journal.txt 2>&1
+          cat journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
