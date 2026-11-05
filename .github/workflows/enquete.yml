@@ -12,11 +12,27 @@ jobs:
       - name: Test paiement Lookmiz
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e
-          curl -sL https://polyhaven.com/license | python3 -c "import sys,re,html;t=sys.stdin.read();t=re.sub(r'<script.*?</script>|<style.*?</style>','',t,flags=re.S);t=re.sub(r'<[^>]+>',' ',t);print(re.sub(r'\s+',' ',html.unescape(t))[:3500])" > licence.txt
-          curl -sL "https://api.polyhaven.com/assets?t=models" | python3 -c "import sys,json;d=json.load(sys.stdin);print(len(d));[print(k,'|',v.get('name'),'|',','.join(v.get('categories',[])),'|',','.join(v.get('tags',[]))[:120]) for k,v in sorted(d.items())]" > modeles.txt
-          curl -sL "https://api.polyhaven.com/assets?t=hdris&c=studio" | python3 -c "import sys,json;d=json.load(sys.stdin);print(len(d));[print(k,'|',v.get('name')) for k,v in sorted(d.items())]" > hdris.txt
-          echo ok > journal.txt
+          mkdir -p /tmp/e/assets /tmp/w && cd /tmp/w
+          npm i -s @gltf-transform/cli@4.1.1 >/dev/null 2>&1
+          cat > dl.py <<'PY'
+          import json, os, sys, urllib.request
+          def get(u): return urllib.request.urlopen(urllib.request.Request(u, headers={'User-Agent': 'lookmiz-asset-fetch'})).read()
+          ids = sys.argv[1].split(',')
+          for i in ids:
+              try:
+                  f = json.loads(get('https://api.polyhaven.com/files/' + i))
+                  g = f['gltf']['1k']['gltf']; d = 'src/' + i; os.makedirs(d, exist_ok=True)
+                  open(d + '/m.gltf', 'wb').write(get(g['url']))
+                  for path, inc in g.get('include', {}).items():
+                      os.makedirs(os.path.dirname(d + '/' + path), exist_ok=True); open(d + '/' + path, 'wb').write(get(inc['url']))
+                  print('ok', i)
+              except Exception as e: print('ERR', i, e)
+          h = json.loads(get('https://api.polyhaven.com/files/brown_photostudio_02'))['hdri']['1k']['hdr']['url']
+          open('/tmp/e/assets/studio.hdr', 'wb').write(get(h)); print('hdr ok')
+          PY
+          python3 dl.py rubber_duck_toy,treasure_chest,strawberry_chocolate_cake,carrot_cake,brass_candleholders,brass_diya_lantern,Lantern_01,tea_set_01,wooden_candlestick,lambis_shell,Chandelier_02,brass_goblets,pocket_watch,mantel_clock_01,fir_sapling_medium,wine_bottles_01,standing_picture_frame_01,potted_plant_02,wicker_basket_01,horse_statue_01,garden_gnome,ornate_mirror_01,brass_vase_03,food_pomegranate_01,vintage_oil_lamp,brass_pot_01 > /tmp/e/journal.txt 2>&1
+          for d in src/*; do n=$(basename $d); npx gltf-transform optimize $d/m.gltf /tmp/e/assets/$n.glb --texture-compress webp --texture-size 512 --compress false >> /tmp/e/journal.txt 2>&1 || echo "ERR opt $n" >> /tmp/e/journal.txt; done
+          ls -la /tmp/e/assets >> /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
