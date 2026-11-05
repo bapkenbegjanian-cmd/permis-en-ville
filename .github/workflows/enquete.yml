@@ -13,17 +13,10 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          npm i -s playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-          cat > s.js <<'JS'
-          const {chromium,devices}=require('playwright');(async()=>{const b=await chromium.launch({args:['--use-gl=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});const p=await b.newPage({...devices['iPhone 13'],deviceScaleFactor:1});const L=[];p.on('pageerror',x=>L.push('ERR '+x.message));p.on('console',m=>{if(m.type()==='error')L.push('C '+m.text())});
-          await new Promise(r=>setTimeout(r,60000));
-          await p.goto('https://lookmiz.com/?v='+Date.now(),{waitUntil:'networkidle'});await p.waitForTimeout(4000);await p.screenshot({path:'a0.png'});
-          await p.goto('https://lookmiz.com/?v='+Date.now()+'#o-anniversaire-enfant',{waitUntil:'networkidle'});await p.waitForTimeout(5000);await p.screenshot({path:'a1.png'});
-          await p.goto('https://lookmiz.com/?v='+Date.now()+'#m-mariage-1',{waitUntil:'networkidle'});await p.waitForTimeout(4000);await p.screenshot({path:'a2.png'});
-          await p.click('[data-preview]');await p.waitForTimeout(4000);await p.mouse.click(195,330);await p.waitForTimeout(2500);await p.screenshot({path:'a3.png'});await p.waitForTimeout(3500);await p.screenshot({path:'a4.png'});
-          require('fs').writeFileSync('journal.txt',L.join('\n')||'aucune erreur');await b.close()})()
-          JS
-          node s.js > err.txt 2>&1; rm -rf node_modules package*.json s.js
+          curl -sL https://polyhaven.com/license | python3 -c "import sys,re,html;t=sys.stdin.read();t=re.sub(r'<script.*?</script>|<style.*?</style>','',t,flags=re.S);t=re.sub(r'<[^>]+>',' ',t);print(re.sub(r'\s+',' ',html.unescape(t))[:3500])" > licence.txt
+          curl -sL "https://api.polyhaven.com/assets?t=models" | python3 -c "import sys,json;d=json.load(sys.stdin);print(len(d));[print(k,'|',v.get('name'),'|',','.join(v.get('categories',[])),'|',','.join(v.get('tags',[]))[:120]) for k,v in sorted(d.items())]" > modeles.txt
+          curl -sL "https://api.polyhaven.com/assets?t=hdris&c=studio" | python3 -c "import sys,json;d=json.load(sys.stdin);print(len(d));[print(k,'|',v.get('name')) for k,v in sorted(d.items())]" > hdris.txt
+          echo ok > journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
