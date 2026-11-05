@@ -27,11 +27,9 @@ jobs:
                       os.makedirs(os.path.dirname(d + '/' + path), exist_ok=True); open(d + '/' + path, 'wb').write(get(inc['url']))
                   print('ok', i)
               except Exception as e: print('ERR', i, e)
-          h = json.loads(get('https://api.polyhaven.com/files/brown_photostudio_02'))['hdri']['1k']['hdr']['url']
-          open('/tmp/e/assets/studio.hdr', 'wb').write(get(h)); print('hdr ok')
           PY
-          python3 dl.py rubber_duck_toy,treasure_chest,strawberry_chocolate_cake,carrot_cake,brass_candleholders,brass_diya_lantern,Lantern_01,tea_set_01,wooden_candlestick,lambis_shell,Chandelier_02,brass_goblets,pocket_watch,mantel_clock_01,fir_sapling_medium,wine_bottles_01,standing_picture_frame_01,potted_plant_02,wicker_basket_01,horse_statue_01,garden_gnome,ornate_mirror_01,brass_vase_03,food_pomegranate_01,vintage_oil_lamp,brass_pot_01 > /tmp/e/journal.txt 2>&1
-          for d in src/*; do n=$(basename $d); npx gltf-transform optimize $d/m.gltf /tmp/e/assets/$n.glb --texture-compress webp --texture-size 512 --compress false >> /tmp/e/journal.txt 2>&1 || echo "ERR opt $n" >> /tmp/e/journal.txt; done
+          python3 dl.py treasure_chest,carved_wooden_elephant,wooden_lantern_01,lantern_chandelier_01,ceramic_vase_02,potted_plant_01,vintage_suitcase,alarm_clock_01,Ukulele_01,boombox,antique_ceramic_vase_01,brass_vase_01,lion_head,seadogs_compass,wooden_bowl_01,food_apple_01,food_lime_01,lemon,wicker_basket_02,throw_pillows_01,decorative_book_set_01,postcard_set_01,magnifying_glass_01,vintage_pocket_watch,fancy_picture_frame_01,ceramic_pot,chinese_chandelier,jug_01,brass_pan_01,pine_sapling_small,vintage_telephone_wall_clock,gaming_console,marble_bust_01,horse_head > /tmp/e/journal.txt 2>&1
+          for d in src/*; do n=$(basename $d); npx gltf-transform optimize $d/m.gltf /tmp/e/assets/$n.glb --texture-compress webp --texture-size 512 --compress false --join false --flatten false >> /tmp/e/journal.txt 2>&1 || echo "ERR opt $n" >> /tmp/e/journal.txt; done
           ls -la /tmp/e/assets >> /tmp/e/journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
