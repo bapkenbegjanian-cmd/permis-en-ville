@@ -12,25 +12,42 @@ jobs:
       - name: Test paiement Lookmiz
         run: |
           set +e
-          mkdir -p /tmp/e/assets /tmp/w && cd /tmp/w
-          npm i -s @gltf-transform/cli@4.1.1 >/dev/null 2>&1
-          cat > dl.py <<'PY'
-          import json, os, sys, urllib.request
-          def get(u): return urllib.request.urlopen(urllib.request.Request(u, headers={'User-Agent': 'lookmiz-asset-fetch'})).read()
-          ids = sys.argv[1].split(',')
-          for i in ids:
-              try:
-                  f = json.loads(get('https://api.polyhaven.com/files/' + i))
-                  g = f['gltf']['1k']['gltf']; d = 'src/' + i; os.makedirs(d, exist_ok=True)
-                  open(d + '/m.gltf', 'wb').write(get(g['url']))
-                  for path, inc in g.get('include', {}).items():
-                      os.makedirs(os.path.dirname(d + '/' + path), exist_ok=True); open(d + '/' + path, 'wb').write(get(inc['url']))
-                  print('ok', i)
-              except Exception as e: print('ERR', i, e)
+          mkdir -p /tmp/e && cd /tmp/e && pip install -q pillow >/dev/null 2>&1
+          cat > ex.py <<'PY'
+          import re, io, urllib.request
+          from PIL import Image, ImageDraw, ImageFont
+          UA = {'User-Agent': 'Mozilla/5.0 lookmiz-preview'}
+          def get(u): return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30).read()
+          def og(u):
+              h = get(u).decode('utf8', 'ignore'); m = re.search(r'property=["\']og:image["\'][^>]*content=["\']([^"\']+)', h) or re.search(r'content=["\']([^"\']+)["\'][^>]*property=["\']og:image', h)
+              return m.group(1) if m else None
+          S = [('Poly Haven (réaliste)', [('cdn', 'https://cdn.polyhaven.com/asset_img/thumbs/' + i + '.png?width=360') for i in ['rubber_duck_toy', 'treasure_chest', 'brass_diya_lantern', 'Chandelier_02', 'strawberry_chocolate_cake', 'ornate_mirror_01']]),
+               ('Kenney (jouet)', [('og', 'https://kenney.nl/assets/' + i) for i in ['holiday-kit', 'food-kit', 'toy-car-kit', 'furniture-kit', 'mini-characters', 'nature-kit']]),
+               ('Quaternius (animé)', [('og', u) for u in ['https://quaternius.itch.io/lowpoly-animated-animals', 'https://quaternius.com/packs/fantasypropsmegakit.html', 'https://quaternius.com/packs/ultimateanimatedanimals.html', 'https://quaternius.com/packs/cutepets.html', 'https://quaternius.com/packs/ultimatefarmanimals.html', 'https://quaternius.com/packs/ultimatefood.html']]),
+               ('Smithsonian (musée)', [('og', u) for u in ['https://3d.si.edu/object/3d/vase:f8b0b3a7-1f4b-4c1e-9b53-6ff3a5e5c0b2', 'https://www.si.edu/spotlight/openaccesshighlights', 'https://3d.si.edu/explore', 'https://3d.si.edu/']]),
+               ('OpenGameArt', [('og', u) for u in ['https://opengameart.org/content/animated-animales-low-poly', 'https://opengameart.org/content/furniture-kit', 'https://opengameart.org/content/lowpoly-animated-farm-animal-pack', 'https://opengameart.org/content/5-low-poly-animals']])]
+          rows = []
+          for name, items in S:
+              ims = []
+              for kind, u in items:
+                  try:
+                      src = u if kind == 'cdn' else og(u)
+                      if not src: print('no og', u); continue
+                      if src.startswith('/'): src = re.match(r'https?://[^/]+', u).group(0) + src
+                      im = Image.open(io.BytesIO(get(src))).convert('RGB'); im.thumbnail((300, 220)); ims.append(im); print('ok', u)
+                  except Exception as e: print('ERR', u, e)
+              rows.append((name, ims))
+          W = 1860; H = sum(270 for _ in rows); out = Image.new('RGB', (W, H), 'white'); d = ImageDraw.Draw(out)
+          try: F = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 26)
+          except Exception: F = None
+          y = 0
+          for name, ims in rows:
+              d.text((12, y + 8), name, fill='black', font=F); x = 10
+              for im in ims[:6]: out.paste(im, (x, y + 44)); x += 308
+              y += 270
+          out.save('exemples.png')
           PY
-          python3 dl.py treasure_chest,carved_wooden_elephant,wooden_lantern_01,lantern_chandelier_01,ceramic_vase_02,potted_plant_01,vintage_suitcase,alarm_clock_01,Ukulele_01,boombox,antique_ceramic_vase_01,brass_vase_01,lion_head,seadogs_compass,wooden_bowl_01,food_apple_01,food_lime_01,lemon,wicker_basket_02,throw_pillows_01,decorative_book_set_01,postcard_set_01,magnifying_glass_01,vintage_pocket_watch,fancy_picture_frame_01,ceramic_pot,chinese_chandelier,jug_01,brass_pan_01,pine_sapling_small,vintage_telephone_wall_clock,gaming_console,marble_bust_01,horse_head > /tmp/e/journal.txt 2>&1
-          for d in src/*; do n=$(basename $d); npx gltf-transform optimize $d/m.gltf /tmp/e/assets/$n.glb --texture-compress webp --texture-size 512 --compress false --join false --flatten false >> /tmp/e/journal.txt 2>&1 || echo "ERR opt $n" >> /tmp/e/journal.txt; done
-          ls -la /tmp/e/assets >> /tmp/e/journal.txt
+          python3 ex.py > journal.txt 2>&1
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
