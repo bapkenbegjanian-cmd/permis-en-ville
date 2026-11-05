@@ -13,41 +13,30 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e && pip install -q pillow >/dev/null 2>&1
-          cat > ex.py <<'PY'
-          import re, io, urllib.request
+          cat > sk.py <<'PY'
+          import json, io, urllib.request, urllib.parse
           from PIL import Image, ImageDraw, ImageFont
           UA = {'User-Agent': 'Mozilla/5.0 lookmiz-preview'}
           def get(u): return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30).read()
-          def og(u):
-              h = get(u).decode('utf8', 'ignore'); m = re.search(r'property=["\']og:image["\'][^>]*content=["\']([^"\']+)', h) or re.search(r'content=["\']([^"\']+)["\'][^>]*property=["\']og:image', h)
-              return m.group(1) if m else None
-          S = [('Poly Haven (réaliste)', [('cdn', 'https://cdn.polyhaven.com/asset_img/thumbs/' + i + '.png?width=360') for i in ['rubber_duck_toy', 'treasure_chest', 'brass_diya_lantern', 'Chandelier_02', 'strawberry_chocolate_cake', 'ornate_mirror_01']]),
-               ('Kenney (jouet)', [('og', 'https://kenney.nl/assets/' + i) for i in ['holiday-kit', 'food-kit', 'toy-car-kit', 'furniture-kit', 'mini-characters', 'nature-kit']]),
-               ('Quaternius (animé)', [('og', u) for u in ['https://quaternius.itch.io/lowpoly-animated-animals', 'https://quaternius.com/packs/fantasypropsmegakit.html', 'https://quaternius.com/packs/ultimateanimatedanimals.html', 'https://quaternius.com/packs/cutepets.html', 'https://quaternius.com/packs/ultimatefarmanimals.html', 'https://quaternius.com/packs/ultimatefood.html']]),
-               ('Smithsonian (musée)', [('og', u) for u in ['https://3d.si.edu/object/3d/vase:f8b0b3a7-1f4b-4c1e-9b53-6ff3a5e5c0b2', 'https://www.si.edu/spotlight/openaccesshighlights', 'https://3d.si.edu/explore', 'https://3d.si.edu/']]),
-               ('OpenGameArt', [('og', u) for u in ['https://opengameart.org/content/animated-animales-low-poly', 'https://opengameart.org/content/furniture-kit', 'https://opengameart.org/content/lowpoly-animated-farm-animal-pack', 'https://opengameart.org/content/5-low-poly-animals']])]
-          rows = []
-          for name, items in S:
-              ims = []
-              for kind, u in items:
-                  try:
-                      src = u if kind == 'cdn' else og(u)
-                      if not src: print('no og', u); continue
-                      if src.startswith('/'): src = re.match(r'https?://[^/]+', u).group(0) + src
-                      im = Image.open(io.BytesIO(get(src))).convert('RGB'); im.thumbnail((300, 220)); ims.append(im); print('ok', u)
-                  except Exception as e: print('ERR', u, e)
-              rows.append((name, ims))
-          W = 1860; H = sum(270 for _ in rows); out = Image.new('RGB', (W, H), 'white'); d = ImageDraw.Draw(out)
-          try: F = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 26)
-          except Exception: F = None
-          y = 0
-          for name, ims in rows:
-              d.text((12, y + 8), name, fill='black', font=F); x = 10
-              for im in ims[:6]: out.paste(im, (x, y + 44)); x += 308
-              y += 270
-          out.save('exemples.png')
+          Q = [('Mariage', 'wedding ring box'), ('Fleurs', 'rose bloom'), ('Anniversaire', 'birthday cake'), ('Cadeau', 'gift box opening'), ('Enfant', 'cute unicorn'), ('Noel', 'christmas'), ('Lanterne', 'lantern ramadan'), ('Ballons', 'balloons')]
+          F = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 22); f2 = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 15)
+          out = Image.new('RGB', (1860, 300 * len(Q)), 'white'); d = ImageDraw.Draw(out); links = []
+          for r, (lab, q) in enumerate(Q):
+              u = 'https://api.sketchfab.com/v3/search?' + urllib.parse.urlencode({'type': 'models', 'q': q, 'animated': 'true', 'sort_by': '-likeCount', 'count': 12})
+              try: res = json.loads(get(u))['results']
+              except Exception as e: print('ERR', q, e); continue
+              d.text((10, r * 300 + 6), lab, fill='black', font=F); x = 10; n = 0
+              for m in res:
+                  th = sorted(m['thumbnails']['images'], key=lambda i: abs(i['width'] - 400))[0]['url']
+                  try: im = Image.open(io.BytesIO(get(th))).convert('RGB')
+                  except Exception: continue
+                  im.thumbnail((300, 220)); out.paste(im, (x, r * 300 + 38)); d.text((x, r * 300 + 262), (str(n + 1) + '. ' + m['name'])[:32], fill='black', font=f2)
+                  links.append(f"{lab} {n+1} | {m['name']} | {m['viewerUrl']} | vendu={bool(m.get('isPurchasable') or m.get('price'))} | licence={(m.get('license') or {}).get('label') if isinstance(m.get('license'), dict) else m.get('license')}")
+                  x += 308; n += 1
+                  if n == 6: break
+          out.save('sketchfab.png'); open('liens.txt', 'w').write('\n'.join(links))
           PY
-          python3 ex.py > journal.txt 2>&1
+          python3 sk.py > journal.txt 2>&1
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
