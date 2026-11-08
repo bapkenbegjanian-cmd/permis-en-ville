@@ -14,17 +14,18 @@ jobs:
           set +e
           mkdir -p /tmp/e && cd /tmp/e
           K=sb_publishable_mz--wiLicR1GMDd2b3Fd2g_ewLTbr9h
-          curl -s "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=*&order=created_at.desc&limit=400" -H "apikey: $K" > scores.json
+          for o in 0 1000 2000 3000; do curl -s "https://ctgjnpxdaqdnrcxjwnkp.supabase.co/rest/v1/scores?select=pseudo,quiz,points,created_at&order=created_at.asc&limit=1000&offset=$o" -H "apikey: $K" > s$o.json; done
           python3 - <<'PY' > journal.txt
-          import json, collections
-          d = json.load(open('scores.json'))
-          if isinstance(d, dict): print(d); raise SystemExit
-          print('lignes:', len(d)); print('colonnes:', list(d[0].keys()) if d else '')
-          by = collections.Counter(str(x.get('created_at', ''))[:10] for x in d)
-          for k in sorted(by)[-21:]: print(k, by[k])
-          print('joueurs distincts (400 derniers):', len(set(x.get('pseudo') for x in d)))
-          q = collections.Counter(str(x.get('quiz', '')).split(':')[0] for x in d); print('quiz:', q.most_common(8))
-          for x in d[:10]: print(x.get('created_at'), x.get('pseudo'), x.get('quiz'), x.get('points'))
+          import json
+          faux = set("Adam,Amine,Anais,Bilel,Camille,ChloeB,Clara,Dylan,Emma,Enzo,Hugo,Ilyes,Ines,Jade,Jules,Kenzo,Kevin_L,Lea.M,Leo,Lina_92,Louna,Lucas,Manon,Maxime,Mehdi.R,Moon,Nassim,Nina,Noah,Nora,QuizKing,Rayan,Samy,Sarah,Sofia,Theo,Tom06,Yanis,Yasmine,Zizou10".split(','))
+          d = []
+          for o in (0, 1000, 2000, 3000):
+              x = json.load(open(f's{o}.json'))
+              if isinstance(x, list): d += x
+          print('scores au total:', len(d))
+          vrais = [x for x in d if x['pseudo'] not in faux]
+          print('scores avec un nom qui n est PAS dans mes faux:', len(vrais))
+          for x in vrais: print(x['created_at'][:16], '|', x['pseudo'], '|', x['quiz'], '|', x['points'])
           PY
       - name: Enregistrer sur la branche « enquete »
         if: always()
