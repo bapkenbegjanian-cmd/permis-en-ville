@@ -10,11 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
       - name: Test paiement Lookmiz
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          pip install -q "rembg[cpu]==2.0.59" pillow > /dev/null 2>&1
+          pip install -q "rembg[cpu]==2.0.59" pillow > pip.txt 2>&1; tail -3 pip.txt >> journal.txt
           for f in v1.jpg v2.webp v3.webp; do python3 -c "
           from rembg import remove, new_session
           from PIL import Image
