@@ -16,19 +16,8 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          curl -s "https://recherche-entreprises.api.gouv.fr/search?q=94261244100025" | python3 -c "
-          import sys, json
-          d = json.load(sys.stdin)
-          for r in d.get('results', [])[:3]:
-              s = r.get('siege', {})
-              print('nom:', r.get('nom_complet')); print('raison sociale:', r.get('nom_raison_sociale')); print('forme:', r.get('nature_juridique')); print('activite:', r.get('activite_principale'))
-              print('creation:', r.get('date_creation')); print('etat:', r.get('etat_administratif')); print('siege:', s.get('siret'), s.get('adresse'))
-              print('dirigeants:', [ (x.get('prenoms'), x.get('nom'), x.get('qualite')) for x in r.get('dirigeants', [])])
-              m = [e for e in r.get('matching_etablissements', [])]; print('etab:', [(e.get('siret'), e.get('adresse')) for e in m])
-          print('total', d.get('total_results'))
-          " > journal.txt 2>&1
-          curl -s -o /dev/null -w "vtcba.com dns: %{http_code}\n" http://vtcba.com >> journal.txt
-          dig +short vtcba.com A >> journal.txt; dig +short vtcba.com NS >> journal.txt
+          { echo "A:"; dig +short vtcba.com A; echo "www:"; dig +short www.vtcba.com; echo "NS:"; dig +short vtcba.com NS
+            for u in http://vtcba.com https://vtcba.com https://www.vtcba.com https://bapkenbegjanian-cmd.github.io/vtcba/; do echo "$u -> $(curl -s -o /tmp/p.html -w '%{http_code} %{redirect_url}' -m 20 $u) $(grep -o '<title>[^<]*' /tmp/p.html | head -1)"; done; } > journal.txt 2>&1
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
