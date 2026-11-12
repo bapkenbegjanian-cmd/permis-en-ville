@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staralyn — Free daily horoscope for all 12 signs</title>
+<meta name="description" content="Your horoscope for today, tomorrow, the week and the month for all 12 signs, with compatibility, moon phase, tarot card of the day, Chinese zodiac and numerology.">
+<link rel="canonical" href="https://staralyn.com/en/">
+<link rel="alternate" hreflang="fr" href="https://staralyn.com/fr/">
+<link rel="alternate" hreflang="en" href="https://staralyn.com/en/">
+<link rel="alternate" hreflang="it" href="https://staralyn.com/it/">
+<link rel="alternate" hreflang="es" href="https://staralyn.com/es/">
+<link rel="alternate" hreflang="de" href="https://staralyn.com/de/">
+<link rel="alternate" hreflang="pt" href="https://staralyn.com/pt/">
+<link rel="alternate" hreflang="x-default" href="https://staralyn.com/en/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Staralyn">
+<meta property="og:title" content="Staralyn — Free daily horoscope for all 12 signs">
+<meta property="og:description" content="Your horoscope for today, tomorrow, the week and the month for all 12 signs, with compatibility, moon phase, tarot card of the day, Chinese zodiac and numerology.">
+<meta property="og:url" content="https://staralyn.com/en/">
+<meta property="og:locale" content="en_GB">
+<meta property="og:image" content="https://staralyn.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0a0820">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-48.png" sizes="48x48" type="image/png">
+<link rel="icon" href="/favicon-192.png" sizes="192x192" type="image/png">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="/css/style.css">
+<script>try{var b=(navigator.languages&&navigator.languages[0]||navigator.language||"").slice(0,2).toLowerCase();if(["fr","en","it","es","de","pt"].indexOf(b)>-1){document.documentElement.setAttribute("translate","no");var m=document.createElement("meta");m.name="google";m.content="notranslate";document.head.appendChild(m)}document.documentElement.classList.add("js")}catch(e){}</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9506500644223987" crossorigin="anonymous"></script>
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Staralyn","url":"https://staralyn.com/","inLanguage":"en","description":"Your horoscope for today, tomorrow, the week and the month for all 12 signs, with compatibility, moon phase, tarot card of the day, Chinese zodiac and numerology."}</script>
+</head>
+<body class="page-home" data-lang="en">
+<canvas id="stars" aria-hidden="true"></canvas>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="logo" href="/en/" aria-label="Staralyn — Horoscope">
+      <svg class="logo-mark" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe3a3"/><stop offset="1" stop-color="#e6a94a"/></linearGradient></defs><path d="M27.500 4.500A15.500 15.500 0 1 0 35.500 28 12.500 12.500 0 0 1 27.500 4.500z" fill="url(#lg)"/><path d="m31 6 1.300 3.200L35.500 10.500l-3.200 1.300L31 15l-1.300-3.200-3.200-1.300 3.200-1.300z" fill="#fff6dc"/></svg>
+      <span class="logo-word" translate="no">Star<b>alyn</b></span></a>
+    <nav class="nav" id="nav" aria-label="Menu"><a href="/en/compatibility/">Compatibility</a><a href="/en/moon-phases/">Moon</a><a href="/en/mercury-retrograde/">Mercury</a><a href="/en/tarot-card-of-the-day/">Tarot</a><a href="/en/chinese-zodiac/">Chinese zodiac</a><a href="/en/numerology/">Numerology</a><a href="/en/what-is-my-zodiac-sign/">My sign</a></nav>
+    <div class="bar-end">
+      <label class="lang"><span class="sr">Language</span><select id="lang-select" aria-label="Language"><option value="/fr/" lang="fr">Français</option><option value="/en/" lang="en" selected>English</option><option value="/it/" lang="it">Italiano</option><option value="/es/" lang="es">Español</option><option value="/de/" lang="de">Deutsch</option><option value="/pt/" lang="pt">Português</option></select></label>
+      <button class="burger" id="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+<main id="main">
+
+<section class="hero wrap">
+  <div class="hero-text">
+    <p class="eyebrow">Thursday, 12 November 2026</p>
+    <h1>Your horoscope for today</h1>
+    <p class="lead">Pick your sign: love, work and energy for the day, updated every morning.</p>
+    <form class="finder-mini" id="home-finder">
+      <label for="home-birth">What is your date of birth?</label>
+      <div class="finder-row"><input id="home-birth" type="date" required max="2026-11-12" min="1900-01-01"><button type="submit" class="btn">Find my sign</button></div>
+      <p class="finder-out" id="home-finder-out" aria-live="polite"></p>
+    </form>
+    <a class="mine-banner" id="mine-banner" href="#" hidden></a>
+  </div>
+  <div class="hero-art" aria-hidden="false"><svg class="wheel" viewBox="0 0 400 400" role="group" aria-label="The 12 zodiac signs">
+      <defs><radialGradient id="core" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffe9b0" stop-opacity=".9"/><stop offset=".5" stop-color="#f4c97a" stop-opacity=".25"/><stop offset="1" stop-color="#f4c97a" stop-opacity="0"/></radialGradient></defs>
+      <g class="wheel-ring"><circle cx="200" cy="200" r="194" class="ring"/><circle cx="200" cy="200" r="120" class="ring ring-in"/><g class="ticks"><line x1="382.0" y1="200.0" x2="392.0" y2="200.0"/><line x1="385.3" y1="216.2" x2="391.3" y2="216.7"/><line x1="383.2" y1="232.3" x2="389.1" y2="233.3"/><line x1="379.7" y1="248.1" x2="385.5" y2="249.7"/><line x1="374.8" y1="263.6" x2="380.4" y2="265.7"/><line x1="368.6" y1="278.6" x2="374.0" y2="281.1"/><line x1="357.6" y1="291.0" x2="366.3" y2="296.0"/><line x1="352.4" y1="306.7" x2="357.3" y2="310.1"/><line x1="342.5" y1="319.6" x2="347.1" y2="323.4"/><line x1="331.5" y1="331.5" x2="335.8" y2="335.8"/><line x1="319.6" y1="342.5" x2="323.4" y2="347.1"/><line x1="306.7" y1="352.4" x2="310.1" y2="357.3"/><line x1="291.0" y1="357.6" x2="296.0" y2="366.3"/><line x1="278.6" y1="368.6" x2="281.1" y2="374.0"/><line x1="263.6" y1="374.8" x2="265.7" y2="380.4"/><line x1="248.1" y1="379.7" x2="249.7" y2="385.5"/><line x1="232.3" y1="383.2" x2="233.3" y2="389.1"/><line x1="216.2" y1="385.3" x2="216.7" y2="391.3"/><line x1="200.0" y1="382.0" x2="200.0" y2="392.0"/><line x1="183.8" y1="385.3" x2="183.3" y2="391.3"/><line x1="167.7" y1="383.2" x2="166.7" y2="389.1"/><line x1="151.9" y1="379.7" x2="150.3" y2="385.5"/><line x1="136.4" y1="374.8" x2="134.3" y2="380.4"/><line x1="121.4" y1="368.6" x2="118.9" y2="374.0"/><line x1="109.0" y1="357.6" x2="104.0" y2="366.3"/><line x1="93.3" y1="352.4" x2="89.9" y2="357.3"/><line x1="80.4" y1="342.5" x2="76.6" y2="347.1"/><line x1="68.5" y1="331.5" x2="64.2" y2="335.8"/><line x1="57.5" y1="319.6" x2="52.9" y2="323.4"/><line x1="47.6" y1="306.7" x2="42.7" y2="310.1"/><line x1="42.4" y1="291.0" x2="33.7" y2="296.0"/><line x1="31.4" y1="278.6" x2="26.0" y2="281.1"/><line x1="25.2" y1="263.6" x2="19.6" y2="265.7"/><line x1="20.3" y1="248.1" x2="14.5" y2="249.7"/><line x1="16.8" y1="232.3" x2="10.9" y2="233.3"/><line x1="14.7" y1="216.2" x2="8.7" y2="216.7"/><line x1="18.0" y1="200.0" x2="8.0" y2="200.0"/><line x1="14.7" y1="183.8" x2="8.7" y2="183.3"/><line x1="16.8" y1="167.7" x2="10.9" y2="166.7"/><line x1="20.3" y1="151.9" x2="14.5" y2="150.3"/><line x1="25.2" y1="136.4" x2="19.6" y2="134.3"/><line x1="31.4" y1="121.4" x2="26.0" y2="118.9"/><line x1="42.4" y1="109.0" x2="33.7" y2="104.0"/><line x1="47.6" y1="93.3" x2="42.7" y2="89.9"/><line x1="57.5" y1="80.4" x2="52.9" y2="76.6"/><line x1="68.5" y1="68.5" x2="64.2" y2="64.2"/><line x1="80.4" y1="57.5" x2="76.6" y2="52.9"/><line x1="93.3" y1="47.6" x2="89.9" y2="42.7"/><line x1="109.0" y1="42.4" x2="104.0" y2="33.7"/><line x1="121.4" y1="31.4" x2="118.9" y2="26.0"/><line x1="136.4" y1="25.2" x2="134.3" y2="19.6"/><line x1="151.9" y1="20.3" x2="150.3" y2="14.5"/><line x1="167.7" y1="16.8" x2="166.7" y2="10.9"/><line x1="183.8" y1="14.7" x2="183.3" y2="8.7"/><line x1="200.0" y1="18.0" x2="200.0" y2="8.0"/><line x1="216.2" y1="14.7" x2="216.7" y2="8.7"/><line x1="232.3" y1="16.8" x2="233.3" y2="10.9"/><line x1="248.1" y1="20.3" x2="249.7" y2="14.5"/><line x1="263.6" y1="25.2" x2="265.7" y2="19.6"/><line x1="278.6" y1="31.4" x2="281.1" y2="26.0"/><line x1="291.0" y1="42.4" x2="296.0" y2="33.7"/><line x1="306.7" y1="47.6" x2="310.1" y2="42.7"/><line x1="319.6" y1="57.5" x2="323.4" y2="52.9"/><line x1="331.5" y1="68.5" x2="335.8" y2="64.2"/><line x1="342.5" y1="80.4" x2="347.1" y2="76.6"/><line x1="352.4" y1="93.3" x2="357.3" y2="89.9"/><line x1="357.6" y1="109.0" x2="366.3" y2="104.0"/><line x1="368.6" y1="121.4" x2="374.0" y2="118.9"/><line x1="374.8" y1="136.4" x2="380.4" y2="134.3"/><line x1="379.7" y1="151.9" x2="385.5" y2="150.3"/><line x1="383.2" y1="167.7" x2="389.1" y2="166.7"/><line x1="385.3" y1="183.8" x2="391.3" y2="183.3"/></g><a href="/en/aries/" class="wheel-sign" style="--hue:8" aria-label="Aries"><circle cx="200.0" cy="50.0" r="22"/><text x="200.0" y="58.0" text-anchor="middle">♈︎</text></a><a href="/en/taurus/" class="wheel-sign" style="--hue:140" aria-label="Taurus"><circle cx="275.0" cy="70.1" r="22"/><text x="275.0" y="78.1" text-anchor="middle">♉︎</text></a><a href="/en/gemini/" class="wheel-sign" style="--hue:48" aria-label="Gemini"><circle cx="329.9" cy="125.0" r="22"/><text x="329.9" y="133.0" text-anchor="middle">♊︎</text></a><a href="/en/cancer/" class="wheel-sign" style="--hue:200" aria-label="Cancer"><circle cx="350.0" cy="200.0" r="22"/><text x="350.0" y="208.0" text-anchor="middle">♋︎</text></a><a href="/en/leo/" class="wheel-sign" style="--hue:32" aria-label="Leo"><circle cx="329.9" cy="275.0" r="22"/><text x="329.9" y="283.0" text-anchor="middle">♌︎</text></a><a href="/en/virgo/" class="wheel-sign" style="--hue:100" aria-label="Virgo"><circle cx="275.0" cy="329.9" r="22"/><text x="275.0" y="337.9" text-anchor="middle">♍︎</text></a><a href="/en/libra/" class="wheel-sign" style="--hue:320" aria-label="Libra"><circle cx="200.0" cy="350.0" r="22"/><text x="200.0" y="358.0" text-anchor="middle">♎︎</text></a><a href="/en/scorpio/" class="wheel-sign" style="--hue:345" aria-label="Scorpio"><circle cx="125.0" cy="329.9" r="22"/><text x="125.0" y="337.9" text-anchor="middle">♏︎</text></a><a href="/en/sagittarius/" class="wheel-sign" style="--hue:270" aria-label="Sagittarius"><circle cx="70.1" cy="275.0" r="22"/><text x="70.1" y="283.0" text-anchor="middle">♐︎</text></a><a href="/en/capricorn/" class="wheel-sign" style="--hue:220" aria-label="Capricorn"><circle cx="50.0" cy="200.0" r="22"/><text x="50.0" y="208.0" text-anchor="middle">♑︎</text></a><a href="/en/aquarius/" class="wheel-sign" style="--hue:185" aria-label="Aquarius"><circle cx="70.1" cy="125.0" r="22"/><text x="70.1" y="133.0" text-anchor="middle">♒︎</text></a><a href="/en/pisces/" class="wheel-sign" style="--hue:245" aria-label="Pisces"><circle cx="125.0" cy="70.1" r="22"/><text x="125.0" y="78.1" text-anchor="middle">♓︎</text></a></g>
+      <circle cx="200" cy="200" r="70" fill="url(#core)" class="core"/>
+      <g class="orbit"><circle cx="200" cy="76" r="5" fill="#f4c97a"/></g>
+    </svg></div>
+</section>
+
+<section class="wrap block" id="signs">
+  <h2 class="section-title">The 12 zodiac signs</h2>
+  <div class="sign-grid "><a class="sign-card reveal" href="/en/aries/" data-sign="aries" style="--hue:8">
+      <span class="sc-glyph" aria-hidden="true">♈︎</span>
+      <span class="sc-name">Aries</span>
+      <span class="sc-dates">21 March – 19 April</span>
+      <span class="sc-teaser">A waxing crescent moon, still slender and full of promise, nudges you toward gentle beginnings today.</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/taurus/" data-sign="taurus" style="--hue:140">
+      <span class="sc-glyph" aria-hidden="true">♉︎</span>
+      <span class="sc-name">Taurus</span>
+      <span class="sc-dates">20 April – 20 May</span>
+      <span class="sc-teaser">The soft light of the young moon invites you to slow down and savour what is already around you.</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/gemini/" data-sign="gemini" style="--hue:48">
+      <span class="sc-glyph" aria-hidden="true">♊︎</span>
+      <span class="sc-name">Gemini</span>
+      <span class="sc-dates">21 May – 20 June</span>
+      <span class="sc-teaser">The thin crescent moon brings a light, curious energy into your day, sparking fresh questions and playful exchanges.</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/cancer/" data-sign="cancer" style="--hue:200">
+      <span class="sc-glyph" aria-hidden="true">♋︎</span>
+      <span class="sc-name">Cancer</span>
+      <span class="sc-dates">21 June – 22 July</span>
+      <span class="sc-teaser">The young moon gently draws your attention inward, toward home, family and the people who feel like shelter.</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/leo/" data-sign="leo" style="--hue:32">
+      <span class="sc-glyph" aria-hidden="true">♌︎</span>
+      <span class="sc-name">Leo</span>
+      <span class="sc-dates">23 July – 22 August</span>
+      <span class="sc-teaser">The gentle crescent moon lights a warm, confident path through your day, inviting you to express yourself with…</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/virgo/" data-sign="virgo" style="--hue:100">
+      <span class="sc-glyph" aria-hidden="true">♍︎</span>
+      <span class="sc-name">Virgo</span>
+      <span class="sc-dates">23 August – 22 September</span>
+      <span class="sc-teaser">The waxing crescent moon sharpens your focus and invites you to tackle tasks with a clear, steady hand.</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/libra/" data-sign="libra" style="--hue:320">
+      <span class="sc-glyph" aria-hidden="true">♎︎</span>
+      <span class="sc-name">Libra</span>
+      <span class="sc-dates">23 September – 22 October</span>
+      <span class="sc-teaser">The young moon glows softly over your day, bringing harmony, charm and a desire for beauty in everyday life.</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/scorpio/" data-sign="scorpio" style="--hue:345">
+      <span class="sc-glyph" aria-hidden="true">♏︎</span>
+      <span class="sc-name">Scorpio</span>
+      <span class="sc-dates">23 October – 21 November</span>
+      <span class="sc-teaser">The slender moon offers a steady, focused energy that suits your determination and depth.</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/sagittarius/" data-sign="sagittarius" style="--hue:270">
+      <span class="sc-glyph" aria-hidden="true">♐︎</span>
+      <span class="sc-name">Sagittarius</span>
+      <span class="sc-dates">22 November – 21 December</span>
+      <span class="sc-teaser">The thin moon opens a window toward curiosity and gentle exploration, encouraging you to notice new details in…</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/capricorn/" data-sign="capricorn" style="--hue:220">
+      <span class="sc-glyph" aria-hidden="true">♑︎</span>
+      <span class="sc-name">Capricorn</span>
+      <span class="sc-dates">22 December – 19 January</span>
+      <span class="sc-teaser">The young moon supports disciplined effort and clear intentions, helping you transform plans into concrete steps.</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/aquarius/" data-sign="aquarius" style="--hue:185">
+      <span class="sc-glyph" aria-hidden="true">♒︎</span>
+      <span class="sc-name">Aquarius</span>
+      <span class="sc-dates">20 January – 18 February</span>
+      <span class="sc-teaser">The waxing crescent moon brings a fresh, inventive mood, encouraging you to think about how things could be done…</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a><a class="sign-card reveal" href="/en/pisces/" data-sign="pisces" style="--hue:245">
+      <span class="sc-glyph" aria-hidden="true">♓︎</span>
+      <span class="sc-name">Pisces</span>
+      <span class="sc-dates">19 February – 20 March</span>
+      <span class="sc-teaser">The gentle crescent moon wraps the day in a soft, dreamy glow, encouraging tenderness and imagination.</span>
+      <span class="sc-cta">Read horoscope →</span>
+    </a></div>
+</section>
+
+<section class="wrap block sky">
+  <h2 class="section-title">The sky today</h2>
+  <div class="sky-grid">
+    <a class="sky-card moon-card reveal" href="/en/moon-phases/">
+      <div class="moon-wrap" id="home-moon"><svg class="moon-svg" viewBox="0 0 120 120" role="img" aria-label="moon"><defs><radialGradient id="mg120" cx="40%" cy="38%" r="70%"><stop offset="0" stop-color="#fffbe9"/><stop offset="1" stop-color="#e8dcb4"/></radialGradient></defs><circle cx="60" cy="60" r="56" fill="#171538" stroke="rgba(255,255,255,.14)"/><path d="M 60 4 A 56 56 0 0 1 60 116 A 45.56 56 0 0 0 60 4 Z" fill="url(#mg120)"/></svg></div>
+      <div><p class="sky-label">Moon</p><p class="sky-title" id="home-moon-name">Waxing crescent</p><p class="sky-sub" id="home-moon-pct">9% illuminated</p></div>
+    </a>
+    <a class="sky-card tarot-teaser merc-card reveal" href="/en/mercury-retrograde/">
+      <div class="mini-card" aria-hidden="true"><span>☿</span></div>
+      <div><p class="sky-label">Mercury</p><p class="sky-title">Mercury is retrograde</p><p class="sky-sub">Until 13 November.</p></div>
+    </a>
+    <a class="sky-card tarot-teaser reveal" href="/en/tarot-card-of-the-day/">
+      <div class="mini-card" aria-hidden="true"><span>✦</span></div>
+      <div><p class="sky-label">Tarot</p><p class="sky-title">Your tarot card of the day</p><p class="sky-sub">Draw my card →</p></div>
+    </a>
+  </div>
+</section>
+
+<section class="wrap block">
+  <h2 class="section-title">Go further</h2>
+  <div class="tool-grid">
+    <a class="tool-card reveal" href="/en/compatibility/"><span class="tool-ico" aria-hidden="true">♡</span><h3>Compatibility between two signs</h3><p>Pick two signs and discover their compatibility in love, friendship and work, with a score and an explanation.</p></a><a class="tool-card reveal" href="/en/moon-phases/"><span class="tool-ico" aria-hidden="true">☾</span><h3>The moon today</h3><p>Today&#39;s moon phase, its illumination, the dates of the next full moon and new moon, and the calendar for the month.</p></a><a class="tool-card reveal" href="/en/mercury-retrograde/"><span class="tool-ico" aria-hidden="true">☿</span><h3>Mercury retrograde</h3><p>Is Mercury retrograde today?</p></a><a class="tool-card reveal" href="/en/tarot-card-of-the-day/"><span class="tool-ico" aria-hidden="true">✦</span><h3>Your tarot card of the day</h3><p>Draw your tarot card of the day from the 22 major arcana and read its meaning and advice.</p></a><a class="tool-card reveal" href="/en/chinese-zodiac/"><span class="tool-ico" aria-hidden="true">☯</span><h3>Your animal in the Chinese zodiac</h3><p>Find your animal and element in the Chinese zodiac from your date of birth, and discover its character.</p></a><a class="tool-card reveal" href="/en/numerology/"><span class="tool-ico" aria-hidden="true">∞</span><h3>Your life path number in numerology</h3><p>Calculate your numerology life path number from your date of birth and read its meaning: personality, strengths and challenges.</p></a><a class="tool-card reveal" href="/en/what-is-my-zodiac-sign/"><span class="tool-ico" aria-hidden="true">♈</span><h3>What is your sign?</h3><p>Enter your date of birth to find your zodiac sign, its element and ruling planet, then read your horoscope.</p></a>
+  </div>
+</section>
+
+<section class="wrap block prose">
+  <p>Every morning, Staralyn publishes the daily horoscope for the twelve zodiac signs, along with tomorrow&#39;s, the week&#39;s and the month&#39;s. The texts are written in six languages and follow the day&#39;s moon phase.</p>
+  <p>You will also find free tools: compatibility between two signs, a calendar of moon phases, the tarot card of the day, the Chinese zodiac and your numerology life path.</p>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="foot-note">Staralyn is an entertainment site. Horoscopes and tarot are not a substitute for medical, legal or financial advice.</p>
+    <p class="foot-links"><a href="/en/about/">About</a><a href="/en/privacy/">Privacy</a><span>© 2026 Staralyn</span></p>
+  </div>
+</footer>
+<script type="application/json" id="suggest-data">{"fr":{"msg":"Ce site existe aussi en français.","btn":"Passer en français","close":"Fermer"},"en":{"msg":"This site is also available in English.","btn":"Switch to English","close":"Close"},"it":{"msg":"Questo sito è disponibile anche in italiano.","btn":"Passa all'italiano","close":"Chiudi"},"es":{"msg":"Este sitio también está disponible en español.","btn":"Cambiar a español","close":"Cerrar"},"de":{"msg":"Diese Seite gibt es auch auf Deutsch.","btn":"Auf Deutsch ansehen","close":"Schließen"},"pt":{"msg":"Este site também está disponível em português.","btn":"Mudar para português","close":"Fechar"}}</script>
+<script src="/js/astro.js"></script>
+<script src="/js/app.js" defer></script>
+<script type="application/json" id="page-data">{"lang":"en","signs":[{"id":"aries","glyph":"♈︎","name":"Aries","url":"/en/aries/","dates":"21 March – 19 April","from":[3,21],"to":[4,19],"element":"fire","modality":"cardinal","ruler":"mars","hue":8},{"id":"taurus","glyph":"♉︎","name":"Taurus","url":"/en/taurus/","dates":"20 April – 20 May","from":[4,20],"to":[5,20],"element":"earth","modality":"fixed","ruler":"venus","hue":140},{"id":"gemini","glyph":"♊︎","name":"Gemini","url":"/en/gemini/","dates":"21 May – 20 June","from":[5,21],"to":[6,20],"element":"air","modality":"mutable","ruler":"mercury","hue":48},{"id":"cancer","glyph":"♋︎","name":"Cancer","url":"/en/cancer/","dates":"21 June – 22 July","from":[6,21],"to":[7,22],"element":"water","modality":"cardinal","ruler":"moon","hue":200},{"id":"leo","glyph":"♌︎","name":"Leo","url":"/en/leo/","dates":"23 July – 22 August","from":[7,23],"to":[8,22],"element":"fire","modality":"fixed","ruler":"sun","hue":32},{"id":"virgo","glyph":"♍︎","name":"Virgo","url":"/en/virgo/","dates":"23 August – 22 September","from":[8,23],"to":[9,22],"element":"earth","modality":"mutable","ruler":"mercury","hue":100},{"id":"libra","glyph":"♎︎","name":"Libra","url":"/en/libra/","dates":"23 September – 22 October","from":[9,23],"to":[10,22],"element":"air","modality":"cardinal","ruler":"venus","hue":320},{"id":"scorpio","glyph":"♏︎","name":"Scorpio","url":"/en/scorpio/","dates":"23 October – 21 November","from":[10,23],"to":[11,21],"element":"water","modality":"fixed","ruler":"pluto","hue":345},{"id":"sagittarius","glyph":"♐︎","name":"Sagittarius","url":"/en/sagittarius/","dates":"22 November – 21 December","from":[11,22],"to":[12,21],"element":"fire","modality":"mutable","ruler":"jupiter","hue":270},{"id":"capricorn","glyph":"♑︎","name":"Capricorn","url":"/en/capricorn/","dates":"22 December – 19 January","from":[12,22],"to":[1,19],"element":"earth","modality":"cardinal","ruler":"saturn","hue":220},{"id":"aquarius","glyph":"♒︎","name":"Aquarius","url":"/en/aquarius/","dates":"20 January – 18 February","from":[1,20],"to":[2,18],"element":"air","modality":"fixed","ruler":"uranus","hue":185},{"id":"pisces","glyph":"♓︎","name":"Pisces","url":"/en/pisces/","dates":"19 February – 20 March","from":[2,19],"to":[3,20],"element":"water","modality":"mutable","ruler":"neptune","hue":245}],"strings":{"home.title":"Free daily horoscope for all 12 signs","home.description":"Your horoscope for today, tomorrow, the week and the month for all 12 signs, with compatibility, moon phase, tarot card of the day, Chinese zodiac and numerology.","home.h1":"Your horoscope for today","home.lead":"Pick your sign: love, work and energy for the day, updated every morning.","home.signs":"The 12 zodiac signs","home.tools":"Go further","home.sky":"The sky today","home.readMore":"Read horoscope","home.mySign":"My sign","home.yourSign":"Your horoscope, {sign}","home.findSign":"What is your date of birth?","home.about1":"Every morning, Staralyn publishes the daily horoscope for the twelve zodiac signs, along with tomorrow's, the week's and the month's. The texts are written in six languages and follow the day's moon phase.","home.about2":"You will also find free tools: compatibility between two signs, a calendar of moon phases, the tarot card of the day, the Chinese zodiac and your numerology life path.","moon.illumination":"{n}% illuminated","moon.phases":"The 8 phases of the moon","moon.p0":"New moon","moon.p1":"Waxing crescent","moon.p2":"First quarter","moon.p3":"Waxing gibbous","moon.p4":"Full moon","moon.p5":"Waning gibbous","moon.p6":"Last quarter","moon.p7":"Waning crescent","finder.title":"What is my zodiac sign?","finder.description":"Enter your date of birth to find your zodiac sign, its element and ruling planet, then read your horoscope.","finder.h1":"What is your sign?","finder.go":"Find my sign","finder.result":"Your sign is {sign}","finder.ranges":"Dates of the 12 signs","form.birth":"Date of birth","form.invalid":"Enter a valid date."},"mineKey":"sl_sign","locale":"en-GB"}</script>
+<script src="/js/tools.js" defer></script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a595f0f4cfb1fc86',t:'MTc5NDQ5MDc1MA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a595f0f4cfb1fc86',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
