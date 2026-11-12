@@ -16,7 +16,10 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          { dig +short staralyn.com A; dig +short www.staralyn.com CNAME; dig +short staralyn.com NS; curl -sI https://www.staralyn.com/fr/ | grep -iE "^(server|x-github|x-vercel|x-nf|cf-ray|x-served|via|location)"; curl -s https://www.staralyn.com/fr/ | grep -oiE "github\.com/[a-z0-9_-]+|pages\.dev|vercel|netlify|generator[^>]*" | sort -u; } > journal.txt 2>&1
+          wget -q --mirror --page-requisites --no-parent -e robots=off --restrict-file-names=nocontrol -U "Mozilla/5.0 (staralyn-sauvegarde)" https://www.staralyn.com/ https://www.staralyn.com/fr/ https://www.staralyn.com/en/ https://www.staralyn.com/sitemap.xml https://www.staralyn.com/robots.txt https://www.staralyn.com/ads.txt https://www.staralyn.com/_headers https://www.staralyn.com/_redirects 2>/dev/null
+          for u in $(grep -oE "<loc>[^<]+" www.staralyn.com/sitemap.xml 2>/dev/null | sed 's/<loc>//' | head -2000); do wget -q -x -nc --page-requisites -e robots=off "$u" 2>/dev/null; done
+          mv www.staralyn.com site 2>/dev/null
+          { find site -type f | wc -l; du -sh site; find site -maxdepth 2 | head -40; } > journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
