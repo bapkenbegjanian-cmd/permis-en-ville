@@ -16,10 +16,20 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          wget -q --mirror --page-requisites --no-parent -e robots=off --restrict-file-names=nocontrol -U "Mozilla/5.0 (staralyn-sauvegarde)" https://www.staralyn.com/ https://www.staralyn.com/fr/ https://www.staralyn.com/en/ https://www.staralyn.com/sitemap.xml https://www.staralyn.com/robots.txt https://www.staralyn.com/ads.txt https://www.staralyn.com/_headers https://www.staralyn.com/_redirects 2>/dev/null
-          for u in $(grep -oE "<loc>[^<]+" www.staralyn.com/sitemap.xml 2>/dev/null | sed 's/<loc>//' | head -2000); do wget -q -x -nc --page-requisites -e robots=off "$u" 2>/dev/null; done
-          mv www.staralyn.com site 2>/dev/null
-          { find site -type f | wc -l; du -sh site; find site -maxdepth 2 | head -40; } > journal.txt
+          cat > q.py <<'PY'
+          import json, urllib.request
+          def gql(url, q):
+              r = urllib.request.Request(url, data=json.dumps({'query': q}).encode(), headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
+              try: return urllib.request.urlopen(r, timeout=30).read().decode()[:1500]
+              except Exception as e: return 'ERR ' + str(e) + ' ' + (e.read().decode()[:800] if hasattr(e, 'read') else '')
+          for url in ['https://graphql.lottiefiles.com/2022-08', 'https://graphql.lottiefiles.com/', 'https://graphql.lottiefiles.com/2022-08/graphql']:
+              print(url); print(gql(url, '{ searchPublicAnimations(query: "wedding", first: 2) { edges { node { id name url gifUrl lottieUrl jsonUrl imageUrl } } } }')); print()
+          try:
+              h = urllib.request.urlopen(urllib.request.Request('https://lottiefiles.com/search?q=wedding&category=animations', headers={'User-Agent': 'Mozilla/5.0'}), timeout=30).read().decode()
+              import re; print('html', len(h)); print(sorted(set(re.findall(r'https://[a-z0-9.-]*lottiefiles\.com/[^"\\ ]+\.(?:json|lottie|gif|png)', h)))[:15])
+          except Exception as e: print('html ERR', e)
+          PY
+          python3 q.py > journal.txt 2>&1
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
