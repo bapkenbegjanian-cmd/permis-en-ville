@@ -15,19 +15,38 @@ jobs:
       - name: Test paiement Lookmiz
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e
-          npm i -s playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-          cat > t.js <<'JS'
-          const {chromium,devices}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({...devices['iPhone 13']});const L=[];
-          p.on('response',r=>{const u=r.url();if(/\.(mp4|webm|mov|m3u8|json|lottie|riv|glb|gltf|mp3|webp|png|jpg)(\?|$)/i.test(u))L.push(r.status()+' '+u.slice(0,160))});
-          await p.goto('https://istudio.am/templates/1055',{waitUntil:'networkidle',timeout:60000});await p.waitForTimeout(3000);await p.screenshot({path:'s0.png'});
-          L.push('MEDIA: '+await p.evaluate(()=>[...document.querySelectorAll('video,audio,canvas,iframe,img')].slice(0,20).map(e=>e.tagName+' '+(e.currentSrc||e.src||'').slice(0,120)+' '+e.clientWidth+'x'+e.clientHeight).join(' | ')));
-          L.push('TEXT: '+(await p.innerText('body')).slice(0,600));
-          await p.mouse.click(195,520);for(let i=1;i<=8;i++){await p.waitForTimeout(700);await p.screenshot({path:'s'+i+'.png'});}
-          await p.mouse.wheel(0,900);await p.waitForTimeout(1500);await p.screenshot({path:'s9.png'});
-          require('fs').writeFileSync('journal.txt',L.join('\n'));await b.close()})()
-          JS
-          node t.js >> journal.txt 2>&1; rm -rf node_modules package*.json t.js
+          mkdir -p /tmp/e && cd /tmp/e && pip install -q pillow >/dev/null 2>&1
+          cat > m.py <<'PY'
+          import re, io, urllib.request
+          from PIL import Image, ImageDraw, ImageFont
+          UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36'}
+          def get(u): return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30).read()
+          T = [('Rideaux', 'curtain'), ('Enveloppe', 'envelope'), ('Mariage', 'wedding'), ('Fleurs', 'flowers'), ('Or / paillettes', 'gold'), ('Bougies', 'candles'), ('Feux d artifice', 'fireworks'), ('Cadeau', 'gift'), ('Noel', 'christmas'), ('Ballons', 'balloons'), ('Coeurs', 'hearts'), ('Bebe', 'baby')]
+          Fb = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 24); Fs = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 14)
+          CW, CH, N = 300, 190, 6
+          out = Image.new('RGB', (CW * N + 20, len(T) * (CH + 70)), 'white'); d = ImageDraw.Draw(out); L = []
+          for r, (lab, q) in enumerate(T):
+              y = r * (CH + 70); d.text((10, y + 6), 'Mixkit - ' + lab, fill='black', font=Fb)
+              try: h = get('https://mixkit.co/free-stock-video/%s/' % q).decode('utf8', 'ignore')
+              except Exception as e: print('ERR', q, e); continue
+              items = re.findall(r'<a[^>]+href="(/free-stock-video/[^"]+-\d+/)"', h)
+              thumbs = re.findall(r'(https://assets\.mixkit\.co/videos/\d+/\d+-thumb-[^"\s]+\.jpg)', h)
+              seen, x, n = set(), 10, 0
+              for t in thumbs:
+                  vid = re.search(r'/videos/(\d+)/', t).group(1)
+                  if vid in seen: continue
+                  seen.add(vid)
+                  try: im = Image.open(io.BytesIO(get(t))).convert('RGB')
+                  except Exception: continue
+                  im.thumbnail((CW - 8, CH)); out.paste(im, (x, y + 38))
+                  code = chr(65 + r) + str(n + 1); page = next((u for u in items if u.rstrip('/').endswith('-' + vid)), '')
+                  d.text((x, y + 40 + CH), code, fill='black', font=Fs)
+                  L.append(f"{code} | {lab} | https://mixkit.co{page} | https://assets.mixkit.co/videos/{vid}/{vid}-720.mp4")
+                  x += CW; n += 1
+                  if n == N: break
+          out.save('mixkit.png'); open('liste.txt', 'w').write('\n'.join(L)); print('ok', len(L))
+          PY
+          python3 m.py > journal.txt 2>&1
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
