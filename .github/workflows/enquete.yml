@@ -15,19 +15,42 @@ jobs:
       - name: Test paiement Lookmiz
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e
+          mkdir -p /tmp/e && cd /tmp/e && pip install -q pillow >/dev/null 2>&1
           cat > q.py <<'PY'
-          import json, urllib.request
-          def gql(url, q):
-              r = urllib.request.Request(url, data=json.dumps({'query': q}).encode(), headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
-              try: return urllib.request.urlopen(r, timeout=30).read().decode()[:1500]
-              except Exception as e: return 'ERR ' + str(e) + ' ' + (e.read().decode()[:800] if hasattr(e, 'read') else '')
-          for url in ['https://graphql.lottiefiles.com/2022-08', 'https://graphql.lottiefiles.com/', 'https://graphql.lottiefiles.com/2022-08/graphql']:
-              print(url); print(gql(url, '{ searchPublicAnimations(query: "wedding", first: 2) { edges { node { id name url gifUrl lottieUrl jsonUrl imageUrl } } } }')); print()
-          try:
-              h = urllib.request.urlopen(urllib.request.Request('https://lottiefiles.com/search?q=wedding&category=animations', headers={'User-Agent': 'Mozilla/5.0'}), timeout=30).read().decode()
-              import re; print('html', len(h)); print(sorted(set(re.findall(r'https://[a-z0-9.-]*lottiefiles\.com/[^"\\ ]+\.(?:json|lottie|gif|png)', h)))[:15])
-          except Exception as e: print('html ERR', e)
+          import json, io, urllib.request
+          from PIL import Image, ImageDraw, ImageFont, ImageSequence
+          UA = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+          def gql(q):
+              r = urllib.request.Request('https://graphql.lottiefiles.com/2022-08', data=json.dumps({'query': q}).encode(), headers=UA)
+              return json.loads(urllib.request.urlopen(r, timeout=40).read())
+          F1 = 'id name url gifUrl imageUrl jsonUrl'
+          extra = ''
+          for f in ['downloads', 'likesCount', 'createdBy { username }']:
+              d = gql('{ searchPublicAnimations(query: "wedding", first: 1) { edges { node { id ' + f + ' } } } }')
+              ok = 'errors' not in d; print('champ', f, ok, json.dumps(d)[:200])
+              if ok: extra += ' ' + f
+          T = [('Enveloppe / lettre', 'envelope letter open'), ('Mariage', 'wedding'), ('Anniversaire', 'birthday cake'), ('Cadeau', 'gift box'), ('Fete / confettis', 'confetti celebration'), ('Feux d artifice', 'fireworks'), ('Noel', 'christmas'), ('Aid / Ramadan', 'ramadan eid'), ('Bebe / naissance', 'baby'), ('Amour', 'love hearts'), ('Diplome', 'graduation'), ('Merci', 'thank you')]
+          Fb = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 24); Fs = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 15)
+          W, CW, CH = 6, 300, 250
+          out = Image.new('RGB', (W * CW + 20, len(T) * (CH + 70)), 'white'); d = ImageDraw.Draw(out); liste = []
+          for r, (lab, q) in enumerate(T):
+              res = gql('{ searchPublicAnimations(query: "%s", first: 40) { edges { node { %s } } } }' % (q, F1 + extra))
+              nodes = [e['node'] for e in res['data']['searchPublicAnimations']['edges']]
+              key = (lambda n: n.get('likesCount') or 0) if 'likesCount' in extra else (lambda n: n.get('downloads') or 0) if 'downloads' in extra else (lambda n: 0)
+              nodes.sort(key=key, reverse=True)
+              y = r * (CH + 70); d.text((10, y + 8), lab, fill='black', font=Fb); x = 10; n = 0
+              for nd in nodes:
+                  if n == W: break
+                  try:
+                      g = Image.open(io.BytesIO(urllib.request.urlopen(urllib.request.Request(nd['gifUrl'], headers={'User-Agent': 'Mozilla/5.0'}), timeout=30).read()))
+                      fr = [f.copy() for f in ImageSequence.Iterator(g)]; im = fr[len(fr) // 2].convert('RGBA')
+                      bg = Image.new('RGBA', im.size, 'white'); bg.alpha_composite(im); im = bg.convert('RGB')
+                  except Exception as e: print('gif err', e); continue
+                  im.thumbnail((CW - 10, CH - 10)); out.paste(im, (x, y + 40)); code = chr(65 + r) + str(n + 1)
+                  d.text((x, y + 40 + CH - 4), code + '  ' + nd['name'][:26], fill='black', font=Fs)
+                  liste.append(f"{code} | {lab} | {nd['name']} | {nd['url']} | {nd['jsonUrl']} | likes={nd.get('likesCount')} dl={nd.get('downloads')}")
+                  x += CW; n += 1
+          out.save('lottie.png'); open('liste.txt', 'w').write('\n'.join(liste)); print('ok', len(liste))
           PY
           python3 q.py > journal.txt 2>&1
       - name: Enregistrer sur la branche « enquete »
