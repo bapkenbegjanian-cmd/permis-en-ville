@@ -15,38 +15,56 @@ jobs:
       - name: Test paiement Lookmiz
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e && pip install -q pillow >/dev/null 2>&1
-          cat > m.py <<'PY'
-          import re, io, urllib.request
-          from PIL import Image, ImageDraw, ImageFont
-          UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36'}
-          def get(u): return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30).read()
-          T = [('Rideaux', 'curtain'), ('Enveloppe', 'envelope'), ('Mariage', 'wedding'), ('Fleurs', 'flowers'), ('Or / paillettes', 'gold'), ('Bougies', 'candles'), ('Feux d artifice', 'fireworks'), ('Cadeau', 'gift'), ('Noel', 'christmas'), ('Ballons', 'balloons'), ('Coeurs', 'hearts'), ('Bebe', 'baby')]
-          Fb = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 24); Fs = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 14)
-          CW, CH, N = 300, 190, 6
-          out = Image.new('RGB', (CW * N + 20, len(T) * (CH + 70)), 'white'); d = ImageDraw.Draw(out); L = []
-          for r, (lab, q) in enumerate(T):
-              y = r * (CH + 70); d.text((10, y + 6), 'Mixkit - ' + lab, fill='black', font=Fb)
-              try: h = get('https://mixkit.co/free-stock-video/%s/' % q).decode('utf8', 'ignore')
-              except Exception as e: print('ERR', q, e); continue
-              items = re.findall(r'<a[^>]+href="(/free-stock-video/[^"]+-\d+/)"', h)
-              thumbs = re.findall(r'(https://assets\.mixkit\.co/videos/\d+/\d+-thumb-[^"\s]+\.jpg)', h)
-              seen, x, n = set(), 10, 0
-              for t in thumbs:
-                  vid = re.search(r'/videos/(\d+)/', t).group(1)
-                  if vid in seen: continue
-                  seen.add(vid)
-                  try: im = Image.open(io.BytesIO(get(t))).convert('RGB')
-                  except Exception: continue
-                  im.thumbnail((CW - 8, CH)); out.paste(im, (x, y + 38))
-                  code = chr(65 + r) + str(n + 1); page = next((u for u in items if u.rstrip('/').endswith('-' + vid)), '')
-                  d.text((x, y + 40 + CH), code, fill='black', font=Fs)
-                  L.append(f"{code} | {lab} | https://mixkit.co{page} | https://assets.mixkit.co/videos/{vid}/{vid}-720.mp4")
-                  x += CW; n += 1
-                  if n == N: break
-          out.save('mixkit.png'); open('liste.txt', 'w').write('\n'.join(L)); print('ok', len(L))
+          mkdir -p /tmp/e/art && cd /tmp/e
+          pip install -q "rembg[cpu]==2.0.59" pillow > /dev/null 2>&1
+          cat > w.py <<'PY'
+          import json, urllib.request, urllib.parse, os, re
+          UA = {'User-Agent': 'LookmizArt/1.0 (contact via github bapkenbegjanian-cmd)'}
+          def api(**p):
+              p.update(format='json'); u = 'https://commons.wikimedia.org/w/api.php?' + urllib.parse.urlencode(p)
+              return json.loads(urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=40).read())
+          def files(search, n):
+              d = api(action='query', generator='search', gsrsearch=search, gsrnamespace=6, gsrlimit=n, prop='imageinfo', iiprop='url|extmetadata|size', iiurlwidth=1100)
+              out = []
+              for pg in (d.get('query', {}).get('pages', {}) or {}).values():
+                  ii = pg['imageinfo'][0]; md = ii.get('extmetadata', {})
+                  lic = md.get('LicenseShortName', {}).get('value', ''); out.append((pg['title'], ii.get('thumburl') or ii['url'], lic, md.get('Artist', {}).get('value', '')[:80]))
+              return out
+          S = [('rose', 'Redouté Les Roses rosa', 14), ('fleur', 'Redouté Choix des plus belles fleurs', 10), ('pivoine', 'Redouté paeonia', 4), ('orn', 'Grammar of Ornament Moresque', 8), ('orn', 'Grammar of Ornament Arabian', 6)]
+          log = []; i = 0
+          for tag, q, n in S:
+              try: L = files(q, n)
+              except Exception as e: log.append('ERR ' + q + ' ' + str(e)); continue
+              for t, u, lic, art in L:
+                  if not re.search(r'\.(jpe?g|png|tiff?)$', t, re.I): continue
+                  i += 1; fn = f'art/{tag}_{i:02d}.jpg'
+                  try: open(fn, 'wb').write(urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60).read())
+                  except Exception as e: log.append('dl err ' + t); continue
+                  log.append(f'{fn} | {t} | {lic} | {re.sub("<[^>]+>", "", art)}')
+          open('credits.txt', 'w').write('\n'.join(log)); print(len(log))
           PY
-          python3 m.py > journal.txt 2>&1
+          python3 w.py > journal.txt 2>&1
+          python3 - >> journal.txt 2>&1 <<'PY'
+          from rembg import remove, new_session
+          from PIL import Image
+          import glob
+          s = new_session('isnet-general-use')
+          for f in sorted(glob.glob('art/rose_*.jpg') + glob.glob('art/fleur_*.jpg') + glob.glob('art/pivoine_*.jpg')):
+              try:
+                  im = Image.open(f).convert('RGB'); o = remove(im, session=s, post_process_mask=True); o = o.crop(o.getbbox()); o.save(f.replace('.jpg', '.png')); print('cut', f, o.size)
+              except Exception as e: print('cut err', f, e)
+          PY
+          python3 -c "
+          from PIL import Image
+          import glob
+          fs = sorted(glob.glob('art/*.png')) + sorted(glob.glob('art/orn_*.jpg'))
+          W = Image.new('RGB', (6*220, ((len(fs)+5)//6)*240), (235,232,226))
+          from PIL import ImageDraw; d = ImageDraw.Draw(W)
+          for i, f in enumerate(fs):
+              im = Image.open(f).convert('RGBA'); im.thumbnail((210, 210)); x, y = (i%6)*220+5, (i//6)*240+5
+              W.paste(im, (x, y), im); d.text((x, y+215), f.split('/')[-1], fill=(0,0,0))
+          W.save('art_planche.png')
+          "
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
