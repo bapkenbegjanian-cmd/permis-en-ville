@@ -15,34 +15,22 @@ jobs:
       - name: Test paiement Lookmiz
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e && pip install -q pillow >/dev/null 2>&1
-          cat > sk.py <<'PY'
-          import json, io, urllib.request, urllib.parse
-          from PIL import Image, ImageDraw, ImageFont
-          UA = {'User-Agent': 'Mozilla/5.0 lookmiz-preview'}
-          def get(u): return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30).read()
-          Q = [('Maries / figurine', 'wedding couple figurine'), ('Gateau de mariage', 'wedding cake topper'), ('Boite a musique', 'music box ballerina'), ('Enfant / peluche', 'teddy bear'), ('Noel', 'santa claus figurine'), ('Ange / bapteme', 'angel statue'), ('Lanterne orientale', 'arabic lantern'), ('Cigogne / bebe', 'stork baby')]
-          F = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 22); f2 = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 14)
-          out = Image.new('RGB', (1860, 300 * len(Q)), 'white'); d = ImageDraw.Draw(out); links = []
-          for r, (lab, q) in enumerate(Q):
-              u = 'https://api.sketchfab.com/v3/search?' + urllib.parse.urlencode({'type': 'models', 'q': q, 'downloadable': 'true', 'sort_by': '-likeCount', 'count': 24})
-              try: res = json.loads(get(u))['results']
-              except Exception as e: print('ERR', q, e); continue
-              d.text((10, r * 300 + 6), lab, fill='black', font=F); x = 10; n = 0
-              for m in res:
-                  lic = m.get('license'); lic = lic.get('label') if isinstance(lic, dict) else lic
-                  if not lic or 'NonCommercial' in str(lic) or 'NoDerivs' in str(lic): continue
-                  th = sorted(m['thumbnails']['images'], key=lambda i: abs(i['width'] - 400))[0]['url']
-                  try: im = Image.open(io.BytesIO(get(th))).convert('RGB')
-                  except Exception: continue
-                  im.thumbnail((300, 220)); out.paste(im, (x, r * 300 + 36)); code = chr(65 + r) + str(n + 1)
-                  d.text((x, r * 300 + 262), (code + '. ' + m['name'])[:34], fill='black', font=f2)
-                  links.append(f"{code} | {m['name']} | https://sketchfab.com/3d-models/{m['uid']} | {lic} | anim={m.get('animationCount')} | faces={m.get('faceCount')}")
-                  x += 308; n += 1
-                  if n == 6: break
-          out.save('sketchfab.png'); open('liens.txt', 'w').write('\n'.join(links))
+          mkdir -p /tmp/e && cd /tmp/e
+          pip install -q "rembg[cpu]==2.0.59" pillow opencv-python-headless > /dev/null 2>&1
+          python3 - > journal.txt 2>&1 <<'PY'
+          from rembg import remove, new_session
+          from PIL import Image, ImageFilter
+          import numpy as np, cv2, os
+          src = Image.open(os.environ['GITHUB_WORKSPACE'] + '/maries/src.png').convert('RGB')
+          W, H = src.size; big = src.resize((W * 2, H * 2), Image.LANCZOS)
+          s = new_session('isnet-general-use')
+          cut = remove(big, session=s, post_process_mask=True)
+          cut.save('couple.png'); a = np.array(cut)[:, :, 3]
+          m = (a > 10).astype(np.uint8) * 255; m = cv2.dilate(m, np.ones((25, 25), np.uint8))
+          bg = cv2.inpaint(cv2.cvtColor(np.array(big), cv2.COLOR_RGB2BGR), m, 25, cv2.INPAINT_TELEA)
+          cv2.imwrite('fond.jpg', bg, [cv2.IMWRITE_JPEG_QUALITY, 92])
+          bb = cut.getbbox(); print('ok', big.size, bb)
           PY
-          python3 sk.py > journal.txt 2>&1
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
