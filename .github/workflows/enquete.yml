@@ -12,15 +12,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: Test paiement Lookmiz
+      - name: Photos libres de droit
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          sleep 100
-          for u in js/common.js data/ecrans-free.js data/ecrans-full.js data/meta.js supabase/copier-paiement.html; do echo "$u -> $(curl -s -o /tmp/x -w '%{http_code}' https://lookmiz.com/$u?x=$RANDOM) $(wc -c < /tmp/x) octets"; done > journal.txt
-          curl -s https://lookmiz.com/js/common.js?x=$RANDOM | grep -c "c-ret" >> journal.txt
-          curl -s https://lookmiz.com/programmes/ecrans/?x=$RANDOM | grep -o "3 jours gratuits\|Commencer gratuitement\|rétractation" | sort | uniq -c >> journal.txt
-          curl -s https://lookmiz.com/supabase/copier-paiement.html?x=$RANDOM | grep -o "prog_day" | head -1 >> journal.txt
+          for p in ecrans:VO_7-kxfFGc ecrans2:R7aBdi5OHtA porno:SUJu6bTIBhE porno2:1mFg9zzIvT8 jeux:MJX7-BAdkt0 tabac:OYUmxJYbHqg tabac2:yOTfmRaA_cQ cannabis:dnBxrPdD8kU cannabis2:qcCPIhhdgTw soiree:8RpxoTmvTRA soiree2:bkO7PBIx6Eo; do
+            n=${p%%:*}; id=${p##*:}
+            curl -sL -A "Mozilla/5.0" -o $n.jpg "https://unsplash.com/photos/$id/download?force=true&w=1100"
+            echo "$n $id $(wc -c < $n.jpg) $(file -b $n.jpg | cut -c1-60)" >> journal.txt
+          done
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
