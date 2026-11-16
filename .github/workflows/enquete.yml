@@ -15,44 +15,19 @@ jobs:
       - name: Test paiement Lookmiz
         run: |
           set +e
-          mkdir -p /tmp/e && cd /tmp/e && pip install -q pillow >/dev/null 2>&1
-          cat > q.py <<'PY'
-          import json, io, urllib.request
-          from PIL import Image, ImageDraw, ImageFont, ImageSequence
-          UA = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
-          def gql(q):
-              r = urllib.request.Request('https://graphql.lottiefiles.com/2022-08', data=json.dumps({'query': q}).encode(), headers=UA)
-              return json.loads(urllib.request.urlopen(r, timeout=40).read())
-          F1 = 'id name url gifUrl imageUrl jsonUrl'
-          extra = ''
-          for f in ['downloads', 'likesCount', 'createdBy { username }']:
-              d = gql('{ searchPublicAnimations(query: "wedding", first: 1) { edges { node { id ' + f + ' } } } }')
-              ok = 'errors' not in d; print('champ', f, ok, json.dumps(d)[:200])
-              if ok: extra += ' ' + f
-          T = [('Enveloppe / lettre', 'envelope letter open'), ('Mariage', 'wedding'), ('Anniversaire', 'birthday cake'), ('Cadeau', 'gift box'), ('Fete / confettis', 'confetti celebration'), ('Feux d artifice', 'fireworks'), ('Noel', 'christmas'), ('Aid / Ramadan', 'ramadan eid'), ('Bebe / naissance', 'baby'), ('Amour', 'love hearts'), ('Diplome', 'graduation'), ('Merci', 'thank you')]
-          Fb = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 24); Fs = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 15)
-          W, CW, CH = 6, 300, 250
-          out = Image.new('RGB', (W * CW + 20, len(T) * (CH + 70)), 'white'); d = ImageDraw.Draw(out); liste = []
-          for r, (lab, q) in enumerate(T):
-              res = gql('{ searchPublicAnimations(query: "%s", first: 40) { edges { node { %s } } } }' % (q, F1 + extra))
-              nodes = [e['node'] for e in res['data']['searchPublicAnimations']['edges']]
-              key = (lambda n: n.get('likesCount') or 0) if 'likesCount' in extra else (lambda n: n.get('downloads') or 0) if 'downloads' in extra else (lambda n: 0)
-              nodes.sort(key=key, reverse=True)
-              y = r * (CH + 70); d.text((10, y + 8), lab, fill='black', font=Fb); x = 10; n = 0
-              for nd in nodes:
-                  if n == W: break
-                  try:
-                      g = Image.open(io.BytesIO(urllib.request.urlopen(urllib.request.Request(nd['gifUrl'], headers={'User-Agent': 'Mozilla/5.0'}), timeout=30).read()))
-                      fr = [f.copy() for f in ImageSequence.Iterator(g)]; im = fr[len(fr) // 2].convert('RGBA')
-                      bg = Image.new('RGBA', im.size, 'white'); bg.alpha_composite(im); im = bg.convert('RGB')
-                  except Exception as e: print('gif err', e); continue
-                  im.thumbnail((CW - 10, CH - 10)); out.paste(im, (x, y + 40)); code = chr(65 + r) + str(n + 1)
-                  d.text((x, y + 40 + CH - 4), code + '  ' + nd['name'][:26], fill='black', font=Fs)
-                  liste.append(f"{code} | {lab} | {nd['name']} | {nd['url']} | {nd['jsonUrl']} | likes={nd.get('likesCount')} dl={nd.get('downloads')}")
-                  x += CW; n += 1
-          out.save('lottie.png'); open('liste.txt', 'w').write('\n'.join(liste)); print('ok', len(liste))
-          PY
-          python3 q.py > journal.txt 2>&1
+          mkdir -p /tmp/e && cd /tmp/e
+          npm i -s playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
+          cat > t.js <<'JS'
+          const {chromium,devices}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({...devices['iPhone 13']});const L=[];
+          p.on('response',r=>{const u=r.url();if(/\.(mp4|webm|mov|m3u8|json|lottie|riv|glb|gltf|mp3|webp|png|jpg)(\?|$)/i.test(u))L.push(r.status()+' '+u.slice(0,160))});
+          await p.goto('https://istudio.am/templates/1055',{waitUntil:'networkidle',timeout:60000});await p.waitForTimeout(3000);await p.screenshot({path:'s0.png'});
+          L.push('MEDIA: '+await p.evaluate(()=>[...document.querySelectorAll('video,audio,canvas,iframe,img')].slice(0,20).map(e=>e.tagName+' '+(e.currentSrc||e.src||'').slice(0,120)+' '+e.clientWidth+'x'+e.clientHeight).join(' | ')));
+          L.push('TEXT: '+(await p.innerText('body')).slice(0,600));
+          await p.mouse.click(195,520);for(let i=1;i<=8;i++){await p.waitForTimeout(700);await p.screenshot({path:'s'+i+'.png'});}
+          await p.mouse.wheel(0,900);await p.waitForTimeout(1500);await p.screenshot({path:'s9.png'});
+          require('fs').writeFileSync('journal.txt',L.join('\n'));await b.close()})()
+          JS
+          node t.js >> journal.txt 2>&1; rm -rf node_modules package*.json t.js
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
