@@ -16,21 +16,11 @@ jobs:
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          npm i -s playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-          cat > t.js <<'JS'
-          const {chromium,devices}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({...devices['iPhone 13']});const L=[];p.on('pageerror',x=>L.push('ERR '+x.message));p.on('requestfailed',r=>{if(r.url().includes('lookmiz.com'))L.push('FAIL '+r.url())});p.on('response',r=>{if(r.status()>=400&&r.url().includes('lookmiz.com'))L.push(r.status()+' '+r.url())});
-          await new Promise(r=>setTimeout(r,90000));
-          const v='?v='+Date.now();
-          await p.goto('https://lookmiz.com/'+v,{waitUntil:'networkidle'});L.push('accueil: '+await p.title());await p.screenshot({path:'a0.png'});
-          await p.goto('https://lookmiz.com/programmes/vape-tabac/'+v,{waitUntil:'networkidle'});L.push('programme: '+await p.title());await p.screenshot({path:'a1.png'});
-          await p.goto('https://lookmiz.com/app/#/p/ecrans/2',{waitUntil:'networkidle'});await p.waitForTimeout(1500);L.push('jour 2: '+await p.locator('h1').first().innerText());await p.screenshot({path:'a2.png'});
-          await p.goto('https://lookmiz.com/app/#/p/ecrans/5',{waitUntil:'networkidle'});await p.waitForTimeout(1200);L.push('jour 5 sans achat: '+await p.locator('.lock h2').first().innerText().catch(()=>'ABSENT'));
-          await p.check('.c-ret');await p.click('[data-buy]');await p.waitForTimeout(3500);L.push('clic payer -> url: '+p.url().slice(0,70)+' | message: '+(await p.locator('.buymsg').first().innerText().catch(()=>'')));
-          await p.goto('https://lookmiz.com/cartes/',{waitUntil:'networkidle'});L.push('cartes: '+await p.title());
-          await p.goto('https://lookmiz.com/sitemap.xml');L.push('sitemap ok: '+(await p.content()).includes('programmes/ecrans'));
-          require('fs').writeFileSync('journal.txt',L.join('\n'));await b.close()})()
-          JS
-          node t.js >> journal.txt 2>&1; rm -rf node_modules package*.json t.js
+          sleep 100
+          for u in js/common.js data/ecrans-free.js data/ecrans-full.js data/meta.js supabase/copier-paiement.html; do echo "$u -> $(curl -s -o /tmp/x -w '%{http_code}' https://lookmiz.com/$u?x=$RANDOM) $(wc -c < /tmp/x) octets"; done > journal.txt
+          curl -s https://lookmiz.com/js/common.js?x=$RANDOM | grep -c "c-ret" >> journal.txt
+          curl -s https://lookmiz.com/programmes/ecrans/?x=$RANDOM | grep -o "3 jours gratuits\|Commencer gratuitement\|rétractation" | sort | uniq -c >> journal.txt
+          curl -s https://lookmiz.com/supabase/copier-paiement.html?x=$RANDOM | grep -o "prog_day" | head -1 >> journal.txt
       - name: Enregistrer sur la branche « enquete »
         if: always()
         run: |
