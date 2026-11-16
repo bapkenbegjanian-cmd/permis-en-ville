@@ -12,14 +12,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: Photos libres de droit
+      - name: Photos libres de droit (Pexels)
         run: |
           set +e
           mkdir -p /tmp/e && cd /tmp/e
-          for p in ecrans:VO_7-kxfFGc ecrans2:R7aBdi5OHtA porno:SUJu6bTIBhE porno2:1mFg9zzIvT8 jeux:MJX7-BAdkt0 tabac:OYUmxJYbHqg tabac2:yOTfmRaA_cQ cannabis:dnBxrPdD8kU cannabis2:qcCPIhhdgTw soiree:8RpxoTmvTRA soiree2:bkO7PBIx6Eo; do
-            n=${p%%:*}; id=${p##*:}
-            curl -sL -A "Mozilla/5.0" -o $n.jpg "https://unsplash.com/photos/$id/download?force=true&w=1100"
-            echo "$n $id $(wc -c < $n.jpg) $(file -b $n.jpg | cut -c1-60)" >> journal.txt
+          for id in 6943426 8037095 6943448 15940893 19285775 14386896 17450454 4677402 6664136 3678384 7594295 17237100 4538421 764883 7667882 8725739 7667738 19651784 11286642; do
+            curl -sL -o p$id.jpg "https://images.pexels.com/photos/$id/pexels-photo-$id.jpeg?auto=compress&cs=tinysrgb&w=1000"
+            echo "$id $(wc -c < p$id.jpg) $(file -b p$id.jpg | cut -c1-50)" >> journal.txt
           done
       - name: Enregistrer sur la branche « enquete »
         if: always()
